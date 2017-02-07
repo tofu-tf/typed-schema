@@ -8,6 +8,8 @@ import ru.tinkoff.travel.schema.typeDSL._
 import shapeless.ops.hlist._
 import shapeless.{::, HList, HNil, Witness}
 
+import scala.language.higherKinds
+
 trait ServePrefix[T, I <: HList] extends ServePartial[T, I] {
   def handle(f: (I) ⇒ Route): Route
 }
@@ -57,12 +59,44 @@ object ServePrefix {
   (implicit fromCookie: FromCookie[x], name: Name[name]): ServePrefix[Cookie[name, x], x :: HNil] =
     f => cookie(name.string)(cook ⇒ f(fromCookie(cook.value) :: HNil))
 
+  implicit def recordServe[place[name, x], x, ParamParse[x] <: FromParam.Aux[x, ParamParse]]
+  (implicit paramMap: ParamMapDirective.Aux[place, ParamParse],
+   paramRecord: ParamRecord[ParamParse, x]): ServePrefix[Record[place, x], x :: HNil] =
+    f ⇒ paramMap.directive.apply(
+      params ⇒ paramRecord(params) match {
+        case Left(names) ⇒ reject()
+        case Right(x) ⇒ f(x :: HNil)
+      })
+
   implicit def consServe[start, end, I1 <: HList, I2 <: HList]
   (implicit start: ServePrefix[start, I1], end: ServePrefix[end, I2], prepend: Prepend[I1, I2]): ServePrefix[start :> end, prepend.Out] =
     f => start.handle(i1 ⇒ end.handle(i2 ⇒ f(prepend(i1, i2))))
 
   implicit def metaServe[x <: Meta]: ServePrefix[x, HNil] = f => f(HNil)
 }
+
+trait ParamMapDirective[place[name, x]] {
+  type ParamParse[x] <: FromParam.Aux[x, ParamParse]
+  def directive: Directive1[Map[String, String]]
+}
+
+object ParamMapDirective {
+  type Aux[place[name, x], F[x] <: FromParam.Aux[x, F]] = ParamMapDirective[place] {type ParamParse[x] = F[x]}
+
+  def apply[place[name, x], F[x] <: FromParam.Aux[x, F]](dir: Directive1[Map[String, String]]): Aux[place, F] = new ParamMapDirective[place] {
+    def directive = dir
+    type ParamParse[x] = F[x]
+  }
+
+  implicit val formData = ParamMapDirective[FormField, FromFormField](formFieldMap)
+  implicit val query = ParamMapDirective[QueryParam, FromQueryParam](parameterMap)
+  implicit val headers = ParamMapDirective[Header, FromHeader](
+    extract(_.request.headers.iterator.map(h ⇒ h.name → h.value).toMap))
+  implicit val cookies = ParamMapDirective[Cookie, FromCookie](
+    extract(_.request.cookies.iterator.map(c ⇒ c.name → c.value).toMap))
+}
+
+
 
 
 

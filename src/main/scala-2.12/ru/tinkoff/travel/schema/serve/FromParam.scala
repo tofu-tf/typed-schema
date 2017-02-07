@@ -4,6 +4,8 @@ import akka.http.scaladsl.server._
 import Directives._
 import akka.http.scaladsl.model.HttpHeader
 import ru.tinkoff.travel.schema.serve.ListParamOptions.default
+import shapeless.labelled._
+import shapeless.{::, HList, HNil, LabelledGeneric, Witness}
 
 import scala.language.higherKinds
 
@@ -13,6 +15,10 @@ trait FromParam[T] {
   def apply(param: String): T
 
   def map[X](f: T ⇒ X): Self[X]
+}
+
+object FromParam {
+  type Aux[T, F[x] <: FromParam[x]] = FromParam[T] {type Self[x] = F[x]}
 }
 /**
   * Options for parsing collections as parameters
@@ -47,7 +53,7 @@ trait LowPriorityFromParamCompanion[F[x] <: FromParam[x] {type Self[y] = F[y]}] 
     }
 }
 
-trait FromParamCompanion[F[x] <: FromParam[x] {type Self[y] = F[y]}] extends LowPriorityFromParamCompanion[F] {
+trait FromParamCompanion[F[x] <: FromParam.Aux[x, F]] extends LowPriorityFromParamCompanion[F] {
   def param[T](f: String ⇒ T): F[T]
 
   implicit val stringParam = param(identity)
@@ -86,8 +92,17 @@ object FromPathParam {
   implicit object uuidParam extends FromPathParam(JavaUUID)
 }
 
-trait FromHeader[T] {
+trait FromHeader[T] extends FromParam[T] {
+  self ⇒
+
   def apply(header: HttpHeader): Option[T]
+  def apply(name: String): T
+
+  type Self[x] = FromHeader[x]
+  def map[X](f: (T) ⇒ X): FromHeader[X] = new FromHeader[X] {
+    def apply(header: HttpHeader): Option[X] = self(header).map(f)
+    def apply(name: String): X = f(self(name))
+  }
 }
 
 trait FromFormField[T] extends FromParam[T] {
@@ -115,3 +130,43 @@ trait FromCookie[T] extends FromParam[T] {
 object FromCookie extends FromParamCompanion[FromCookie] {
   def param[T](f: String ⇒ T): FromCookie[T] = s ⇒ f(s)
 }
+
+trait ParamRecord[F[x] <: FromParam[x], C] {
+  def apply(params: Map[String, String]): Either[List[String], C]
+}
+
+object ParamRecord {
+  implicit def hnilRecord[F[x] <: FromParam[x]]: ParamRecord[F, HNil] = _ ⇒ Right(HNil)
+
+  private def concatErrors[S, A, T <: HList](head: Either[String, A], tail: Either[List[String], T]): Either[List[String], A :: T] =
+    (head, tail) match {
+      case (Right(h), Right(t)) ⇒ Right(h :: t)
+      case (Right(h), Left(names)) ⇒ Left(names)
+      case (Left(name), Right(_)) ⇒ Left(List(name))
+      case (Left(name), Left(names)) ⇒ Left(name :: names)
+    }
+
+  implicit def hconsRecord[F[x] <: FromParam.Aux[x, F], S <: Symbol, H, Tail <: HList]
+  (implicit head: F[H], tail: ParamRecord[F, Tail], S: Witness.Aux[S]): ParamRecord[F, FieldType[S, H] :: Tail] =
+    map ⇒ {
+      val name = S.value.name
+      val tr = tail(map)
+      val hr = map.get(name).map(s ⇒ field[S](head(s))).toRight(name)
+      concatErrors(hr, tr)
+    }
+
+  implicit def hconsOptRecord[F[x] <: FromParam.Aux[x, F], S <: Symbol, H, Tail <: HList]
+  (implicit head: F[H], tail: ParamRecord[F, Tail], S: Witness.Aux[S]): ParamRecord[F, FieldType[S, Option[H]] :: Tail] =
+    map ⇒ {
+      val name = S.value.name
+      val tr = tail(map)
+      val hr = field[S](map.get(name).map(s ⇒ head(s)))
+      tr.map(hr :: _)
+    }
+
+  implicit def generic[F[x] <: FromParam.Aux[x, F], C, L <: HList]
+  (implicit lgen: LabelledGeneric.Aux[C, L], record: ParamRecord[F, L]): ParamRecord[F, C] =
+    map ⇒ record(map).map(lgen.from)
+}
+
+

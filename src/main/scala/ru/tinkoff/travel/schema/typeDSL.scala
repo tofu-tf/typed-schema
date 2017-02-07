@@ -92,6 +92,13 @@ object typeDSL {
   final class Cookie[name, x]
 
   /**
+    * captures multiple fields from place
+    * @tparam place Header, FormField, Cookie or QueryParam
+    * @tparam x record type - only simple types, with modifiers like Option or List accepted
+    */
+  final class Record[place[_, _], x]
+
+  /**
     * concatenates pair of paths into complete path
     *
     * @tparam path    prefix - always simple path without disjunctions

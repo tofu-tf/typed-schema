@@ -27,6 +27,8 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test"
 
+libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 

@@ -4,6 +4,7 @@ import akka.http.scaladsl.server._
 import Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import ru.tinkoff.travel.schema.Name
+import ru.tinkoff.travel.schema.serve.ParamMapDirective.ParamsNotFoundRejection
 import ru.tinkoff.travel.schema.typeDSL._
 import shapeless.ops.hlist._
 import shapeless.{::, HList, HNil, Witness}
@@ -64,7 +65,7 @@ object ServePrefix {
    paramRecord: ParamRecord[ParamParse, x]): ServePrefix[Record[place, x], x :: HNil] =
     f ⇒ paramMap.directive.apply(
       params ⇒ paramRecord(params) match {
-        case Left(names) ⇒ reject()
+        case Left(names) ⇒ reject(ParamsNotFoundRejection(names))
         case Right(x) ⇒ f(x :: HNil)
       })
 
@@ -81,6 +82,8 @@ trait ParamMapDirective[place[name, x]] {
 }
 
 object ParamMapDirective {
+  final case class ParamsNotFoundRejection(names: List[String]) extends Rejection
+
   type Aux[place[name, x], F[x] <: FromParam.Aux[x, F]] = ParamMapDirective[place] {type ParamParse[x] = F[x]}
 
   def apply[place[name, x], F[x] <: FromParam.Aux[x, F]](dir: Directive1[Map[String, String]]): Aux[place, F] = new ParamMapDirective[place] {

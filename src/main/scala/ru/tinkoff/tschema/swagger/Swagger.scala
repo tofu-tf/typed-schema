@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.schema.swagger
+package ru.tinkoff.tschema.swagger
 
 import Swagger.jsonMimeType
 import akka.http.scaladsl.model.StatusCode
@@ -6,9 +6,9 @@ import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe._
 import io.circe.generic._
 import io.circe.syntax._
-import ru.tinkoff.travel.utils.json.CirceKeyEnum
-import ru.tinkoff.travel.utils.json.circeDerivation._
-import ru.tinkoff.travel.utils.json.circeSyntax._
+import ru.tinkoff.tschema.utils.json.CirceKeyEnum
+import ru.tinkoff.tschema.utils.json.circeDerivation._
+import ru.tinkoff.tschema.utils.json.circeSyntax._
 
 case class Swagger(swagger: String = "2.0",
                    info: SwaggerInfo,
@@ -38,7 +38,7 @@ object Swagger {
   type Path = Map[Method, SwaggerOp]
   type PathMap = Map[String, Path]
 
-  private[schema] val jsonMimeType = Vector("application/json")
+  private[tschema] val jsonMimeType = Vector("application/json")
 
   implicit lazy val swaggerEncoder: ObjectEncoder[Swagger] = deriveObjEncoder
 }

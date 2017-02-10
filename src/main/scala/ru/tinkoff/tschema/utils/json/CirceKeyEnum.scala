@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.utils.json
+package ru.tinkoff.tschema.utils.json
 
 import enumeratum.{Enum, EnumEntry}
 import io.circe._

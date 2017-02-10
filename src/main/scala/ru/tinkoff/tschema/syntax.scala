@@ -1,8 +1,8 @@
-package ru.tinkoff.travel.schema
+package ru.tinkoff.tschema
 
 import akka.http.scaladsl.server._
-import ru.tinkoff.travel.schema.serve.{Serve, ToServable}
-import ru.tinkoff.travel.schema.swagger.{DerivedMkSwagger, Description, Tag}
+import ru.tinkoff.tschema.serve.{Serve, ToServable}
+import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description, Tag}
 import typeDSL._
 import shapeless.Witness
 

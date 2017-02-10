@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.schema
+package ru.tinkoff.tschema
 
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Uri.Query

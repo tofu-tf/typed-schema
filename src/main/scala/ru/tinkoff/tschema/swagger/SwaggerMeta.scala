@@ -1,6 +1,6 @@
-package ru.tinkoff.travel.schema.swagger
+package ru.tinkoff.tschema.swagger
 
-import ru.tinkoff.travel.schema.typeDSL
+import ru.tinkoff.tschema.typeDSL
 
 trait SwaggerMeta extends typeDSL.Meta
 

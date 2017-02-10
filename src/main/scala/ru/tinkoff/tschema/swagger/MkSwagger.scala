@@ -1,12 +1,12 @@
-package ru.tinkoff.travel.schema.swagger
+package ru.tinkoff.tschema.swagger
 
 import java.util.{Date, ResourceBundle}
 
 import MkSwagger._
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.util.ByteString
-import ru.tinkoff.travel.schema.Name
-import ru.tinkoff.travel.schema.typeDSL._
+import ru.tinkoff.tschema.Name
+import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 
 import scala.language.higherKinds

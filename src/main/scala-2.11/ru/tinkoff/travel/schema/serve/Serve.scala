@@ -1,8 +1,8 @@
-package ru.tinkoff.travel.schema.serve
+package ru.tinkoff.tschema.serve
 
 import akka.http.scaladsl.server._
 import Directives._
-import ru.tinkoff.travel.schema.typeDSL._
+import ru.tinkoff.tschema.typeDSL._
 import shapeless.ops.hlist._
 import shapeless.{HList, DepFn2}
 

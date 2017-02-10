@@ -6,6 +6,8 @@ scalaVersion := "2.12.1"
 
 crossScalaVersions := Seq("2.11.8", "2.12.1")
 
+scalaOrganization := "org.typelevel"
+
 
 val akkaHttpVersion = "10.0.3"
 

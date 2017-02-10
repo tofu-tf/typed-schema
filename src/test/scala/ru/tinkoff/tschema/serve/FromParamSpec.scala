@@ -1,9 +1,9 @@
-package ru.tinkoff.travel.schema.serve
+package ru.tinkoff.tschema.serve
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.{GeneratorDrivenPropertyChecks, TableDrivenPropertyChecks}
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalactic.Equality
-import ru.tinkoff.travel.schema.serve.ForAllTypes.Checker
+import ru.tinkoff.tschema.serve.ForAllTypes.Checker
 import shapeless._
 
 import scala.reflect.runtime.universe._

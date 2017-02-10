@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.schema.swagger
+package ru.tinkoff.tschema.swagger
 
 import java.util.ResourceBundle
 

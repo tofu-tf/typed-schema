@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.schema
+package ru.tinkoff.tschema
 
 import shapeless.Witness
 

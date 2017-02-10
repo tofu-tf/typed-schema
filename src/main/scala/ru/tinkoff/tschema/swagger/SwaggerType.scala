@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.schema.swagger
+package ru.tinkoff.tschema.swagger
 
 import java.util.Date
 
@@ -156,7 +156,7 @@ object SwaggerTypeable {
 
   val default = Config(propMod = identity)
 
-  private[schema] implicit class LazyTypeableOps[T](val lazt: Lazy[SwaggerTypeable[T]]) extends AnyVal {
+  private[tschema] implicit class LazyTypeableOps[T](val lazt: Lazy[SwaggerTypeable[T]]) extends AnyVal {
     def later = Eval.later(lazt.value.swaggerType)
   }
 

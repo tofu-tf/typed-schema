@@ -1,9 +1,9 @@
-package ru.tinkoff.travel.schema.serve
+package ru.tinkoff.tschema.serve
 
 import akka.http.scaladsl.server._
 import Directives._
 import akka.http.scaladsl.model.HttpHeader
-import ru.tinkoff.travel.schema.serve.ListParamOptions.default
+import ru.tinkoff.tschema.serve.ListParamOptions.default
 import shapeless.labelled._
 import shapeless.{::, HList, HNil, LabelledGeneric, Witness}
 

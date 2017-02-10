@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.schema
+package ru.tinkoff.tschema
 
 import akka.http.scaladsl.server.Route
 import akka.shapeless.ops.hlist.Prepend

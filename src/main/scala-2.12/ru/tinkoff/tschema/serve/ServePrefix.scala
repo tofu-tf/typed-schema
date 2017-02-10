@@ -1,11 +1,11 @@
-package ru.tinkoff.travel.schema.serve
+package ru.tinkoff.tschema.serve
 
 import akka.http.scaladsl.server._
 import Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
-import ru.tinkoff.travel.schema.Name
-import ru.tinkoff.travel.schema.serve.ParamMapDirective.ParamsNotFoundRejection
-import ru.tinkoff.travel.schema.typeDSL._
+import ru.tinkoff.tschema.Name
+import ru.tinkoff.tschema.serve.ParamMapDirective.ParamsNotFoundRejection
+import ru.tinkoff.tschema.typeDSL._
 import shapeless.ops.hlist._
 import shapeless.{::, HList, HNil, Witness}
 

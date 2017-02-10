@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.utils.json
+package ru.tinkoff.tschema.utils.json
 
 import io.circe._
 

@@ -1,13 +1,14 @@
-package ru.tinkoff.tschema.serve
+package ru.tinkoff.tschema.named
 
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server._
 import Directives._
+import ru.tinkoff.tschema.serve.ServableSingle
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.ops.hlist._
 import shapeless.{HList, HNil}
 
-trait ServeSingle[T, In <: HList, Out] extends ServePartial[T, In] {
+trait ServeSingle[T, In <: HList, Out] {
 
   def handle(f: (In) ⇒ Route): Route
 }
@@ -33,7 +34,7 @@ object ServeSingle {
 
   implicit def serveCons[start, end, startInput <: HList, endInput <: HList, endOut]
   (implicit
-   start: ServePrefix[start, startInput],
+   start: ServeNamedPrefix[start, startInput],
    end: ServeSingle[end, endInput, endOut],
    prepend: Prepend[startInput, endInput]) = new ServeSingle[start :> end, prepend.Out, endOut] {
     def handle(f: (prepend.Out) => Route): Route = start.handle(startIn ⇒ end.handle { endIn ⇒ f(prepend(startIn, endIn)) })

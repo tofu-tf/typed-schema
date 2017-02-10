@@ -43,7 +43,7 @@ object ListParamOptions {
   def default[F[x] <: FromParam[x]]: ListParamOptions[F] = apply[F](',', ';')
 }
 
-trait LowPriorityFromParamCompanion[F[x] <: FromParam[x] {type Self[y] = F[y]}] {
+trait LowPriorityFromParamCompanion[F[x] <: FromParam.Aux[x, F]] {
   self: FromParamCompanion[F] ⇒
 
   implicit def listParam[X](implicit fromParam: F[X], options: ListParamOptions[F] = default[F]) =

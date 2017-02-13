@@ -11,6 +11,11 @@ object typeDSL {
     */
   trait Meta
 
+  /**
+    * tagging symbol for route
+    */
+  class Tag[tag]
+
 
   /**
     * indicates result of element of type `x`

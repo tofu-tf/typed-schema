@@ -11,6 +11,7 @@ import shapeless.{::, HList, HNil, Witness}
 
 import scala.language.higherKinds
 
+//@annotation.inductive
 trait ServePrefix[T, I <: HList] extends ServePartial[T, I] {
   def handle(f: (I) ⇒ Route): Route
 }
@@ -74,6 +75,8 @@ object ServePrefix {
     f => start.handle(i1 ⇒ end.handle(i2 ⇒ f(prepend(i1, i2))))
 
   implicit def metaServe[x <: Meta]: ServePrefix[x, HNil] = f => f(HNil)
+
+  implicit def tagServe[x]: ServePrefix[Tag[x], HNil] = f ⇒ f(HNil)
 }
 
 trait ParamMapDirective[place[name, x]] {

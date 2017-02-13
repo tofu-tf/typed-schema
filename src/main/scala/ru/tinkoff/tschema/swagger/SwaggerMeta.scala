@@ -10,6 +10,5 @@ object Description {
   class I18n[property] extends SwaggerMeta
 }
 
-class Tag[tag] extends SwaggerMeta
 
 

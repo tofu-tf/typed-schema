@@ -1,28 +1,30 @@
-package ru.tinkoff.tschema.serve
+package ru.tinkoff.tschema.named
 
 import akka.http.scaladsl.server._
 import Directives._
+import ru.tinkoff.tschema.serve.{Servable, ServableSingle, ToServable}
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.ops.hlist._
-import shapeless.{HList, DepFn2}
+import shapeless.{DepFn2, HList}
 
 import scala.language.higherKinds
 
-//@annotation.inductive
+@annotation.inductive
 trait Serve[T, Input, Output] {
   self ⇒
 
   def handle(f: Input ⇒ Route): Route
 
-  def apply(servable: Servable[Input, Output]) = handle(servable.route)
-
   def to[U] = new Serve[U, Input, Output] {
     override def handle(f: Input ⇒ Route) = self.handle(f)
   }
+
+  def apply[Impl](impl: Impl)(implicit routable: Routable[Input, Impl]): Route =
+    handle(in ⇒ routable.routeWith(in, impl))
 }
 
 trait LowPriorityServe {
-  implicit def serveCons[start, end, startIn <: HList, endIn, endOut, in]
+  implicit def serveCons[start, end, startIn <: HList, endIn <: HList, endOut, in <: HList]
   (implicit
    start: ServePrefix[start, startIn],
    end: Serve[end, endIn, endOut],
@@ -35,23 +37,23 @@ object Serve extends LowPriorityServe {
   def make[T](x: T) = new MkServe[T]
 
   class MkServe[T] {
-    def apply[In, Out, S](servable: S)
-                         (implicit serve: Serve[T, In, Out],
-                          convert: ToServable[S, In, Out]) =
+    def apply[In <: HList, Out, S](servable: S)
+                                  (implicit serve: Serve[T, In, Out],
+                                   convert: ToServable[S, In, Out]) =
       serve.handle(servable.route)
   }
 
   implicit def serveSingle[x, I <: HList, O](implicit serve: ServeSingle[x, I, O]): Serve[x, I, O] =
     f => serve.handle(f)
 
-  implicit def serveJoin[left, right, leftIn, leftOut, rightIn, rightOut]
+  implicit def serveJoin[left, right, leftIn <: HList, leftOut, rightIn <: HList, rightOut]
   (implicit
    left: Serve[left, leftIn, leftOut],
    right: Serve[right, rightIn, rightOut]): Serve[<|>[left, right], Either[leftIn, rightIn], Either[leftOut, rightOut]] =
     (f: Either[leftIn, rightIn] ⇒ Route) => left.handle(x ⇒ f(Left(x))) ~ right.handle(x ⇒ f(Right(x)))
 
-  implicit def metaLeftServe[left <: Meta, right, I, O](implicit right: Serve[right, I, O]): Serve[left <|> right, I, O] = right.to[left <|> right]
-  implicit def metaRightServe[left, right <: Meta, I, O](implicit left: Serve[left, I, O]): Serve[left <|> right, I, O] = left.to[left <|> right]
+  implicit def metaLeftServe[left <: Meta, right, I <: HList, O](implicit right: Serve[right, I, O]): Serve[left <|> right, I, O] = right.to[left <|> right]
+  implicit def metaRightServe[left, right <: Meta, I <: HList, O](implicit left: Serve[left, I, O]): Serve[left <|> right, I, O] = left.to[left <|> right]
 }
 
 /**

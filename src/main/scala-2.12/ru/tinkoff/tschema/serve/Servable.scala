@@ -4,6 +4,7 @@ import akka.http.scaladsl.server._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.HList
 
+@annotation.inductive
 trait Servable[Input, Output] {
   def route(x: Input): Route
 }

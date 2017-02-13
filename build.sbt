@@ -8,6 +8,12 @@ crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 scalaOrganization := "org.typelevel"
 
+scalacOptions ++= Seq(
+  "-Yinduction-heuristics",
+  "-Yliteral-types",
+  "-Xstrict-patmat-analysis"
+)
+
 
 val akkaHttpVersion = "10.0.3"
 
@@ -32,6 +38,11 @@ libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVers
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 
 
+
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+
+lazy val typedschema = (project in file(".")).dependsOn(macros)
+
+lazy val macros = project

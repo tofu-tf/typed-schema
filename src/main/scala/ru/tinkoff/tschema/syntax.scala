@@ -2,7 +2,7 @@ package ru.tinkoff.tschema
 
 import akka.http.scaladsl.server._
 import ru.tinkoff.tschema.serve.{Serve, ToServable}
-import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description, Tag}
+import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description}
 import typeDSL._
 import shapeless.Witness
 

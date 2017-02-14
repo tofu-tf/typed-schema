@@ -26,8 +26,8 @@ object Checks {
 
   trait DatabaseService {
     def put(value: String, id: Int): Future[Unit]
-    def read(id: Long): Future[Long]
-    def zzz(u: Double): Unit
+    def read(id: Any): Future[Long]
+    def zzz(u: Double): Unit = ???
   }
 
   NamedImpl[DatabaseService, inputGen.type]

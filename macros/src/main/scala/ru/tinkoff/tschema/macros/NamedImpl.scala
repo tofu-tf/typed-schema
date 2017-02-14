@@ -18,24 +18,23 @@ object NamedImpl {
 
 class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
   import c.universe._
+  import NamedImplMacros._
   type =?>[-A, +B] = PartialFunction[A, B]
 
   def materialize[T: WeakTypeTag, Input: WeakTypeTag]: Tree = {
-    val srcType = weakTypeOf[T]
-    val inpType = weakTypeOf[Input]
-    info(srcType)
-    val inputWiden = inpType.dealias.widen
-    info(inputWiden)
-    info("class :" + srcType.typeSymbol.isClass)
-    info("abstract :" + srcType.typeSymbol.isAbstract)
-    info(extractMethods(srcType))
-    info("union: " + extractUnion(inputWiden))
-    warning("asd")
-    warning("1231231")
 
-    q"""new _root_.ru.tinkoff.tschema.macros.NamedImpl[$srcType, $inpType]{
+    val applier = new Applier(weakTypeOf[T], weakTypeOf[Input])
+    import applier._
+    info(impl)
+
+    info(inputWiden)
+    info(s"methods: $methods")
+    info(s"union  $union")
+    if (!verifyTypes) abort("could not satisfy input type with implementation type")
+
+    q"""new _root_.ru.tinkoff.tschema.macros.NamedImpl[$impl, $input]{
         import shapeless._
-        type Output = $srcType
+        type Output = $output
         override def toString = "Hello from Generic materialize\n"
      }"""
   }
@@ -43,18 +42,55 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
   def info[A](u: A) = c.info(c.enclosingPosition, u.toString, force = true)
   def warning(msg: String) = c.warning(c.enclosingPosition, msg)
 
-  def extractMethods(tpe: Type) =
+  def extractMethods(tpe: Type): NList[List[NList[Type]]] =
     if (!tpe.typeSymbol.isClass || !tpe.typeSymbol.isAbstract) List()
     else tpe.decls.collect {
-      case s: MethodSymbol ⇒ s.name ->
-                             (s.paramLists.map(lst ⇒ lst.map(p ⇒ p.name → p.typeSignature)) -> s.returnType)
+      case s: MethodSymbol ⇒ s.name.decodedName.toString ->
+                             s.paramLists.map(lst ⇒ lst.map(p ⇒ p.name.decodedName.toString → p.typeSignature))
     }.toList
 
-  def extractUnion(tpe: Type) = coproductElements(tpe)
-                                .collect { case FieldType(KeyName(name), value) ⇒ name -> extractList(value) }
+  def extractUnion(tpe: Type): NList[NList[Type]] =
+    coproductElements(tpe).collect { case FieldType(KeyName(name), value) ⇒ name -> extractList(value) }
 
-  def extractList(tpe: Type) = hlistElements(tpe)
-                               .collect { case FieldType(KeyName(name), value) ⇒ name -> value }
+  def extractList(tpe: Type): NList[Type] =
+    hlistElements(tpe).collect { case FieldType(KeyName(name), value) ⇒ name -> value }
+
+
+
+  class Applier(val input: Type, val impl: Type){
+    val inputWiden = input.dealias.widen
+    val union = extractUnion(inputWiden)
+    val methods = extractMethods(impl)
+
+    def verifyTypes: Boolean = {
+      val implMap = methods.iterator.map { case (n, lists) ⇒ n -> lists.iterator.flatMap(_.iterator) }.toMap
+      union.foldLeft(true) { case (result, (caseName, inputFields)) ⇒
+        implMap.get(caseName) match {
+          case None ⇒
+            info(s"ERROR: implementation for $caseName is not defined")
+            false
+          case Some(caseImpl) ⇒
+            val inputMap = inputFields.toMap
+            caseImpl.foldLeft(result) { case (result2, (paramName, parImplType)) ⇒
+              inputMap.get(paramName) match {
+                case None ⇒
+                  info(s"ERROR parameter $paramName in method $caseName not found in input")
+                  false
+                case Some(parInputType) if parInputType <:< parImplType ⇒
+                  result2
+                case Some(parInputType) ⇒
+                  info(s"ERROR parameter $paramName in method $caseName has type $parImplType not assignable from $parInputType in input")
+                  false
+              }
+            }
+        }
+      }
+    }
+
+    def output: Type = input
+
+
+  }
 
   object KeyName {
     def unapply(tpe: Type): Option[String] = tpe match {
@@ -70,5 +106,11 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
       case _ ⇒ None
     }
   }
+
+  c.freshName()
+}
+
+object NamedImplMacros {
+  type NList[T] = List[(String, T)]
 }
 

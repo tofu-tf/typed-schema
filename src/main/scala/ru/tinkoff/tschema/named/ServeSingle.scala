@@ -10,7 +10,7 @@ import shapeless.ops.record.Values
 import shapeless.{HList, HNil}
 
 trait ServeSingle[T, In <: HList, Out] extends ServePartial[T, In, Out] {
-
+  type Tag
   def handle(f: (In) ⇒ Route): Route
 }
 
@@ -28,19 +28,23 @@ object ServeSingle {
 
   implicit def servePost[x]
   (implicit marshaller: ToResponseMarshaller[x]) = new ServeSingle[Post[x], HNil, x] {
+    type Tag = Nothing
     def handle(f: (HNil) => Route): Route = post(f(HNil))
   }
 
   implicit def serveGet[x]
   (implicit marshaller: ToResponseMarshaller[x]) = new ServeSingle[Get[x], HNil, x] {
+    type Tag = Nothing
     def handle(f: (HNil) => Route): Route = get(f(HNil))
   }
 
-  implicit def serveCons[start, end, startInput <: HList, endInput <: HList, endOut]
+  implicit def serveCons[start, end, startInput <: HList, endInput <: HList, endOut, T1, T2]
   (implicit
-   start: ServePrefix[start, startInput],
-   end: ServeSingle[end, endInput, endOut],
-   prepend: Prepend[startInput, endInput]) = new ServeSingle[start :> end, prepend.Out, endOut] {
+   start: ServePrefix[start, startInput]{type Tag = T1},
+   end: ServeSingle[end, endInput, endOut]{type Tag = T2},
+   prepend: Prepend[startInput, endInput],
+   chooseTag: ChooseTag[T1, T2]) = new ServeSingle[start :> end, prepend.Out, endOut] {
+    type Tag = chooseTag.Out
     def handle(f: (prepend.Out) => Route): Route = start.handle(startIn ⇒ end.handle { endIn ⇒ f(prepend(startIn, endIn)) })
   }
 }

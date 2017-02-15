@@ -20,19 +20,13 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
   import c.universe._
   import NamedImplMacros._
   import internal.{constantType, refinedType}
-  type =?>[-A, +B] = PartialFunction[A, B]
 
   def taggedType = typeOf[shapeless.tag.Tagged[_]].typeConstructor
 
   def materialize[T: WeakTypeTag, Input: WeakTypeTag]: Tree = try {
     val applier = new Applier(impl = weakTypeOf[T], input = weakTypeOf[Input])
     import applier._
-//    info(impl)
-//    info(inputWiden)
-//    info(s"methods: $methods")
-//    info(s"union  $union")
-//    info(s"output  $output")
-//    info(s"matches $matches")
+
     errors.foreach(err ⇒ info("ERROR during Named Implementation : " + err))
     if (!correct) abort("could not satisfy input type with implementation type")
 
@@ -51,8 +45,10 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
       EmptyTree
   }
 
-  def info[A](u: A) = c.info(c.enclosingPosition, u.toString, force = true)
-  def warning(msg: String) = c.warning(c.enclosingPosition, msg)
+  def info[A](u: A): A = {
+    c.info(c.enclosingPosition, u.toString, force = true)
+    u
+  }
 
   def extractMethods(tpe: Type): NList[(List[NList[Type]], Type)] =
     if (!tpe.typeSymbol.isClass || !tpe.typeSymbol.isAbstract) List()
@@ -130,6 +126,15 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
           case Inr(input) => Inr($next)
         } """
     }
+
+    def infos = {
+      info(s"implementation: $impl")
+      info(s"input: $inputWiden")
+      info(s"methods: $methods")
+      info(s"union:  $union")
+      info(s"output:  $output")
+      info(s"matches: $matches")
+    }
   }
 
   object KeyName {
@@ -154,5 +159,6 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
 
 object NamedImplMacros {
   type NList[T] = List[(String, T)]
+  type =?>[-A, +B] = PartialFunction[A, B]
 }
 

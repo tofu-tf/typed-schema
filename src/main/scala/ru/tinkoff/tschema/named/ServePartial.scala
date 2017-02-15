@@ -1,4 +1,5 @@
 package ru.tinkoff.tschema.named
+
 import akka.http.scaladsl.server.Route
 import ru.tinkoff.tschema.serve.ServableSingle
 import shapeless.HList

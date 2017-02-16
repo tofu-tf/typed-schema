@@ -1,20 +1,15 @@
+package ru.tinkoff.tschema
+
 import ru.tinkoff.tschema.macros.NamedImpl
-import shapeless._
-import shapeless.labelled.FieldType
-import shapeless.syntax._
-import shapeless.syntax.singleton._
+import shapeless.ops.{coproduct, hlist, union}
 import shapeless.union._
-import shapeless.{Witness ⇒ W}
-import shapeless.labelled._
-import shapeless.tag.{@@, Tagged}
+import shapeless.{Witness ⇒ W, _}
 
 object toProduct extends Poly1 {
   implicit def labelled[T](implicit lgen: LabelledGeneric[T]): Case.Aux[T, lgen.Repr] = at[T](t ⇒ lgen.to(t))
 }
 
-object Checks extends App {
-
-  import scala.concurrent.Future
+object NamedImplSuite extends App {
   sealed trait DatabaseInput
   final case class put(id: Long, value: String) extends DatabaseInput
   final case class read(id: Long, session: Long) extends DatabaseInput
@@ -32,6 +27,11 @@ object Checks extends App {
   }
 
   val result = NamedImpl[DatabaseService, inputGen.type]
-  print(result.produce(inputGen, new DatabaseService {}))
+  val values = union.Values[result.Output]
+  val align = coproduct.Align[values.Out, String :+: Unit :+: CNil]
+  val keys = union.Keys[result.Output]
+  val names = hlist.Reify[keys.Out]
+  println(names().toList)
+  println(result.produce(inputGen, new DatabaseService {}))
 }
 

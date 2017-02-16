@@ -29,11 +29,11 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
 
     errors.foreach(err ⇒ info("ERROR during Named Implementation : " + err))
     if (!correct) abort("could not satisfy input type with implementation type")
+    val outputStr = output.toString
 
     q"""new _root_.ru.tinkoff.tschema.macros.NamedImpl[$impl, $input]{
         import shapeless._
         type Output = $output
-        override def toString = "Hello from Generic materialize\n"
         def produce(union: $input, impl: $impl): Output = {
            val input = union.values
            $implementation
@@ -65,13 +65,15 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
 
   def symbolName(symbol: Symbol) = symbol.name.decodedName.toString
 
+  case class ResultField(pattern: Tree, result: Tree, key: Type)
+
   case class TraverseState(correct: Boolean = true,
                            output: Vector[Type] = Vector.empty,
                            errors: Vector[String] = Vector.empty,
-                           matches: Vector[(Tree, Tree)] = Vector.empty) {
+                           matches: Vector[ResultField] = Vector.empty) {
     def failed(msg: String) = copy(correct = false, errors = errors :+ msg)
     def addType(tpe: Type) = copy(output = output :+ tpe)
-    def addMatch(mat: (Tree, Tree)) = copy(matches = matches :+ mat)
+    def addMatch(mat: ResultField) = copy(matches = matches :+ mat)
   }
 
   class Applier(val input: Type, val impl: Type) {
@@ -92,9 +94,10 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
 
     def traverseSingle(init: TraverseState, input: NList[Type], impl: List[NList[Type]], retType: Type, name: String) = {
       val inputMap = input.toMap
-      val retFld = FieldType(KeyName(name), retType)
+      val keyType = KeyName(name)
+      val retFld = FieldType(keyType, retType)
 
-      val res = impl.flatten.foldLeft(init addType retType) { case (state, (paramName, parImplType)) ⇒
+      val res = impl.flatten.foldLeft(init addType retFld) { case (state, (paramName, parImplType)) ⇒
         inputMap.get(paramName) match {
           case None ⇒ state.failed(s"parameter $paramName in method $name not found in input")
           case Some(parInputType) if parInputType <:< parImplType ⇒ state
@@ -103,7 +106,7 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
         }
       }
 
-      def matc: (Tree, Tree) = {
+      def matc = {
         val nameMap = input.map { case (paramName, _) ⇒ paramName -> c.freshName(paramName) }.toMap
         val pattern = input
                       .map { case (pname, _) ⇒ TermName(nameMap(pname)) }
@@ -112,7 +115,7 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
         val paramLists = impl.map(_ map { case (paramName, _) ⇒ Ident(TermName(nameMap(paramName))) })
         val funcName = TermName(name)
         val result = q"impl.$funcName(...$paramLists)"
-        pattern → result
+        ResultField(pattern, result, keyType)
       }
 
       if (res.correct) res addMatch matc else res
@@ -121,8 +124,8 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
     lazy val output = mkCoproductTpe(outputTypes.toList)
 
     lazy val implementation = matches.foldRight[Tree](q"input") {
-      case ((pat, res), next) ⇒ q"""input match{
-          case Inl($pat) => Inl($res)
+      case (ResultField(pat, res, key), next) ⇒ q"""input match{
+          case Inl($pat) => Inl(labelled.field[$key]($res))
           case Inr(input) => Inr($next)
         } """
     }

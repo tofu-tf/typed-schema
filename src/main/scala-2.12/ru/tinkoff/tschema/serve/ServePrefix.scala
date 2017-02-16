@@ -3,7 +3,7 @@ package ru.tinkoff.tschema.serve
 import akka.http.scaladsl.server._
 import Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
-import ru.tinkoff.tschema.Name
+import ru.tinkoff.tschema.named.Name
 import ru.tinkoff.tschema.serve.ParamMapDirective.ParamsNotFoundRejection
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.ops.hlist._

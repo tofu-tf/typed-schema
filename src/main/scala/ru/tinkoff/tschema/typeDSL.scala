@@ -16,7 +16,6 @@ object typeDSL {
     */
   class Tag[tag]
 
-
   /**
     * indicates result of element of type `x`
     * via POST HTTP method
@@ -30,6 +29,42 @@ object typeDSL {
     * all `Get`s and `Post`s except last will be ignored
     */
   final class Get[x]
+
+  /**
+    * indicates result of element of type `x`
+    * via PUT HTTP method
+    * all `Get`s and `Post`s except last will be ignored
+    */
+  final class Put[x]
+
+  /**
+    * indicates result of element of type `x`
+    * via DELETE HTTP method
+    * all `Get`s and `Post`s except last will be ignored
+    */
+  final class Delete[x]
+
+  /**
+    * indicates result of element of type `x`
+    * via HEAD HTTP method
+    * all `Get`s and `Post`s except last will be ignored
+    */
+  final class Head[x]
+
+  /**
+    * indicates result of element of type `x`
+    * via OPTIONS HTTP method
+    * all `Get`s and `Post`s except last will be ignored
+    */
+  final class Options[x]
+
+  /**
+    * indicates result of element of type `x`
+    * via PATCH HTTP method
+    * all `Get`s and `Post`s except last will be ignored
+    */
+  final class Patch[x]
+
 
   /**
     * Indicated single path prefix

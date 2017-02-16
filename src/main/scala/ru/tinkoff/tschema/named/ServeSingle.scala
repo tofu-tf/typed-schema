@@ -1,17 +1,19 @@
 package ru.tinkoff.tschema.named
 
-import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server._
-import Directives._
 import ru.tinkoff.tschema.serve.ServableSingle
 import ru.tinkoff.tschema.typeDSL._
+import shapeless.HList
 import shapeless.ops.hlist._
 import shapeless.ops.record.Values
-import shapeless.{HList, HNil}
 
 trait ServeSingle[T, In <: HList, Out] extends ServePartial[T, In, Out] {
   type Tag
   def handle(f: (In) ⇒ Route): Route
+
+  def apply[SIn <: HList](servable: ServableSingle[SIn, Out])
+                         (implicit values: Values.Aux[In, SIn]): Route =
+    handle(in ⇒ servable.route(values.apply(in)))
 }
 
 object ServeSingle {
@@ -21,30 +23,16 @@ object ServeSingle {
 
   class MkServe[T] {
     def apply[I <: HList, SI <: HList, O](servable: ServableSingle[SI, O])
-                                (implicit
-                                 serve: ServeSingle[T, I, O],
-                                 values: Values.Aux[I, SI]): Route = serve(servable)
+                                         (implicit
+                                          serve: ServeSingle[T, I, O],
+                                          values: Values.Aux[I, SI]): Route = serve(servable)
   }
 
-  implicit def servePost[x]
-  (implicit marshaller: ToResponseMarshaller[x]) = new ServeSingle[Post[x], HNil, x] {
-    type Tag = Nothing
-    def handle(f: (HNil) => Route): Route = post(f(HNil))
-  }
-
-  implicit def serveGet[x]
-  (implicit marshaller: ToResponseMarshaller[x]) = new ServeSingle[Get[x], HNil, x] {
-    type Tag = Nothing
-    def handle(f: (HNil) => Route): Route = get(f(HNil))
-  }
-
-  implicit def serveCons[start, end, startInput <: HList, endInput <: HList, endOut, T1, T2]
+  implicit def serveCons[start, end, input <: HList, output]
   (implicit
-   start: ServePrefix[start, startInput]{type Tag = T1},
-   end: ServeSingle[end, endInput, endOut]{type Tag = T2},
-   prepend: Prepend[startInput, endInput],
-   chooseTag: ChooseTag[T1, T2]) = new ServeSingle[start :> end, prepend.Out, endOut] {
-    type Tag = chooseTag.Out
-    def handle(f: (prepend.Out) => Route): Route = start.handle(startIn ⇒ end.handle { endIn ⇒ f(prepend(startIn, endIn)) })
+   start: ServePrefix[start, input],
+   end: ServePostfix[end, output]) = new ServeSingle[start :> end, input, output] {
+    type Tag = start.Tag
+    def handle(f: input => Route): Route = start.handle(in ⇒ end.transform(f(in)))
   }
 }

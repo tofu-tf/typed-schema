@@ -10,11 +10,11 @@ trait Name[name] {
   override def toString = string
 }
 
-trait StringName[name <: String] extends Name[name] {
+trait StringName[name <: String] extends named.Name[name] {
   def symbol = Symbol(string)
 }
 
-trait SymbolName[name <: Symbol] extends Name[name] {
+trait SymbolName[name <: Symbol] extends named.Name[name] {
   def string = symbol.name
 }
 

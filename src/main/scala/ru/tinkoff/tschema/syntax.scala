@@ -1,10 +1,12 @@
 package ru.tinkoff.tschema
 
 import akka.http.scaladsl.server._
+import ru.tinkoff.tschema.named.Routable
 import ru.tinkoff.tschema.serve.{Serve, ToServable}
 import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description}
 import typeDSL._
-import shapeless.Witness
+import shapeless.{Coproduct, Witness}
+import shapeless.ops.coproduct.Align
 
 import scala.language.higherKinds
 
@@ -57,6 +59,12 @@ object syntax {
                          (implicit serve: Serve[x, In, Out],
                           convert: ToServable[S, In, Out]): Route =
       serve.handle(servable.route)
+
+    def route[S, T, In, Out <: Coproduct, Out1 <: Coproduct](impl: T)
+                                                            (implicit serve: named.Serve[S, In, Out],
+                                                             routable: Routable.Aux[In, T, Out1],
+                                                             align: Align[Out, Out1]): Route =
+      serve.handle(in ⇒ routable.routeWith(in, impl))
 
     def mkSwagger(implicit derive: DerivedMkSwagger[x]) = derive.mkSwagger
   }

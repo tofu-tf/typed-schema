@@ -1,6 +1,6 @@
 organization := "ru.tinkoff"
 
-name := "typed-schema"
+name := "typed-schema-macros"
 
 version := "0.3.2"
 

@@ -36,7 +36,7 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
     val inputStr = showAlg(union)
     val implStr = impl.toString
 
-    applier.infos
+//    applier.infos
 
     q"""new _root_.ru.tinkoff.tschema.macros.NamedImpl[$impl, $input]{
         import shapeless._

@@ -20,18 +20,19 @@ object NamedImplSuite extends App {
 
   LabelledGeneric[put]
 
-  trait DatabaseService {
+  object DatabaseService {
     def put(value: String)(id: Long) = s"$value $id"
     def read(id: AnyVal) = println(id)
     def zzz(u: Double): Unit = ()
   }
 
-  val result = NamedImpl[DatabaseService, inputGen.type]
+  val result = NamedImpl[DatabaseService.type, inputGen.type]
   val values = union.Values[result.Output]
   val align = coproduct.Align[values.Out, String :+: Unit :+: CNil]
   val keys = union.Keys[result.Output]
   val names = hlist.Reify[keys.Out]
+  println(result.description)
   println(names().toList)
-  println(result.produce(inputGen, new DatabaseService {}))
+  println(result.produce(inputGen, DatabaseService))
 }
 

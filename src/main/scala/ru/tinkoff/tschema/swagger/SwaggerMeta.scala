@@ -10,5 +10,10 @@ object Description {
   class I18n[property] extends SwaggerMeta
 }
 
+/**
+  * tagging symbol for route
+  */
+class Tag[tag] extends SwaggerMeta
+
 
 

@@ -210,6 +210,9 @@ object DerivedMkSwaggerPrefix {
 
   implicit def deriveTag[name](implicit name: Name[name]) =
     new DerivedMkSwaggerPrefix[Tag[name]](Mapper(func = _.modOp(_.addTag(name.string))))
+
+  implicit def deriveKey[name] = new DerivedMkSwaggerPrefix[Key[name]](Mapper())
+
 }
 
 

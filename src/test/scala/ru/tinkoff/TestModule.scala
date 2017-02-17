@@ -1,17 +1,30 @@
 package ru.tinkoff
 
 import java.util.ResourceBundle
-import java.util.ResourceBundle
 
-import akka.http.scaladsl.server._
+import akka.http.scaladsl.marshalling.ToResponseMarshaller
+import akka.http.scaladsl.server.Route
 import io.circe.generic.JsonCodec
+import ru.tinkoff.tschema.named.syntax._
+import ru.tinkoff.tschema.swagger.syntax._
 import ru.tinkoff.tschema.serve.FromQueryParam
-import ru.tinkoff.tschema.swagger.{AsSwaggerParam, StaticDescription, SwaggerIntValue, SwaggerTag}
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
-import ru.tinkoff.tschema.typeDSL._
+import ru.tinkoff.tschema.swagger.{AsSwaggerParam, StaticDescription, SwaggerIntValue, SwaggerTag}
 import ru.tinkoff.tschema.syntax._
+import ru.tinkoff.tschema.named
+import ru.tinkoff.tschema.typeDSL._
+import shapeless.ops.hlist.Reify
+import shapeless.ops.record
+import shapeless.ops.union
+import shapeless.ops.coproduct
+import shapeless._
+import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import ru.tinkoff.tschema.macros.NamedImpl
+import ru.tinkoff.tschema.named.{Routable, RoutableResult}
+import shapeless.labelled.FieldType
 
-object TestModule {
+import scala.reflect.runtime.universe._
+object TestModule extends App {
 
   @JsonCodec case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
   @JsonCodec case class Combine(source: CombSource, res: CombRes)
@@ -28,29 +41,45 @@ object TestModule {
   implicit lazy val clientFromParam = FromQueryParam.intParam.map(Client)
   implicit lazy val clientSwaggerParam = AsSwaggerParam[Client](SwaggerIntValue())
 
-  implicit val bundle = ResourceBundle.getBundle("swagger")
+  implicit lazy val bundle = ResourceBundle.getBundle("swagger")
 
-  def concat = prefix("concat") :> queryParam[String]('left) :> queryParam[String]('right) :> Get[String]
+  def concat = keyPrefix('concat) :> queryParam[String]('left) :> queryParam[String]('right) :> Get[String]
 
-  def combine = prefix("combine") :> queryParam[Client]('x) :> capture[Int]('y) :> Get[Combine]
+  def combine = keyPrefix('combine) :> queryParam[Client]('x) :> capture[Int]('y) :> Get[Combine]
 
-  def stats = prefix("stats") :> ReqBody[Vector[BigDecimal]] :> Post[StatsRes]
+  def stats = keyPrefix('stats) :> ReqBody[Vector[BigDecimal]] :> Post[StatsRes]
 
   def api = tagPrefix('test) :> (concat <|> combine <|> stats)
   object handler {
-    def concat(x: String, y: String) = x + y
+    def concat(left: String, right: String) = left + right
 
     def combine(x: Client, y: Int) = Combine(CombSource(x.value, y), CombRes(mul = x.value * y, sum = x.value + y))
 
-    def stats(xs: Vector[BigDecimal]) = {
-      val mean = xs.sum / xs.size
-      val mid = xs.size / 2
-      val median = if (xs.size % 2 == 1) xs(mid) else (xs(mid) + xs(mid - 1)) / 2
-      val std = xs.view.map(x ⇒ x * x).sum / xs.size - mean * mean
+    def stats(body: Vector[BigDecimal]) = {
+      val mean = body.sum / body.size
+      val mid = body.size / 2
+      val median = if (body.size % 2 == 1) body(mid) else (body(mid) + body(mid - 1)) / 2
+      val std = body.view.map(x ⇒ x * x).sum / body.size - mean * mean
       StatsRes(mean, std, median)
     }
   }
-//  lazy val route: Route = api.route(handler)
+
+  val pp = keyPrefix('test) :> queryParam[String]('left) :> queryParam[String]('right) :> Get[String]
+
+  val srv = api.serve
+
+  the[ToResponseMarshaller[StatsRes]]
+  the[ToResponseMarshaller[String]]
+//  the[ToResponseMarshaller[FieldType['xxx, ToResponseMarshaller[String]]]]
+
+  val impl = NamedImpl[handler.type, srv.Input]
+
+  println(impl.description)
+
+  val routable = the[RoutableResult[impl.Output]]
+  coproduct.Align[srv.Output, impl.Output]
+
+  lazy val route: Route = api.route(handler)
 
   val mkSwagger = api.mkSwagger
 

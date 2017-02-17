@@ -3,37 +3,45 @@ import akka.http.scaladsl.server.Directives.{get, post, put, delete, head, optio
 import akka.http.scaladsl.server.Route
 import ru.tinkoff.tschema.typeDSL.{Get, Post, Put, Delete, Head, Options}
 
-trait ServePostfix[T, Out] extends ServePartial[T, Unit, Out] {
+trait ServePostfix[T] extends ServePartial[T] {
+  type Input = Unit
+
   def transform(route: Route): Route
   def handle(f: (Unit) ⇒ Route): Route = transform(f(()))
 }
 
 object ServePostfix {
-  implicit def servePost[x] = new ServePostfix[Post[x], x] {
+  type Aux[T, O] = ServePostfix[T]{type Output = O}
+
+  abstract class Impl[T, x] extends ServePostfix[T]{
+    type Output = x
+  }
+
+  implicit def servePost[x] = new Impl[Post[x], x] {
     def transform(route: Route): Route = post(route)
   }
 
-  implicit def serveGet[x] = new ServePostfix[Get[x], x] {
+  implicit def serveGet[x] = new Impl[Get[x], x] {
     def transform(route: Route): Route = get(route)
   }
 
-  implicit def servePut[x] = new ServePostfix[Put[x], x] {
+  implicit def servePut[x] = new Impl[Put[x], x] {
     def transform(route: Route): Route = put(route)
   }
 
-  implicit def serveDelete[x] = new ServePostfix[Delete[x], x] {
+  implicit def serveDelete[x] = new Impl[Delete[x], x] {
     def transform(route: Route): Route = post(route)
   }
 
-  implicit def serveHead[x] = new ServePostfix[Head[x], x] {
+  implicit def serveHead[x] = new Impl[Head[x], x] {
     def transform(route: Route): Route = get(route)
   }
 
-  implicit def serveOptions[x] = new ServePostfix[Options[x], x] {
+  implicit def serveOptions[x] = new Impl[Options[x], x] {
     def transform(route: Route): Route = put(route)
   }
 
-  implicit def servePatch[x] = new ServePostfix[Options[x], x] {
+  implicit def servePatch[x] = new Impl[Options[x], x] {
     def transform(route: Route): Route = put(route)
   }
 }

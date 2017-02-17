@@ -76,7 +76,7 @@ object ServePrefix {
 
   implicit def metaServe[x <: Meta]: ServePrefix[x, HNil] = f => f(HNil)
 
-  implicit def tagServe[x]: ServePrefix[Tag[x], HNil] = f ⇒ f(HNil)
+  implicit def keyServe[x]: ServePrefix[Key[x], HNil] = f ⇒ f(HNil)
 }
 
 trait ParamMapDirective[place[name, x]] {

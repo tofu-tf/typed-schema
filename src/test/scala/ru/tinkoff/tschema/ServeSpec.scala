@@ -12,6 +12,7 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
 
   import syntax._
   import typeDSL._
+  import serve.syntax._
 
   val dsl = typeDSL
 

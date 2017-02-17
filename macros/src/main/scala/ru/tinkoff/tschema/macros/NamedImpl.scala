@@ -1,19 +1,22 @@
 package ru.tinkoff.tschema.macros
 
+import shapeless.Coproduct
+
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-trait NamedImpl[T, Input] {
-  type Output
+trait NamedImpl[T, Input <: Coproduct] {
+  type Output <: Coproduct
   def produce(input: Input, impl: T): Output
+  def description: String = toString
 }
 
 object NamedImpl {
-  type Aux[T, I, O] = NamedImpl[T, I] {type Output = O}
+  type Aux[T, I <: Coproduct, O <: Coproduct] = NamedImpl[T, I] {type Output = O}
 
-  implicit def apply[T, Input](implicit routable: NamedImpl[T, Input]): Aux[T, Input, routable.Output] = routable
+  implicit def apply[T, Input <: Coproduct](implicit routable: NamedImpl[T, Input]): Aux[T, Input, routable.Output] = routable
 
-  implicit def materialize[T, Input, Output]: Aux[T, Input, Output] = macro NamedImplMacros.materialize[T, Input]
+  implicit def materialize[T, Input]: NamedImpl[T, Input] = macro NamedImplMacros.materialize[T, Input]
 }
 
 class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
@@ -29,12 +32,21 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
 
     errors.foreach(err ⇒ info("ERROR during Named Implementation : " + err))
     if (!correct) abort("could not satisfy input type with implementation type")
-    val outputStr = output.toString
+    val outputStr = showNList(extractUnion(output))
+    val inputStr = showAlg(union)
+    val implStr = impl.toString
+
+    applier.infos
 
     q"""new _root_.ru.tinkoff.tschema.macros.NamedImpl[$impl, $input]{
         import shapeless._
         type Output = $output
+        override def description =
+          "NamedImpl[" + $implStr + "]\n" +
+           "Input\n------------------\n" + $inputStr +
+           "\nOutput\n--------------------\n" + $outputStr
         def produce(union: $input, impl: $impl): Output = {
+           import shapeless.union._
            val input = union.values
            $implementation
         }
@@ -51,17 +63,26 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
   }
 
   def extractMethods(tpe: Type): NList[(List[NList[Type]], Type)] =
-    if (!tpe.typeSymbol.isClass || !tpe.typeSymbol.isAbstract) List()
-    else tpe.decls.collect {
+    tpe.decls.collect {
       case s: MethodSymbol ⇒ symbolName(s) ->
                              (s.paramLists.map(lst ⇒ lst.map(p ⇒ symbolName(p) → p.typeSignature)) -> s.returnType)
     }.toList
 
-  def extractUnion(tpe: Type): NList[NList[Type]] =
-    coproductElements(tpe).collect { case FieldType(KeyName(name), value) ⇒ name -> extractList(value) }
+  def extractAlgebra(tpe: Type): NList[NList[Type]] =
+    extractUnion(tpe).map { case (name, product) ⇒ name → extractList(product) }
+
+  def extractUnion(tpe: Type): NList[Type] =
+    coproductElements(tpe).collect { case FieldType(KeyName(name), value) ⇒ name -> value }
 
   def extractList(tpe: Type): NList[Type] =
     hlistElements(tpe).collect { case FieldType(KeyName(name), value) ⇒ name -> value }
+
+  def showNList[A](lst: NList[A], prefix: String = "") =
+    lst.iterator.map { case (name, value) ⇒ s"$name : $value" }
+    .mkString(s"$prefix", "\n" + prefix, "")
+
+  def showAlg[A](alg: NList[NList[A]]) =
+    alg.map { case (name, value) ⇒ s"$name : \n${showNList(value, "    ")}" }.mkString("", "\n", "")
 
   def symbolName(symbol: Symbol) = symbol.name.decodedName.toString
 
@@ -78,7 +99,7 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
 
   class Applier(val input: Type, val impl: Type) {
     val inputWiden = input.dealias.widen
-    val union = extractUnion(inputWiden)
+    val union = extractAlgebra(inputWiden)
     val methods = extractMethods(impl)
 
     lazy val TraverseState(correct, outputTypes, errors, matches) = {

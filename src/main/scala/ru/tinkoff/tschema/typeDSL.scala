@@ -12,10 +12,9 @@ object typeDSL {
   trait Meta
 
   /**
-    * tagging symbol for route
+    * naming symbol of single route in complex route
     */
-  class Tag[tag]
-
+  class Key[key]
   /**
     * indicates result of element of type `x`
     * via POST HTTP method

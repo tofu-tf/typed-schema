@@ -3,7 +3,7 @@ package ru.tinkoff.tschema
 import akka.http.scaladsl.server._
 import ru.tinkoff.tschema.named.Routable
 import ru.tinkoff.tschema.serve.{Serve, ToServable}
-import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description}
+import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description, Tag}
 import typeDSL._
 import shapeless.{Coproduct, Witness}
 import shapeless.ops.coproduct.Align
@@ -14,7 +14,9 @@ object syntax {
   def prefix[s](witness: Witness.Lt[s]) = new Prefix[s]
   def queryFlag[s](witness: Witness.Lt[s]) = new QueryFlag[s]
   def tag[s](witness: Witness.Lt[s]) = new Tag[s]
-  def tagPrefix[s](witness: Witness.Lt[s]) = tag[s](witness) :> prefix[s](witness)
+  def key[s](witness: Witness.Lt[s]) = new Key[s]
+  def tagPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> tag[s](witness)
+  def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> key[s](witness)
 
   object descr {
     def static[s](witness: Witness.Lt[s]) = new Description.Static[s]
@@ -54,18 +56,4 @@ object syntax {
     def apply[s](witness: Witness.Lt[s]) = maker.make[s]
   }
 
-  implicit class ServeOps[x](x: ⇒ x) {
-    def serve[S, In, Out](servable: S)
-                         (implicit serve: Serve[x, In, Out],
-                          convert: ToServable[S, In, Out]): Route =
-      serve.handle(servable.route)
-
-    def route[S, T, In, Out <: Coproduct, Out1 <: Coproduct](impl: T)
-                                                            (implicit serve: named.Serve[S, In, Out],
-                                                             routable: Routable.Aux[In, T, Out1],
-                                                             align: Align[Out, Out1]): Route =
-      serve.handle(in ⇒ routable.routeWith(in, impl))
-
-    def mkSwagger(implicit derive: DerivedMkSwagger[x]) = derive.mkSwagger
-  }
 }

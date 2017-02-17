@@ -10,14 +10,16 @@ import shapeless.ops.coproduct.Prepend
 
 import scala.language.higherKinds
 
-trait Serve[T, I, O] extends ServePartial[T, I, O] {
+trait Serve[T] extends ServePartial[T] {
   self ⇒
-  type Input = I
-  type Output = O
+  type Input <: Coproduct
+  type Output <: Coproduct
 
   def handle(f: Input ⇒ Route): Route
 
-  def to[U] = new Serve[U, Input, Output] {
+  def to[U]: Serve.Aux[U, Input, Output] = new Serve[U] {
+    type Input = self.Input
+    type Output = self.Output
     override def handle(f: Input ⇒ Route): Route = self.handle(f)
   }
 
@@ -26,41 +28,50 @@ trait Serve[T, I, O] extends ServePartial[T, I, O] {
 }
 
 object Serve {
+  type Aux[T, I <: Coproduct, O <: Coproduct] = Serve[T] {type Input = I; type Output = O}
+
   def apply[T] = new MkServe[T]
   def make[T](x: T) = new MkServe[T]
 
   class MkServe[T] {
-    def apply[In <: HList, Out, Impl](impl: Impl)
-                                  (implicit serve: Serve[T, In, Out],
-                                   convert: Routable.Aux[In, Impl, Out]) =
+    def apply[In <: Coproduct, Out <: Coproduct, Impl](impl: Impl)
+                                     (implicit serve: Aux[T, In, Out],
+                                      convert: Routable.Aux[In, Impl, Out]) =
       serve.handle(x ⇒ convert.routeWith(x, impl))
   }
 
-  implicit def serveCons[start, end, startIn <: HList, endIn <: Coproduct, endOut, in <: Coproduct]
+  implicit def serveCons[start, end, startIn <: HList, endIn <: Coproduct, endOut <: Coproduct, in <: Coproduct]
   (implicit
-   start: ServePrefix[start, startIn],
-   end: Serve[end, endIn, endOut],
-   distribute: Distribute.Aux[startIn, endIn, in]): Serve[start :> end, in, endOut] =
-    f => start.handle { startIn ⇒ end.handle { endIn ⇒ f(distribute(startIn, endIn)) } }
+   start: ServePrefix.Aux[start, startIn],
+   end: Aux[end, endIn, endOut],
+   distribute: Distribute.Aux[startIn, endIn, in]) = new Serve[start :> end] {
+    type Input = in
+    type Output = endOut
 
-  implicit def serveSingle[x, I <: HList, O](implicit serve: ServeSingle[x, I, O]): Serve[x, FieldType[serve.Tag, I] :+: CNil, O :+: CNil] =
-    new Serve[x, FieldType[serve.Tag, I] :+: CNil, O :+: CNil] {
-      def handle(f: (FieldType[serve.Tag, I] :+: CNil) ⇒ Route): Route = serve.handle(x ⇒ f(Inl[FieldType[serve.Tag, I], CNil](field[serve.Tag](x))))
+    def handle(f: Input ⇒ Route) = start.handle { startIn ⇒ end.handle { endIn ⇒ f(distribute(startIn, endIn)) } }
+  }
+
+  implicit def serveSingle[x](implicit serve: ServeSingle[x]) =
+    new Serve[x] {
+      type Input = FieldType[serve.Key, serve.Input] :+: CNil
+      type Output = FieldType[serve.Key, serve.Output] :+: CNil
+      def handle(f: Input ⇒ Route): Route = serve.handle(x ⇒ f(Inl[FieldType[serve.Key, serve.Input], CNil](field[serve.Key](x))))
     }
 
   implicit def serveJoin[left, right, leftIn <: Coproduct, leftOut <: Coproduct, rightIn <: Coproduct, rightOut <: Coproduct]
   (implicit
-   left: Serve[left, leftIn, leftOut],
-   right: Serve[right, rightIn, rightOut],
+   left: Aux[left, leftIn, leftOut],
+   right: Aux[right, rightIn, rightOut],
    sumIn: Prepend[leftIn, rightIn],
-   sumOut: Prepend[leftOut, rightOut]): Serve[left <|> right, sumIn.Out, sumOut.Out] =
-    new Serve[left <|> right, sumIn.Out, sumOut.Out] {
-      def handle(f: (Input) ⇒ Route): Route =
-        left.handle(x ⇒ f(sumIn(Left(x)))) ~ right.handle(x ⇒ f(sumIn(Right(x))))
-    }
+   sumOut: Prepend[leftOut, rightOut]) = new Serve[left <|> right] {
+    type Input = sumIn.Out
+    type Output = sumOut.Out
+    def handle(f: (Input) ⇒ Route): Route =
+      left.handle(x ⇒ f(sumIn(Left(x)))) ~ right.handle(x ⇒ f(sumIn(Right(x))))
+  }
 
-  implicit def metaLeftServe[left <: Meta, right, I <: HList, O](implicit right: Serve[right, I, O]): Serve[left <|> right, I, O] = right.to[left <|> right]
-  implicit def metaRightServe[left, right <: Meta, I <: HList, O](implicit left: Serve[left, I, O]): Serve[left <|> right, I, O] = left.to[left <|> right]
+  implicit def metaLeftServe[left <: Meta, right](implicit right: Serve[right]) = right.to[left <|> right]
+  implicit def metaRightServe[left, right <: Meta](implicit left: Serve[left]) = left.to[left <|> right]
 }
 
 

@@ -6,13 +6,16 @@ import ru.tinkoff.tschema.serve._
 import ru.tinkoff.tschema.typeDSL.{Capture, Cookie, FormField, Header, Meta, Prefix, QueryFlag, QueryParam, QueryParams, ReqBody}
 import shapeless._
 
-trait ServeElement[T, I <: HList] extends ServePartial[T, I, Nothing]{
-  def handle(f: (I) ⇒ Route): Route
+trait ServeElement[T] extends ServePartial[T] {
+  type Output = Nothing
+  def handle(f: (Input) ⇒ Route): Route
 }
 
 object ServeElement {
-  type Element0[T] = ServeElement[T, HNil]
-  type Element1[T, A] = ServeElement[T, A :: HNil]
+  type Aux[T, I] = ServeElement[T]{type Input = I}
+
+  abstract class Element0[T] extends ServeElement[T] {type Input = HNil}
+  abstract class Element1[T, A] extends ServeElement[T] {type Input = A :: HNil}
   import labelled.FieldType
   private type Fld[name, x] = FieldType[name, x] :: HNil
 

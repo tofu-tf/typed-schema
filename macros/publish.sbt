@@ -2,7 +2,7 @@ organization := "ru.tinkoff"
 
 name := "typed-schema-macros"
 
-version := "0.3.2"
+version := "0.3.3"
 
 description := "Typelevel DSL for defining webservices, covertable to akka-http and swagger definitions"
 

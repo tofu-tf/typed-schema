@@ -45,15 +45,21 @@ object TestModule extends App {
 
   def concat = keyPrefix('concat) :> queryParam[String]('left) :> queryParam[String]('right) :> Get[String]
 
-  def combine = keyPrefix('combine) :> queryParam[Client]('x) :> capture[Int]('y) :> Get[Combine]
+  def combine = keyPrefix('combine) :> capture[Int]('y) :> Get[Combine]
+
+  def sum = keyPrefix('sum) :> capture[Int]('y) :> Get[Int]
 
   def stats = keyPrefix('stats) :> ReqBody[Vector[BigDecimal]] :> Post[StatsRes]
 
-  def api = tagPrefix('test) :> (concat <|> combine <|> stats)
+  def intops = queryParam[Client]('x) :> (combine <|> sum)
+
+  def api = tagPrefix('test) :> (concat <|> intops <|> stats)
   object handler {
     def concat(left: String, right: String) = left + right
 
     def combine(x: Client, y: Int) = Combine(CombSource(x.value, y), CombRes(mul = x.value * y, sum = x.value + y))
+
+    def sum(x: Client, y: Int) = x.value + y
 
     def stats(body: Vector[BigDecimal]) = {
       val mean = body.sum / body.size
@@ -67,10 +73,6 @@ object TestModule extends App {
   val pp = keyPrefix('test) :> queryParam[String]('left) :> queryParam[String]('right) :> Get[String]
 
   val srv = api.serve
-
-  the[ToResponseMarshaller[StatsRes]]
-  the[ToResponseMarshaller[String]]
-//  the[ToResponseMarshaller[FieldType['xxx, ToResponseMarshaller[String]]]]
 
   val impl = NamedImpl[handler.type, srv.Input]
 

@@ -35,23 +35,23 @@ object Serve {
 
   class MkServe[T] {
     def apply[In <: Coproduct, Out <: Coproduct, Impl](impl: Impl)
-                                     (implicit serve: Aux[T, In, Out],
-                                      convert: Routable.Aux[In, Impl, Out]) =
+                                                      (implicit serve: Aux[T, In, Out],
+                                                       convert: Routable.Aux[In, Impl, Out]) =
       serve.handle(x ⇒ convert.routeWith(x, impl))
   }
 
-  implicit def serveCons[start, end, startIn <: HList, endIn <: Coproduct, endOut <: Coproduct, in <: Coproduct]
+  implicit def serveCons[start, end, startIn <: HList, endIn <: Coproduct, endOut <: Coproduct]
   (implicit
    start: ServePrefix.Aux[start, startIn],
    end: Aux[end, endIn, endOut],
-   distribute: Distribute.Aux[startIn, endIn, in]) = new Serve[start :> end] {
-    type Input = in
+   in: DistributeLab[startIn, endIn]): Aux[start :> end, in.Out, endOut] = new Serve[start :> end] {
+    type Input = in.Out
     type Output = endOut
 
-    def handle(f: Input ⇒ Route) = start.handle { startIn ⇒ end.handle { endIn ⇒ f(distribute(startIn, endIn)) } }
+    def handle(f: Input ⇒ Route) = start.handle { startIn ⇒ end.handle { endIn ⇒ f(in(startIn, endIn)) } }
   }
 
-  implicit def serveSingle[x](implicit serve: ServeSingle[x]) =
+  implicit def serveSingle[x](implicit serve: ServeSingle[x]): Aux[x, FieldType[serve.Key, serve.Input] :+: CNil, FieldType[serve.Key, serve.Output] :+: CNil] =
     new Serve[x] {
       type Input = FieldType[serve.Key, serve.Input] :+: CNil
       type Output = FieldType[serve.Key, serve.Output] :+: CNil
@@ -63,7 +63,7 @@ object Serve {
    left: Aux[left, leftIn, leftOut],
    right: Aux[right, rightIn, rightOut],
    sumIn: Prepend[leftIn, rightIn],
-   sumOut: Prepend[leftOut, rightOut]) = new Serve[left <|> right] {
+   sumOut: Prepend[leftOut, rightOut]): Aux[left <|> right, sumIn.Out, sumOut.Out] = new Serve[left <|> right] {
     type Input = sumIn.Out
     type Output = sumOut.Out
     def handle(f: (Input) ⇒ Route): Route =

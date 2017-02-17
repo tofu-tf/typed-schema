@@ -8,11 +8,15 @@ crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 scalaOrganization := "org.typelevel"
 
-scalacOptions ++= Seq(
-  "-Yinduction-heuristics",
-  "-Yliteral-types",
-  "-Xstrict-patmat-analysis"
-)
+scalacOptions ++= {
+  if (scalaVersion.value >= "2.12")
+    Seq(
+      "-Yinduction-heuristics",
+      "-Yliteral-types",
+      "-Xstrict-patmat-analysis"
+    )
+  else Seq()
+}
 
 
 val akkaHttpVersion = "10.0.3"
@@ -25,10 +29,10 @@ libraryDependencies += "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
 libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.2"
 
 libraryDependencies ++= Seq("enumeratum", "enumeratum-circe")
-  .map(module ⇒ "com.beachape" %% module % "1.5.2")
+                        .map(module ⇒ "com.beachape" %% module % "1.5.2")
 
 libraryDependencies ++= Seq("core", "parser", "generic", "generic-extras")
-  .map(module ⇒ "io.circe" %% s"circe-$module" % "0.7.0")
+                        .map(module ⇒ "io.circe" %% s"circe-$module" % "0.7.0")
 
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"

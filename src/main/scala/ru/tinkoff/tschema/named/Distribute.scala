@@ -4,7 +4,7 @@ import akka.shapeless.DepFn2
 import shapeless.ops.hlist.Prepend
 import shapeless.{:+:, CNil, Coproduct, HList, Inl, Inr}
 
-@annotation.inductive
+
 trait Distribute[prefix <: HList, sum <: Coproduct] extends DepFn2[prefix, sum] {
   def apply(prefix: prefix, sum: sum): Out
   type Out <: Coproduct

@@ -11,30 +11,39 @@ trait ServePrefix[T, P <: HList] extends ServePartial[T, P] {
 }
 
 trait LowLevelServePrefix {
+  type Aux[T, P <: HList, I] = ServePrefix[T, P] {type Input = I}
+  type KAux[T, P <: HList, I, K] = ServePrefix[T, P] {type Input = I; type Key = K}
+
   implicit def elementServe[T, P <: HList, I <: HList]
   (implicit element: ServeElement.Aux[T, I],
-   prepend: Prepend[I, P]) = new ServePrefix[T, P] {
+   prepend: Prepend[I, P]): Aux[T, P, prepend.Out] = new ServePrefix[T, P] {
     type Key = Nothing
     type Input = prepend.Out
     def apply(f: Input ⇒ Route, provide: Provide[P]): Route = provide(p ⇒ element(in ⇒ f(prepend(in, p))))
   }
+
+  implicit def keyServe[key, P <: HList]: KAux[Key[key], P, P, key] = new ServePrefix[Key[key], P] {
+    type Input = P
+    type Key = key
+    def apply(f: (Input) ⇒ Route, p: Provide[P]): Route = p(in ⇒ f(in))
+  }
+
+  implicit def middleServe[mid, P <: HList]
+  (implicit mid: ServeMiddle[mid, P]): Aux[mid, P, P] =
+    new ServePrefix[mid, P] {
+      type Input = P
+      type Key = Nothing
+      def apply(f: P ⇒ Route, p: Provide[P]): Route = mid(f, p)
+    }
 }
 
 object ServePrefix extends LowLevelServePrefix {
-  type Aux[T, P <: HList, I] = ServePrefix[T, P] {type Input = I}
-  type KAux[T, P <: HList, I, K] = ServePrefix[T, P] {type Input = I; type Key = K}
 
   implicit def keyConsServe[start, key, P <: HList, I <: HList]
   (implicit start: Aux[start, P, I]) = new ServePrefix[start :> Key[key], P] {
     type Input = I
     type Key = key
     def apply(f: (I) ⇒ Route, p: Provide[P]): Route = start(f, p)
-  }
-
-  implicit def keyServe[key, P <: HList] = new ServePrefix[Key[key], P] {
-    type Input = P
-    type Key = key
-    def apply(f: (Input) ⇒ Route, p: Provide[P]): Route = p(in ⇒ f(in))
   }
 
   //TODO consider change order of Prefix and Element in Prepend (they are named anyway)
@@ -58,6 +67,8 @@ object ServePrefix extends LowLevelServePrefix {
         start(in ⇒ mid(f, start.curry(provide)), provide)
     }
 }
+
+
 
 
 

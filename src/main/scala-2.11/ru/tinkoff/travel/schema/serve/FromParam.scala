@@ -3,6 +3,7 @@ package ru.tinkoff.tschema.serve
 import akka.http.scaladsl.server._
 import Directives._
 import akka.http.scaladsl.model.HttpHeader
+import ru.tinkoff.travel.schema.serve.ListParamOptions.default
 
 import scala.language.higherKinds
 
@@ -12,6 +13,32 @@ trait FromParam[T] {
   def apply(param: String): T
 
   def map[X](f: T ⇒ X): Self[X]
+}
+object FromParam{
+  type Aux[T, F[x] <: FromParam[x]] = FromParam[T] {type Self[x] = F[x]}
+}
+
+/**
+  * Options for parsing collections as parameters
+  */
+trait ListParamOptions[F[x] <: FromParam[x]] {
+  /**
+    * separator for parsing lists of primitives
+    */
+  def sep: Char
+  /**
+    * separator for parsing lists of lists of primitives
+    */
+  def sep2: Char
+}
+
+object ListParamOptions {
+  def apply[F[x] <: FromParam[x]](separator: Char, separator2: Char) = new ListParamOptions[F] {
+    def sep: Char = separator
+    def sep2: Char = separator2
+  }
+
+  def default[F[x] <: FromParam[x]]: ListParamOptions[F] = apply[F](',', ';')
 }
 
 trait FromQueryParam[T] extends FromParam[T] {
@@ -25,13 +52,16 @@ trait FromQueryParam[T] extends FromParam[T] {
   }
 }
 
-trait LowPriorityFromParamCompanion[F[x] <: FromParam[x] {type Self[y] = F[y]}] {
+trait LowPriorityFromParamCompanion[F[x] <: FromParam.Aux[x, F]] {
   self: FromParamCompanion[F] ⇒
-  implicit def listParam[X](implicit fromParam: F[X]): F[List[X]] =
-    param(_.split(',').view.map(fromParam.apply).toList)
+  implicit def listParam[X](implicit fromParam: F[X], options: ListParamOptions[F] = default[F]): F[List[X]] =
+    param {
+      case "" ⇒ List.empty[X]
+      case str ⇒ str.split(options.sep).iterator.map(x ⇒ fromParam(x): X).toList
+    }
 }
 
-trait FromParamCompanion[F[x] <: FromParam[x] {type Self[y] = F[y]}] {
+trait FromParamCompanion[F[x] <: FromParam.Aux[x, F]]  extends LowPriorityFromParamCompanion[F]{
   def param[T](f: String ⇒ T): F[T]
 
   implicit val stringParam = param(identity)
@@ -41,9 +71,10 @@ trait FromParamCompanion[F[x] <: FromParam[x] {type Self[y] = F[y]}] {
   implicit val longParam = param(_.toLong)
   implicit val bigIntParam = param(BigInt.apply)
   implicit val bigDecimalParam = param(BigDecimal.apply)
+  implicit val booleanParam = param(_.toBoolean)
 
-  implicit def list2Param[X](implicit fromParam: F[List[X]]): F[List[List[X]]] =
-    param(_.split(';').view.map(fromParam.apply).toList)
+  implicit def list2Param[X](implicit fromParam: F[List[X]], options: ListParamOptions[F] = default[F]): F[List[List[X]]] =
+    param(_.split(options.sep2).view.map(fromParam.apply).toList)
 }
 
 object FromQueryParam extends FromParamCompanion[FromQueryParam] {
@@ -62,8 +93,17 @@ object FromPathParam {
   implicit object uuidParam extends FromPathParam(JavaUUID)
 }
 
-trait FromHeader[T] {
+trait FromHeader[T] extends FromParam[T]{
+  self ⇒
+  type Self[x] = FromHeader[x]
+
   def apply(header: HttpHeader): Option[T]
+  def apply(name: String): T
+
+  def map[X](f: (T) ⇒ X): Self[X] = new FromHeader[X] {
+    def apply(header: HttpHeader)  = self(header).map(f)
+    def apply(name: String) = f(self(name))
+}
 }
 
 trait FromFormField[T] extends FromParam[T] {

@@ -22,20 +22,17 @@ object ServeSingle {
   }
 
   implicit def servePost[x]
-  (implicit marshaller: ToResponseMarshaller[x]) = new ServeSingle[Post[x], HNil, x] {
-    def handle(f: (HNil) => Route): Route = post(f(HNil))
-  }
+  (implicit marshaller: ToResponseMarshaller[x]): ServeSingle[Post[x], HNil, x] =
+    f => post(f(HNil))
 
   implicit def serveGet[x]
-  (implicit marshaller: ToResponseMarshaller[x]) = new ServeSingle[Get[x], HNil, x] {
-    def handle(f: (HNil) => Route): Route = get(f(HNil))
-  }
+  (implicit marshaller: ToResponseMarshaller[x]): ServeSingle[Get[x], HNil, x] =
+    f => get(f(HNil))
 
   implicit def serveCons[start, end, startInput <: HList, endInput <: HList, endOut]
   (implicit
    start: ServePrefix[start, startInput],
    end: ServeSingle[end, endInput, endOut],
-   prepend: Prepend[startInput, endInput]) = new ServeSingle[start :> end, prepend.Out, endOut] {
-    def handle(f: (prepend.Out) => Route): Route = start.handle(startIn ⇒ end.handle { endIn ⇒ f(prepend(startIn, endIn)) })
-  }
+   prepend: Prepend[startInput, endInput]): ServeSingle[start :> end, prepend.Out, endOut] =
+    f => start.handle(startIn ⇒ end.handle { endIn ⇒ f(prepend(startIn, endIn)) })
 }

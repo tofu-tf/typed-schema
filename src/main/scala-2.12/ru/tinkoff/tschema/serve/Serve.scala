@@ -8,12 +8,7 @@ import shapeless.{HList, DepFn2}
 
 import scala.language.higherKinds
 
-trait ServePartial[T, Input <: HList] {
-  def handle(f: Input ⇒ Route): Route
-
-  def apply(servable: ServableSingle[Input, _]): Route = handle(servable.route)
-}
-
+//@annotation.inductive
 trait Serve[T, Input, Output] {
   self ⇒
 
@@ -31,9 +26,8 @@ trait LowPriorityServe {
   (implicit
    start: ServePrefix[start, startIn],
    end: Serve[end, endIn, endOut],
-   distribute: Distribute[startIn, endIn, in]) = new Serve[start :> end, in, endOut] {
-    def handle(f: (in) => Route): Route = start.handle { startIn ⇒ end.handle { endIn ⇒ f(distribute(startIn, endIn)) } }
-  }
+   distribute: Distribute[startIn, endIn, in]): Serve[start :> end, in, endOut] =
+    f => start.handle { startIn ⇒ end.handle { endIn ⇒ f(distribute(startIn, endIn)) } }
 }
 
 object Serve extends LowPriorityServe {
@@ -47,18 +41,14 @@ object Serve extends LowPriorityServe {
       serve.handle(servable.route)
   }
 
-  implicit def serveSingle[x, I <: HList, O](implicit serve: ServeSingle[x, I, O]) = new Serve[x, I, O] {
-    def handle(f: (I) => Route): Route = serve.handle(f)
-  }
+  implicit def serveSingle[x, I <: HList, O](implicit serve: ServeSingle[x, I, O]): Serve[x, I, O] =
+    f => serve.handle(f)
 
   implicit def serveJoin[left, right, leftIn, leftOut, rightIn, rightOut]
   (implicit
    left: Serve[left, leftIn, leftOut],
-   right: Serve[right, rightIn, rightOut]) =
-    new Serve[<|>[left, right], Either[leftIn, rightIn], Either[leftOut, rightOut]] {
-      def handle(f: (Either[leftIn, rightIn]) => Route): Route =
-        left.handle(x ⇒ f(Left(x))) ~ right.handle(x ⇒ f(Right(x)))
-    }
+   right: Serve[right, rightIn, rightOut]): Serve[<|>[left, right], Either[leftIn, rightIn], Either[leftOut, rightOut]] =
+    (f: Either[leftIn, rightIn] ⇒ Route) => left.handle(x ⇒ f(Left(x))) ~ right.handle(x ⇒ f(Right(x)))
 
   implicit def metaLeftServe[left <: Meta, right, I, O](implicit right: Serve[right, I, O]): Serve[left <|> right, I, O] = right.to[left <|> right]
   implicit def metaRightServe[left, right <: Meta, I, O](implicit left: Serve[left, I, O]): Serve[left <|> right, I, O] = left.to[left <|> right]
@@ -77,18 +67,15 @@ object Distribute {
   def apply[list <: HList, x, O](implicit dist: Distribute[list, x, O]) = dist
 
   implicit def distributeSingle[list <: HList, x <: HList]
-  (implicit prepend: Prepend[list, x]) = new Distribute[list, x, prepend.Out] {
-    def apply(list: list, x: x) = prepend(list, x)
-  }
+  (implicit prepend: Prepend[list, x]): Distribute[list, x, prepend.Out] =
+    (list: list, x: x) ⇒ prepend(list, x)
 
   implicit def distributeEither[list <: HList, left, right, leftOut, rightOut]
   (implicit
    left: Distribute[list, left, leftOut],
-   right: Distribute[list, right, rightOut]) = new Distribute[list, Either[left, right], Either[leftOut, rightOut]] {
-    def apply(list: list, x: Either[left, right]): Either[leftOut, rightOut] = x match {
-      case Left(l) ⇒ Left(left(list, l))
-      case Right(r) ⇒ Right(right(list, r))
-    }
+   right: Distribute[list, right, rightOut]): Distribute[list, Either[left, right], Either[leftOut, rightOut]] = {
+    case (list, Left(l)) ⇒ Left(left(list, l))
+    case (list, Right(r)) ⇒ Right(right(list, r))
   }
 }
 

@@ -1,4 +1,4 @@
-package ru.tinkoff.travel.schema.serve
+package ru.tinkoff.tschema.serve
 
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server._

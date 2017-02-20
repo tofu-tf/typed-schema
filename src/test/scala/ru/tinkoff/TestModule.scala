@@ -19,7 +19,7 @@ import shapeless.labelled.FieldType
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-object TestModule{
+object TestModule {
 
   @JsonCodec case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
   @JsonCodec case class Combine(source: CombSource, res: CombRes)
@@ -49,6 +49,7 @@ object TestModule{
   def intops = queryParam[Client]('x) :> (combine <|> sum)
 
   def api = tagPrefix('test) :> (concat <|> intops <|> stats)
+
   object handler {
     def concat(left: String, right: String) = left + right
 
@@ -76,8 +77,6 @@ object TestModule{
     println(srv)
   }
 
-
-//
   lazy val route: Route = api.route(handler)
 }
 

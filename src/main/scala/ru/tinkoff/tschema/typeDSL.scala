@@ -64,7 +64,6 @@ object typeDSL {
     */
   final class Patch[x]
 
-
   /**
     * Indicated single path prefix
     * Could be replaced by it's parameter
@@ -120,8 +119,9 @@ object typeDSL {
 
   /**
     * captures field value from form data
+    *
     * @tparam name field name
-    * @tparam x parameter type, should have `FromFormParam` instance
+    * @tparam x    parameter type, should have `FromFormParam` instance
     */
   final class FormField[name, x]
 
@@ -132,8 +132,9 @@ object typeDSL {
 
   /**
     * captures multiple fields from place
+    *
     * @tparam place Header, FormField, Cookie or QueryParam
-    * @tparam x record type - only simple types, with modifiers like Option or List accepted
+    * @tparam x     record type - only simple types, with modifiers like Option or List accepted
     */
   final class Record[place[_, _], x]
 
@@ -150,7 +151,7 @@ object typeDSL {
     * can be used both for defining API type and for joining different handlers
     * resulting type is effectively `Either[left input, right input] => Either[left output, right output]`
     */
-  final case class <|>[left, right](left: left, right: right){
+  final case class <|>[left, right](left: left, right: right) {
     override def toString = s"$left <|> $right"
   }
 
@@ -158,8 +159,6 @@ object typeDSL {
     def <|>[y](y: y): x <|> y = new <|>(x, y)
     def :>[y](y: y): x :> y = new :>
   }
-
-
 
   object Get {
     def apply[x]: Get[x] = new Get
@@ -171,5 +170,13 @@ object typeDSL {
 
   object ReqBody {
     def apply[x]: ReqBody[x] = new ReqBody
+  }
+
+  implicit class HNameOps[x](val x: Witness.Lt[x]) {
+    def ~:[y](y: Witness.Lt[y]) = y.value :: x.value :: HNil
+  }
+
+  implicit class HNameListOps[L <: HList](val xs: L) {
+    def ~:[x](x: Witness.Lt[x]) = x.value :: xs
   }
 }

@@ -75,6 +75,7 @@ object TestModule {
   def main(args: Array[String]): Unit = {
     println(impl.description)
     println(srv)
+    "asdsad".split('a')
   }
 
   lazy val route: Route = api.route(handler)

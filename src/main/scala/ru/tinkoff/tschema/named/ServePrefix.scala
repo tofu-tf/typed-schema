@@ -29,7 +29,7 @@ trait LowLevelServePrefix {
   }
 
   implicit def middleServe[mid, P <: HList]
-  (implicit mid: ServeMiddle[mid, P]): Aux[mid, P, P] =
+  (implicit mid: ServeMiddle[mid, P, Nothing]): Aux[mid, P, P] =
     new ServePrefix[mid, P] {
       type Input = P
       type Key = Nothing
@@ -58,10 +58,10 @@ object ServePrefix extends LowLevelServePrefix {
     def apply(f: (prepend.Out) => Route, provide: Provide[P]): Route = start(i1 ⇒ end(i2 ⇒ f(prepend(i2, i1))), provide)
   }
 
-  implicit def middleConsServe[start, mid, P <: HList, I <: HList]
-  (implicit start: Aux[start, P, I], mid: ServeMiddle[mid, I]): Aux[start :> mid, P, I] =
+  implicit def middleConsServe[start, mid, key, P <: HList, I <: HList]
+  (implicit start: KAux[start, P, I, key], mid: ServeMiddle[mid, I, key]): Aux[start :> mid, P, I] =
     new ServePrefix[start :> mid, P] {
-      type Key = start.Key
+      type Key = key
       type Input = start.Input
       def apply(f: Input ⇒ Route, provide: Provide[P]): Route =
         start(in ⇒ mid(f, start.curry(provide)), provide)

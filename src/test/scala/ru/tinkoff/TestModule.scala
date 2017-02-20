@@ -4,27 +4,22 @@ import java.util.ResourceBundle
 
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server.Route
+import de.heikoseeberger.akkahttpcirce.CirceSupport._
 import io.circe.generic.JsonCodec
+import ru.tinkoff.tschema.macros.NamedImpl
+import ru.tinkoff.tschema.named.RoutableUnion
 import ru.tinkoff.tschema.named.syntax._
-import ru.tinkoff.tschema.swagger.syntax._
 import ru.tinkoff.tschema.serve.FromQueryParam
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
-import ru.tinkoff.tschema.swagger.{AsSwaggerParam, StaticDescription, SwaggerIntValue, SwaggerTag}
+import ru.tinkoff.tschema.swagger.{AsSwaggerParam, SwaggerIntValue}
 import ru.tinkoff.tschema.syntax._
-import ru.tinkoff.tschema.named
 import ru.tinkoff.tschema.typeDSL._
-import shapeless.ops.hlist.Reify
-import shapeless.ops.record
-import shapeless.ops.union
-import shapeless.ops.coproduct
 import shapeless._
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
-import ru.tinkoff.tschema.macros.NamedImpl
-import ru.tinkoff.tschema.named.{Routable, RoutableResult}
 import shapeless.labelled.FieldType
 
-import scala.reflect.runtime.universe._
-object TestModule extends App {
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+object TestModule{
 
   @JsonCodec case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
   @JsonCodec case class Combine(source: CombSource, res: CombRes)
@@ -59,7 +54,7 @@ object TestModule extends App {
 
     def combine(x: Client, y: Int) = Combine(CombSource(x.value, y), CombRes(mul = x.value * y, sum = x.value + y))
 
-    def sum(x: Client, y: Int) = x.value + y
+    def sum(x: Client, y: Int): Future[Int] = Future(x.value + y)
 
     def stats(body: Vector[BigDecimal]) = {
       val mean = body.sum / body.size
@@ -76,17 +71,13 @@ object TestModule extends App {
 
   val impl = NamedImpl[handler.type, srv.Input]
 
-  println(impl.description)
+  def main(args: Array[String]): Unit = {
+    println(impl.description)
+    println(srv)
+  }
 
-  val routable = the[RoutableResult[impl.Output]]
-  coproduct.Align[srv.Output, impl.Output]
 
+//
   lazy val route: Route = api.route(handler)
-
-  val mkSwagger = api.mkSwagger
-
-  def tagInfo: Vector[SwaggerTag] = Vector(
-    SwaggerTag("test", Some(StaticDescription("Test modules")))
-  )
 }
 

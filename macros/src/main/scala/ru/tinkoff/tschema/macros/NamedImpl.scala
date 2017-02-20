@@ -14,7 +14,7 @@ trait NamedImpl[T, Input <: Coproduct] {
 object NamedImpl {
   type Aux[T, I <: Coproduct, O <: Coproduct] = NamedImpl[T, I] {type Output = O}
 
-  implicit def apply[T, Input <: Coproduct](implicit routable: NamedImpl[T, Input]): Aux[T, Input, routable.Output] = routable
+  implicit def apply[T, Input <: Coproduct](implicit impl: NamedImpl[T, Input]): Aux[T, Input, impl.Output] = impl
 
   implicit def materialize[T, Input]: NamedImpl[T, Input] = macro NamedImplMacros.materialize[T, Input]
 }

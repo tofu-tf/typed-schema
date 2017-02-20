@@ -2,6 +2,7 @@ package ru.tinkoff.tschema.named
 
 import akka.http.scaladsl.server._
 import Directives._
+import ru.tinkoff.tschema.macros.NamedImpl
 import ru.tinkoff.tschema.serve.ToServable
 import ru.tinkoff.tschema.typeDSL._
 import shapeless._
@@ -22,23 +23,10 @@ trait Serve[T] extends ServePartial[T] {
     type Output = self.Output
     override def handle(f: Input ⇒ Route): Route = self.handle(f)
   }
-
-  def apply[Impl](impl: Impl)(implicit routable: Routable[Input, Impl]): Route =
-    handle(in ⇒ routable.routeWith(in, impl))
 }
 
 object Serve {
   type Aux[T, I <: Coproduct, O <: Coproduct] = Serve[T] {type Input = I; type Output = O}
-
-  def apply[T] = new MkServe[T]
-  def make[T](x: T) = new MkServe[T]
-
-  class MkServe[T] {
-    def apply[In <: Coproduct, Out <: Coproduct, Impl](impl: Impl)
-                                                      (implicit serve: Aux[T, In, Out],
-                                                       convert: Routable.Aux[In, Impl, Out]) =
-      serve.handle(x ⇒ convert.routeWith(x, impl))
-  }
 
   implicit def serveCons[start, end, startIn <: HList, endIn <: Coproduct, endOut <: Coproduct]
   (implicit

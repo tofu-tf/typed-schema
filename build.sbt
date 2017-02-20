@@ -11,7 +11,7 @@ scalaOrganization := "org.typelevel"
 scalacOptions ++= {
   if (scalaVersion.value >= "2.12")
     Seq(
-      "-Yinduction-heuristics",
+//      "-Yinduction-heuristics",
       "-Yliteral-types",
       "-Xstrict-patmat-analysis"
     )

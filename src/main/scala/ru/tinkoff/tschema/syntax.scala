@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema
 
 import akka.http.scaladsl.server._
-import ru.tinkoff.tschema.named.Routable
+import ru.tinkoff.tschema.named.RoutableUnion$
 import ru.tinkoff.tschema.serve.{Serve, ToServable}
 import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description, Tag}
 import typeDSL._

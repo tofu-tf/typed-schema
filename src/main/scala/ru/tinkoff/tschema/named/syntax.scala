@@ -1,17 +1,18 @@
 package ru.tinkoff.tschema.named
 import akka.http.scaladsl.server.Route
+import ru.tinkoff.tschema.macros.NamedImpl
 import ru.tinkoff.tschema.named
 import shapeless.Coproduct
 import shapeless.ops.coproduct.Align
 
 object syntax {
   implicit class NamedServeOps[x](x: ⇒ x) {
-    def route[T, In <: Coproduct, Out <: Coproduct, Out1 <: Coproduct]
+    def route[T, In <: Coproduct, Out <: Coproduct, Res <: Coproduct]
     (impl: T)
-    (implicit serve: named.Serve.Aux[x, In, Out],
-     routable: Routable.Aux[In, T, Out1],
-     align: Align[Out, Out1]): Route =
-      serve.handle(in ⇒ routable.routeWith(in, impl))
+    (implicit serve: Serve.Aux[x, In, Out],
+     namedImpl: NamedImpl.Aux[T, In, Res],
+     routable: RoutableUnion[Res, Out]): Route =
+      serve.handle(in ⇒ routable.route(namedImpl.produce(in, impl)))
 
     def servePrefix(implicit prefix: ServePrefix[x]): ServePrefix.KAux[x, prefix.Input, prefix.Key] = prefix
     def servePostfix(implicit postfix: ServePostfix[x]): ServePostfix.Aux[x, postfix.Output] = postfix

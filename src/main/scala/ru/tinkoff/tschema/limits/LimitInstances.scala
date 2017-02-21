@@ -5,6 +5,7 @@ import ru.tinkoff.tschema.limits.LimitHandler.{LimitRate, Pattern}
 import ru.tinkoff.tschema.named.{Name, Provide, ServeMiddle}
 import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, DerivedMkSwaggerPrefix, MkSwagger}
 import shapeless._
+import shapeless.ops.hlist.{Reify, ToList}
 import shapeless.ops.record._
 
 import scala.concurrent.{Future, ExecutionContext ⇒ EC}
@@ -35,12 +36,14 @@ trait LimitDef[l <: Limit[_, _], key, P <: HList] {
 object LimitDef {
   type Aux[l <: Limit[_, _], key, P <: HList, Ps <: HList] = LimitDef[l, key, P] {type Params = Ps}
 
-  implicit def fromHandler[count <: Int, unit <: TimeUnit, key, P <: HList, names <: HList]
+  implicit def fromHandler[count <: Int, unit <: TimeUnit, key, P <: HList, names <: HList, namesR <: HList]
   (implicit handler: LimitHandler,
    selectAll: SelectAll[P, names],
    count: Witness.Aux[count],
    unit: Witness.Aux[unit],
    key: Name[key],
+   names: Reify.Aux[names, namesR],
+   nameList: ToList[namesR, Symbol],
    ec: EC
   ): Aux[Limit[names, Rate[count, unit]], key, P, selectAll.Out] =
     new LimitDef[Limit[names, Rate[count, unit]], key, P] {
@@ -50,7 +53,7 @@ object LimitDef {
       def hasExceeded(params: P): Future[Option[LimitRejection]] =
         handler.check(Pattern(key.string, selectAll(params)), rate).map {
           case true ⇒ None
-          case false ⇒ Some(LimitRejection(key.string, count.value, unit.value.toString))
+          case false ⇒ Some(LimitRejection(key.string, count.value, unit.value.toString, nameList(names()).map(_.name)))
         }
     }
 }

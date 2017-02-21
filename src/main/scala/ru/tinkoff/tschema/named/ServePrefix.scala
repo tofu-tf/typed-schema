@@ -63,8 +63,7 @@ object ServePrefix extends LowLevelServePrefix {
     new ServePrefix[start :> mid, P] {
       type Key = key
       type Input = start.Input
-      def apply(f: Input ⇒ Route, provide: Provide[P]): Route =
-        start(in ⇒ mid(f, start.curry(provide)), provide)
+      def apply(f: Input ⇒ Route, provide: Provide[P]): Route = mid(f, start.curry(provide))
     }
 }
 

@@ -172,11 +172,5 @@ object typeDSL {
     def apply[x]: ReqBody[x] = new ReqBody
   }
 
-  implicit class HNameOps[x](val x: Witness.Lt[x]) {
-    def ~:[y](y: Witness.Lt[y]) = y.value :: x.value :: HNil
-  }
 
-  implicit class HNameListOps[L <: HList](val xs: L) {
-    def ~:[x](x: Witness.Lt[x]) = x.value :: xs
-  }
 }

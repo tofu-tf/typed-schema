@@ -14,6 +14,9 @@ import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger.{AsSwaggerParam, SwaggerIntValue}
 import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL._
+import ru.tinkoff.tschema.limits._
+import ru.tinkoff.tschema.limits.syntax._
+import ru.tinkoff.tschema.swagger.syntax._
 import shapeless._
 import shapeless.labelled.FieldType
 
@@ -42,7 +45,7 @@ object TestModule {
 
   def combine = keyPrefix('combine) :> capture[Int]('y) :> Get[Combine]
 
-  def sum = keyPrefix('sum) :> capture[Int]('y) :> Get[Int]
+  def sum = keyPrefix('sum) :> capture[Int]('y) :> (limit(1) / minute ! 'x) :> Get[Int]
 
   def stats = keyPrefix('stats) :> ReqBody[Vector[BigDecimal]] :> Post[StatsRes]
 
@@ -66,7 +69,13 @@ object TestModule {
     }
   }
 
-  val pp = keyPrefix('test) :> queryParam[String]('left) :> queryParam[String]('right) :> Get[String]
+  implicit val limitHandler = LimitHandler.trieMap
+
+  val pp = keyPrefix('test) :> queryParam[String]('left) :> queryParam[String]('right) :> (limit(1) / hour ! 'left)  :> Get[String]
+
+  pp.serve
+
+  pp.mkSwagger
 
   val srv = api.serve
 

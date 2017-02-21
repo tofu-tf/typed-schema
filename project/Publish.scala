@@ -20,6 +20,6 @@ object Publish {
     ,
     credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
     ,
-    version := "0.3.4"
+    version := "0.3.5"
   )
 }

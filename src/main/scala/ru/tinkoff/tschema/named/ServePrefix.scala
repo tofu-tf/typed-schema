@@ -59,7 +59,7 @@ object ServePrefix extends LowLevelServePrefix {
   }
 
   implicit def middleConsServe[start, mid, key, P <: HList, I <: HList]
-  (implicit start: KAux[start, P, I, key], mid: ServeMiddle[mid, I, key]): Aux[start :> mid, P, I] =
+  (implicit start: KAux[start, P, I, key], mid: ServeMiddle[mid, I, key]): KAux[start :> mid, P, I, key] =
     new ServePrefix[start :> mid, P] {
       type Key = key
       type Input = start.Input

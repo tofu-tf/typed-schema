@@ -1,5 +1,12 @@
-import ru.tinkoff.tschema.named.ChooseTag
+import ru.tinkoff.tschema.limits.syntax._
+import ru.tinkoff.tschema.limits._
+
 import shapeless._
 
-the[ChooseTag[Nothing, Nothing]]
+(1 :: 2 :: HNil).##
+(1 :: 2 :: HNil).##
+('a :: 3 :: HNil).##
+(1 :: 2 :: HNil).##
+('a :: 3 :: HNil).##
+(1 :: 2 :: HNil).##
 

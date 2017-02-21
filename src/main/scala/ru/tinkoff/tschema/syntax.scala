@@ -1,11 +1,10 @@
 package ru.tinkoff.tschema
 
 import akka.http.scaladsl.server._
-import ru.tinkoff.tschema.named.RoutableUnion$
 import ru.tinkoff.tschema.serve.{Serve, ToServable}
 import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description, Tag}
 import typeDSL._
-import shapeless.{Coproduct, Witness}
+import shapeless._
 import shapeless.ops.coproduct.Align
 
 import scala.language.higherKinds
@@ -55,5 +54,4 @@ object syntax {
   class MkComplex[x, T[_, _]](maker: Maker[x, T]) {
     def apply[s](witness: Witness.Lt[s]) = maker.make[s]
   }
-
 }

@@ -1,9 +1,9 @@
 package ru.tinkoff.tschema.limits
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult.Rejected
-import akka.http.scaladsl.server.{Route, RouteResult}
 import ru.tinkoff.tschema.limits.LimitHandler.{LimitRate, Pattern}
 import ru.tinkoff.tschema.named.{Name, Provide, ServeMiddle}
-import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, DerivedMkSwaggerPrefix, MkSwagger}
+import ru.tinkoff.tschema.swagger.SwaggerMapper
 import shapeless._
 import shapeless.ops.hlist.{Reify, ToList}
 import shapeless.ops.record._
@@ -22,8 +22,7 @@ trait LimitInstances {
       )
     }
 
-  implicit def limitSwagger[l <: Limit[_, _]]: DerivedMkSwaggerPrefix[l] =
-    DerivedMkSwaggerPrefix.fromFunc(identity)
+  implicit def limitSwagger[l <: Limit[_, _]]: SwaggerMapper[l] = SwaggerMapper.empty[l]
 }
 
 trait LimitDef[l <: Limit[_, _], key, P <: HList] {

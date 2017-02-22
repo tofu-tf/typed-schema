@@ -2,23 +2,19 @@ package ru.tinkoff
 
 import java.util.ResourceBundle
 
-import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server.Route
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
 import io.circe.generic.JsonCodec
+import ru.tinkoff.tschema.limits._
+import ru.tinkoff.tschema.limits.syntax._
 import ru.tinkoff.tschema.macros.NamedImpl
-import ru.tinkoff.tschema.named.RoutableUnion
 import ru.tinkoff.tschema.named.syntax._
 import ru.tinkoff.tschema.serve.FromQueryParam
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
+import ru.tinkoff.tschema.swagger.syntax._
 import ru.tinkoff.tschema.swagger.{AsSwaggerParam, SwaggerIntValue}
 import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL._
-import ru.tinkoff.tschema.limits._
-import ru.tinkoff.tschema.limits.syntax._
-import ru.tinkoff.tschema.swagger.syntax._
-import shapeless._
-import shapeless.labelled.FieldType
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -71,11 +67,11 @@ object TestModule {
 
   implicit val limitHandler = LimitHandler.trieMap
 
-  val pp = keyPrefix('test) :> queryParam[String]('left) :> queryParam[String]('right) :> (limit(1) / hour ! 'left)  :> Get[String]
+  val pp = keyPrefix('test) :> queryParam[String]('left) :> queryParam[String]('right) :> (limit(1) / hour ! 'left) :> Get[String]
 
   pp.serve
 
-  pp.mkSwagger
+  api.mkSwagger
 
   val srv = api.serve
 

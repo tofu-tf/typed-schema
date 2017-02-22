@@ -1,11 +1,8 @@
 package ru.tinkoff.tschema
 
-import akka.http.scaladsl.server._
-import ru.tinkoff.tschema.serve.{Serve, ToServable}
-import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description, Tag}
-import typeDSL._
+import ru.tinkoff.tschema.swagger.{Description, Tag}
 import shapeless._
-import shapeless.ops.coproduct.Align
+import typeDSL._
 
 import scala.language.higherKinds
 

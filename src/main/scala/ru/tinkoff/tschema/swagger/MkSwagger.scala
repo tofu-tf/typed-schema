@@ -8,6 +8,7 @@ import akka.util.ByteString
 import ru.tinkoff.tschema.named.Name
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
+import cats.MonoidK
 
 import scala.language.higherKinds
 
@@ -39,13 +40,13 @@ sealed trait MkSwagger[T] {
 
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
-      val paths: PathSeq = paths.map(_.modOp { op ⇒
+      val paths: PathSeq = self.paths.map(_.modOp { op ⇒
         val codes = op.responses.codes
         op.copy(responses = op.responses.copy(codes = codes ++ Map(
           code → SwaggerResponse(schema = typeable.swaggerType, description = description)
         )))
       })
-      val types: TypePool = typeable.swaggerType.collectTypes
+      val types: TypePool = self.types ++ typeable.swaggerType.collectTypes
     }
 }
 
@@ -68,7 +69,7 @@ object MkSwagger {
 
   def single[T](op: SwaggerOp, method: Swagger.Method, types: Map[String, SwaggerType]) = new MkSwagger[T] {
     val paths = Vector(PathSpec(Vector.empty, method, op))
-    val types = Map.empty
+    val types = Map.empty[String, SwaggerType]
   }
 
   private def derivedMethod[T, meth[_]](method: Swagger.Method)(implicit typ: SwaggerTypeable[T]) =
@@ -89,6 +90,11 @@ object MkSwagger {
 
   implicit def deriveCons[start, end]
   (implicit start: SwaggerMapper[start], end: MkSwagger[end]): MkSwagger[start :> end] = start(end).as[start :> end]
+
+  implicit val instance = new MonoidK[MkSwagger] {
+    def empty[A]: MkSwagger[A] = MkSwagger.empty[A]
+    def combineK[A](x: MkSwagger[A], y: MkSwagger[A]): MkSwagger[A] = x ++ y
+  }
 }
 
 
@@ -237,6 +243,11 @@ object SwaggerMapper {
     }
 
   implicit def deriveKey[name] = empty[Key[name]]
+
+  implicit val instance = new MonoidK[SwaggerMapper] {
+    def empty[A]: SwaggerMapper[A] = SwaggerMapper.empty
+    def combineK[A](x: SwaggerMapper[A], y: SwaggerMapper[A]): SwaggerMapper[A] = x andThen y
+  }
 }
 
 

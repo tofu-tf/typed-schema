@@ -8,7 +8,7 @@ import akka.util.ByteString
 import ru.tinkoff.tschema.named.Name
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
-import cats.MonoidK
+import cats.{Monoid, MonoidK}
 
 import scala.language.higherKinds
 
@@ -67,9 +67,9 @@ object MkSwagger {
 
   type TypePool = Map[String, SwaggerType]
 
-  def single[T](op: SwaggerOp, method: Swagger.Method, types: Map[String, SwaggerType]) = new MkSwagger[T] {
+  def single[T](op: SwaggerOp, method: Swagger.Method, typeList: Map[String, SwaggerType]) = new MkSwagger[T] {
     val paths = Vector(PathSpec(Vector.empty, method, op))
-    val types = Map.empty[String, SwaggerType]
+    val types = typeList
   }
 
   private def derivedMethod[T, meth[_]](method: Swagger.Method)(implicit typ: SwaggerTypeable[T]) =
@@ -80,10 +80,14 @@ object MkSwagger {
           StatusCodes.OK → SwaggerResponse(
             schema = typ.swaggerType
           )))),
-      types = typ.swaggerType.collectTypes)
+      typeList = typ.swaggerType.collectTypes)
 
   implicit def deriveGet[T: SwaggerTypeable] = derivedMethod[T, Get](Swagger.Method.get)
   implicit def derivePost[T: SwaggerTypeable] = derivedMethod[T, Post](Swagger.Method.post)
+  implicit def deriveHead[T: SwaggerTypeable] = derivedMethod[T, Head](Swagger.Method.head)
+  implicit def derivePut[T: SwaggerTypeable] = derivedMethod[T, Put](Swagger.Method.put)
+  implicit def deriveDelete[T: SwaggerTypeable] = derivedMethod[T, Delete](Swagger.Method.delete)
+  implicit def deriveOptions[T: SwaggerTypeable] = derivedMethod[T, Options](Swagger.Method.options)
 
   implicit def deriveJoin[left, right]
   (implicit left: MkSwagger[left], right: MkSwagger[right]) = (left ++ right).as[left <|> right]
@@ -91,12 +95,12 @@ object MkSwagger {
   implicit def deriveCons[start, end]
   (implicit start: SwaggerMapper[start], end: MkSwagger[end]): MkSwagger[start :> end] = start(end).as[start :> end]
 
-  implicit val instance = new MonoidK[MkSwagger] {
+  implicit val monoidKInstance = new MonoidK[MkSwagger] {
     def empty[A]: MkSwagger[A] = MkSwagger.empty[A]
     def combineK[A](x: MkSwagger[A], y: MkSwagger[A]): MkSwagger[A] = x ++ y
   }
+  implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 }
-
 
 case class AsSwaggerParam[T](value: SwaggerValue, required: Boolean = true)
 
@@ -244,10 +248,12 @@ object SwaggerMapper {
 
   implicit def deriveKey[name] = empty[Key[name]]
 
-  implicit val instance = new MonoidK[SwaggerMapper] {
+  implicit val monoidKInstance = new MonoidK[SwaggerMapper] {
     def empty[A]: SwaggerMapper[A] = SwaggerMapper.empty
     def combineK[A](x: SwaggerMapper[A], y: SwaggerMapper[A]): SwaggerMapper[A] = x andThen y
   }
+
+  implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 }
 
 

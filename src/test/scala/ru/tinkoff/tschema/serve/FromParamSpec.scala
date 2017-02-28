@@ -3,6 +3,7 @@ import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.{GeneratorDrivenPropertyChecks, TableDrivenPropertyChecks}
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalactic.Equality
+import ru.tinkoff.tschema.{FromCookie, FromFormField, FromParam, FromQueryParam}
 import ru.tinkoff.tschema.serve.ForAllTypes.Checker
 import shapeless._
 

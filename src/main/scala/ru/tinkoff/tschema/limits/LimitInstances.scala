@@ -2,7 +2,7 @@ package ru.tinkoff.tschema.limits
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult.Rejected
 import ru.tinkoff.tschema.limits.LimitHandler.{LimitRate, Pattern}
-import ru.tinkoff.tschema.named.{Name, Provide, ServeMiddle}
+import ru.tinkoff.tschema.akkaHttp.{Name, Provide, ServeMiddle}
 import ru.tinkoff.tschema.swagger.SwaggerMapper
 import shapeless._
 import shapeless.ops.hlist.{Reify, ToList}

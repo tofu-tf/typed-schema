@@ -5,7 +5,8 @@ import java.util.{Date, ResourceBundle}
 import MkSwagger._
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.util.ByteString
-import ru.tinkoff.tschema.named.Name
+import cats.arrow.FunctionK
+import ru.tinkoff.tschema.akkaHttp.Name
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 import cats.{Monoid, MonoidK}
@@ -127,10 +128,15 @@ object AsSwaggerParam {
   implicit def streamParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Stream[T]](SwaggerArrayValue(param.value), param.required)
 }
 
-trait SwaggerMapper[T] {
+trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger]{
   self ⇒
   def mapSpec(spec: PathSpec): PathSpec
   def types: Map[String, SwaggerType]
+
+  def apply[A](mkSwagger: MkSwagger[A]): MkSwagger[A] = new MkSwagger[A] {
+    def paths: PathSeq = mkSwagger.paths.map(mapSpec)
+    def types: TypePool = mkSwagger.types ++ self.types
+  }
 
   def andThen[B](other: SwaggerMapper[B]) = new SwaggerMapper[B] {
     def mapSpec(spec: PathSpec): PathSpec = self.mapSpec(other.mapSpec(spec))
@@ -145,11 +151,6 @@ trait SwaggerMapper[T] {
   def ++(that: TraversableOnce[(String, SwaggerType)]) = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = self.mapSpec(spec)
     def types: Map[String, SwaggerType] = self.types ++ that
-  }
-
-  def apply(mkSwagger: MkSwagger[_]) = new MkSwagger[T] {
-    def paths: PathSeq = mkSwagger.paths.map(mapSpec)
-    def types: TypePool = mkSwagger.types ++ self.types
   }
 
   def as[U] = self.asInstanceOf[SwaggerMapper[U]]

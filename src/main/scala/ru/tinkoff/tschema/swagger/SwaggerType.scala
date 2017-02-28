@@ -26,6 +26,7 @@ sealed trait SwaggerType {
   def or(that: SwaggerType): SwaggerType =
     merge.applyOrElse(that, Function.const(SwaggerObject(Vector("left" → Eval.now(this), "right" → Eval.now(that)))))
 }
+
 class SwaggerPrimitive[Typ <: SwaggerValue](val typ: Typ, val format: Option[SwaggerFormat[Typ]] = None) extends SwaggerType {
   override def merge = {
     case prim: SwaggerPrimitive[_] if typ == prim.typ ⇒

@@ -5,11 +5,11 @@ import java.util.ResourceBundle
 import akka.http.scaladsl.server.Route
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
 import io.circe.generic.JsonCodec
+import ru.tinkoff.tschema.FromQueryParam
 import ru.tinkoff.tschema.limits._
 import ru.tinkoff.tschema.limits.syntax._
 import ru.tinkoff.tschema.macros.NamedImpl
-import ru.tinkoff.tschema.named.syntax._
-import ru.tinkoff.tschema.serve.FromQueryParam
+import ru.tinkoff.tschema.akkaHttp.syntax._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger.syntax._
 import ru.tinkoff.tschema.swagger.{AsSwaggerParam, SwaggerIntValue}

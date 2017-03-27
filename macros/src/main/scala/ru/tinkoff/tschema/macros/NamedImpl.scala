@@ -19,13 +19,10 @@ object NamedImpl {
   implicit def materialize[T, Input]: NamedImpl[T, Input] = macro NamedImplMacros.materialize[T, Input]
 }
 
-class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros {
+class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros with SymbolMacros{
   import c.universe._
   import NamedImplMacros._
   import internal.{constantType, refinedType}
-
-  def taggedType = typeOf[shapeless.tag.Tagged[_]].typeConstructor
-
   def materialize[T: WeakTypeTag, Input: WeakTypeTag]: Tree = try {
     val applier = new Applier(impl = weakTypeOf[T], input = weakTypeOf[Input])
     import applier._
@@ -161,24 +158,7 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
     }
   }
 
-  object KeyName {
-    def apply(name: String): Type =
-      NamedSymbol(appliedType(taggedType, constantType(Constant(name))))
 
-    def unapply(tpe: Type): Option[String] = tpe match {
-      case NamedSymbol(ConstantType(Constant(name: String))) ⇒ Some(name)
-      case _ ⇒ None
-    }
-  }
-
-  object NamedSymbol {
-    def apply(tpe: Type) = refinedType(List(symbolTpe, tpe), NoSymbol)
-
-    def unapply(tpe: Type) = tpe match {
-      case RefinedType(List(sym, tag, _*), _) if sym == symbolTpe ⇒ tag.typeArgs.headOption
-      case _ ⇒ None
-    }
-  }
 }
 
 object NamedImplMacros {

@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.akkaHttp
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive, Directive1, Route}
+import akka.http.scaladsl.server.{Directive, Directive1, RequestContext, Route}
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import ru.tinkoff.tschema._
 import ru.tinkoff.tschema.typeDSL.{Capture, Cookie, FormField, Header, Meta, Prefix, QueryFlag, QueryParam, QueryParams, ReqBody}
@@ -100,5 +100,16 @@ object ServeElement {
   implicit def metaServe[x <: Meta] = new Element0[x] {
     def apply(f: (HNil) => Route): Route = f(HNil)
   }
+
+  implicit def directServe[A, S <: Symbol](implicit x: Direct[A, S]) = new Element1[Direct[A, S], FieldType[S, A]] {
+    def apply(f: Fld[S, A] ⇒ Route): Route = x.directive(y ⇒ f(fld(y)))
+  }
+}
+
+
+sealed class Direct[A, S <: Symbol](val directive: Directive1[A])
+
+object Direct {
+  def apply[A, S <: Symbol](w: Witness.Lt[S])(directive: Directive1[A]) = new Direct[A, S](directive)
 }
 

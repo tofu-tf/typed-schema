@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{Matchers, WordSpec}
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
-import ru.tinkoff.tschema.akkaHttp.syntax._
+import ru.tinkoff.tschema.akkaHttp._
 import ru.tinkoff.tschema.macros.NamedImpl
 
 class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {

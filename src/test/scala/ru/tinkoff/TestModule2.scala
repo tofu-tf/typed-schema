@@ -2,25 +2,21 @@ package ru.tinkoff
 
 import java.util.ResourceBundle
 
-import akka.http.scaladsl.server.{RequestContext, Route, Directives}
-import Directives._
-import ru.tinkoff.tschema.utils.json.CirceSupport._
+import akka.http.scaladsl.server.Route
+import de.heikoseeberger.akkahttpcirce.CirceSupport._
 import io.circe.generic.JsonCodec
 import ru.tinkoff.tschema.FromQueryParam
-import ru.tinkoff.tschema.akkaHttp.ServeMiddle
+import ru.tinkoff.tschema.akkaHttp._
 import ru.tinkoff.tschema.limits._
 import ru.tinkoff.tschema.macros.NamedImpl
-import ru.tinkoff.tschema.akkaHttp._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL._
-import shapeless.{Witness ⇒ W, _}
-import shapeless.record.Record
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-object TestModule {
+object TestModule2 {
 
   @JsonCodec case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
   @JsonCodec case class Combine(source: CombSource, res: CombRes)
@@ -39,19 +35,31 @@ object TestModule {
 
   implicit lazy val bundle = ResourceBundle.getBundle("swagger")
 
-  def concat = operation('concat) :> queryParam[String]('left) :> queryParam[String]('right) :> Get[String]
+  def combine = keyPrefix('combine) :> capture[Int]('y) :> Get[Combine]
 
-  def combine = operation('combine) :> capture[Int]('y) :> Get[Combine]
+  def sum = keyPrefix('sum) :> capture[Int]('y) :> (limit(1) / minute ! 'x) :> Get[Int]
 
-  def sum = operation('sum) :> capture[Int]('y) :> (limit(1) / minute ! 'x) :> Get[Int]
-
-  def stats = operation('stats) :> ReqBody[Vector[BigDecimal]] :> Post[StatsRes]
+  def stats = keyPrefix('stats) :> ReqBody[Vector[BigDecimal]] :> Post[StatsRes]
 
   def intops = queryParam[Client]('x) :> (combine <|> sum)
 
-  def api = tagPrefix('test) :> (concat <|> intops <|> stats)
+  def api1 = keyPrefix('combine) {
+    queryParam[Client]('x) {
+      capture[Int]('y) {
+        Get[Combine]
+      }
+    }
+  }
+  /*    tagPrefix('test) {*/
+  def api2 =
+    keyPrefix('stats) {
+      ReqBody[Vector[BigDecimal]] {
+        Post[StatsRes]
+      }
+    }
+  /*}*/
 
-  val handler = new {
+  object handler {
     def concat(left: String, right: String) = left + right
 
     def combine(x: Client, y: Int) = Combine(CombSource(x.value, y), CombRes(mul = x.value * y, sum = x.value + y))
@@ -73,29 +81,20 @@ object TestModule {
 
   pp.serve
 
-  val swagger = api.mkSwagger
+//  api.mkSwagger
 
-  val srv = api.serve
+//  val srv = api1.serve
+//  api2.serve
+//  (api1 <|> api2).serve
 
-  val impl = NamedImpl[handler.type, srv.Input]
+//  val impl = NamedImpl[handler.type, srv.Input]
 
-  (limit(10) / hour).serveMiddle('combine)
+//  def main(args: Array[String]): Unit = {
+//    println(impl.description)
+//    println(srv)
+//    "asdsad".split('a')
+//  }
 
-//  val u: ServeMiddle[Limit[HNil, Rate[W.`1`.T, minute.type]], HNil, W.`'combine`.T] = limitMiddleware[HNil, Limit[HNil, Rate[W.`1`.T, minute.type]], W.`'combine`.T]
-
-  def main(args: Array[String]): Unit = {
-    import io.circe.syntax._
-
-    println(impl.description)
-    println(srv)
-    "asdsad".split('a')
-    println(route)
-  }
-
-  lazy val route: Route = api.route(handler)
-
-  implicit val encoding = Direct('encoding)(extract(_.request.encoding))
-
-  encoding.servePrefix
+//  lazy val route: Route = api.route(handler)
 }
 

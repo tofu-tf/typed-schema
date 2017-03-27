@@ -29,8 +29,12 @@ addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 
+libraryDependencies += {scalaOrganization.value} % "scala-compiler" % {scalaVersion.value}
+
 lazy val typedschema = (project in file("."))
                        .dependsOn(macros)
-                       .aggregate(macros)
+                       .aggregate(macros, typedsl)
 
-lazy val macros = project
+lazy val macros = project.dependsOn(typedsl)
+
+lazy val typedsl = project

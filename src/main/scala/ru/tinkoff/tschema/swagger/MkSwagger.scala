@@ -128,7 +128,7 @@ object AsSwaggerParam {
   implicit def streamParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Stream[T]](SwaggerArrayValue(param.value), param.required)
 }
 
-trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger]{
+trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
   self ⇒
   def mapSpec(spec: PathSpec): PathSpec
   def types: Map[String, SwaggerType]
@@ -227,20 +227,20 @@ object SwaggerMapper {
   implicit def deriveCons[start, end]
   (implicit start: SwaggerMapper[start], end: SwaggerMapper[end]): SwaggerMapper[start :> end] = (start andThen end).as[start :> end]
 
-  private def deriveDescription[T](descr: SwaggerDescription): SwaggerMapper[T] =
+  private def deriveDesr[T](descr: SwaggerDescription): SwaggerMapper[T] =
     new FromFunc[T] {
       def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.copy(description = Some(descr)))
     }
 
   implicit def deriveStaticDescr[name](implicit name: Name[name]) =
-    deriveDescription[Description.Static[name]](StaticDescription(name.string))
+    deriveDesr[Description.Static[name]](StaticDescription(name.string))
 
   implicit def deriveResourceDescr[name](implicit name: Name[name]) =
-    deriveDescription[Description.Resource[name]](ResourceDescription(name.string))
+    deriveDesr[Description.Resource[name]](ResourceDescription(name.string))
 
   implicit def deriveI18nDescr[name]
-  (implicit name: Name[name], bundle: ResourceBundle): SwaggerMapper[Description.I18n[name]] =
-    deriveDescription[Description.I18n[name]](I18nDescription(name.string))
+  (implicit name: Name[name], bundle: ResourceBundle) =
+    deriveDesr[Description.I18n[name]](I18nDescription(name.string))
 
   implicit def deriveTag[name](implicit name: Name[name]): SwaggerMapper[Tag[name]] =
     new FromFunc[Tag[name]] {

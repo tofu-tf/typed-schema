@@ -5,8 +5,8 @@ import shapeless._
 import shapeless.labelled.FieldType
 
 import scala.language.higherKinds
-
 object circeDerivation {
+  @deprecated("use standard derivation")
   def deriveObjEncoder[T](implicit enc: Lazy[DerivedCirceEncoder[T]]) = new ObjectEncoder[T]{
     def encodeObject(a: T): JsonObject = enc.value.encodeObject(a)
   }

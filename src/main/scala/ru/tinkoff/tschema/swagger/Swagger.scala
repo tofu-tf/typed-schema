@@ -5,9 +5,9 @@ import akka.http.scaladsl.model.StatusCode
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe._
 import io.circe.generic._
+import io.circe.generic.semiauto._
 import io.circe.syntax._
 import ru.tinkoff.tschema.utils.json.CirceKeyEnum
-import ru.tinkoff.tschema.utils.json.circeDerivation._
 import ru.tinkoff.tschema.utils.json.circeSyntax._
 
 case class Swagger(swagger: String = "2.0",
@@ -40,7 +40,7 @@ object Swagger {
 
   private[tschema] val jsonMimeType = Vector("application/json")
 
-  implicit lazy val swaggerEncoder: ObjectEncoder[Swagger] = deriveObjEncoder
+  implicit lazy val swaggerEncoder: ObjectEncoder[Swagger] = deriveEncoder
 }
 
 @JsonCodec
@@ -175,7 +175,7 @@ object SwaggerValue {
     case object multi extends CollectionFormat
   }
 
-  private lazy val derivedEncoder: ObjectEncoder[SwaggerValue] = deriveObjEncoder
+  private lazy val derivedEncoder: ObjectEncoder[SwaggerValue] = deriveEncoder
   implicit lazy val encodeSwaggerValue: ObjectEncoder[SwaggerValue] = derivedEncoder.mapObjWithSrc {
     (x, obj) ⇒ obj.add("type", Json.fromString(x.typeName))
   }
@@ -221,7 +221,7 @@ case class SwaggerOp(tags: Vector[String] = Vector.empty,
 }
 
 object SwaggerOp {
-  implicit lazy val swaggerOpDecoder: ObjectEncoder[SwaggerOp] = deriveObjEncoder
+  implicit lazy val swaggerOpDecoder: ObjectEncoder[SwaggerOp] = deriveEncoder
 }
 
 case class SwaggerResponses(default: Option[SwaggerResponse] = None,
@@ -247,7 +247,7 @@ case class SwaggerResponse(description: Option[SwaggerDescription] = None,
                            headers: Map[String, SwaggerValue] = Map.empty)
 
 object SwaggerResponse {
-  implicit lazy val responseEncoder: Encoder[SwaggerResponse] = deriveObjEncoder
+  implicit lazy val responseEncoder: Encoder[SwaggerResponse] = deriveEncoder
 }
 
 

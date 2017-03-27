@@ -1,4 +1,4 @@
-import ru.tinkoff.tschema.limits.syntax._
+import ru.tinkoff.tschema.limits.LimitSyntax._
 import ru.tinkoff.tschema.limits._
 
 import shapeless._

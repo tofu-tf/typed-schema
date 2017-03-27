@@ -1,5 +1,6 @@
 package ru.tinkoff.tschema
 
+import ru.tinkoff.tschema.macros.ParamMaker
 import ru.tinkoff.tschema.swagger.{Description, Tag}
 import shapeless._
 import typeDSL._
@@ -13,6 +14,7 @@ object syntax {
   def key[s](witness: Witness.Lt[s]) = new Key[s]
   def tagPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> tag[s](witness)
   def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> key[s](witness)
+  def operation[s](witness: Witness.Lt[s]) = keyPrefix[s](witness) :> descr.i18n[s](witness)
 
   object descr {
     def static[s](witness: Witness.Lt[s]) = new Description.Static[s]
@@ -51,4 +53,15 @@ object syntax {
   class MkComplex[x, T[_, _]](maker: Maker[x, T]) {
     def apply[s](witness: Witness.Lt[s]) = maker.make[s]
   }
+
+  implicit class TypeApiOps[x <: DSLAtom](x: ⇒ x) {
+    def <|>[y](y: ⇒ y): x <|> y = new <|>(x, y)
+    def :>[y](y: ⇒ y): x :> y = new :>
+    def apply[y](y: ⇒ y): x :> y = new :>
+  }
+
+  object query extends ParamMaker[QueryParam]
+  object path extends ParamMaker[Capture]
+  object headers extends ParamMaker[Header]
+  object form extends ParamMaker[FormField]
 }

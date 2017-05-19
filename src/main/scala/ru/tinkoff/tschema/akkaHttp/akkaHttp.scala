@@ -18,7 +18,7 @@ package object akkaHttp {
     def serveSingle(implicit single: ServeSingle[x, HNil]): ServeSingle.TAux[x, HNil, single.Input, single.Output, single.Key] = single
     def serveSingleP[P <: HList](implicit single: ServeSingle[x, P]): ServeSingle.TAux[x, P, single.Input, single.Output, single.Key] = single
     def serveMiddle[key](key: Witness.Lt[key])(implicit middle: ServeMiddle[x, HNil, key]): ServeMiddle[x, HNil, key] = middle
-    def serveMiddleP[key, P <: HList](key: Witness.Lt[key])(implicit middle: ServeMiddle[x, P, key]): ServeMiddle[x, P, key] = middle
+    def serveMiddleP[key, P <: HList](implicit middle: ServeMiddle[x, P, key]): ServeMiddle[x, P, key] = middle
     def serve(implicit serve: Serve[x, HNil]): Serve.Aux[x, HNil, serve.Input, serve.Output] = serve
     def serveP[P <: HList](implicit serve: Serve[x, P]): Serve.Aux[x, P, serve.Input, serve.Output] = serve
     def typeof: TypeContainer[x] = new TypeContainer[x]

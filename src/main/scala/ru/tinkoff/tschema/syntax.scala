@@ -1,5 +1,6 @@
 package ru.tinkoff.tschema
 
+import ru.tinkoff.tschema.common.HasReq
 import ru.tinkoff.tschema.macros.ParamMaker
 import ru.tinkoff.tschema.swagger.{Description, Tag}
 import shapeless._
@@ -46,6 +47,10 @@ object syntax {
     override def make[s]: Cookie[s, x] = new Cookie
   })
 
+  def transform[a, b] = new MkTransform[a, b]
+
+  def transformReq[a, b] = new MkTransformReq[a, b]
+
   abstract class Maker[x, T[_, _]] {
     def make[s]: T[s, x]
   }
@@ -54,7 +59,15 @@ object syntax {
     def apply[s](witness: Witness.Lt[s]) = maker.make[s]
   }
 
-  implicit class TypeApiOps[x <: DSLAtom](x: ⇒ x) {
+  class MkTransform[a, b] {
+    def apply[t, u, s](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
+  }
+
+  class MkTransformReq[a, b] {
+    def apply[t <: HasReq, u, s](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
+  }
+
+  implicit class TypeApiOps[x <: DSLDef](x: ⇒ x) {
     def <|>[y](y: ⇒ y): x <|> y = new <|>(x, y)
     def :>[y](y: ⇒ y): x :> y = new :>
     def apply[y](y: ⇒ y): x :> y = new :>
@@ -64,4 +77,16 @@ object syntax {
   object path extends ParamMaker[Capture]
   object headers extends ParamMaker[Header]
   object form extends ParamMaker[FormField]
+
+  sealed class ResultMaker[F[_]](x: => F[Nothing]){
+    def apply[x]: F[x] = x.asInstanceOf[F[x]]
+  }
+
+  object get extends ResultMaker(new Get)
+  object post extends ResultMaker(new Post)
+  object put extends ResultMaker(new Put)
+  object delete extends ResultMaker(new Delete)
+  object head extends ResultMaker(new Head)
+  object options extends ResultMaker(new Options)
+  object patch extends ResultMaker(new Patch)
 }

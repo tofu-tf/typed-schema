@@ -1,10 +1,10 @@
 package ru.tinkoff.tschema.macros
 import shapeless.ReprTypes
 
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.{blackbox, whitebox}
 
 trait SymbolMacros extends ReprTypes {
-  val c: whitebox.Context
+  val c: blackbox.Context
 
   import c.universe._
   import c.internal.{constantType, refinedType}
@@ -24,10 +24,13 @@ trait SymbolMacros extends ReprTypes {
   object NamedSymbol {
     def apply(tpe: Type): Type = refinedType(List(symbolTpe, tpe), NoSymbol)
 
-    def unapply(tpe: Type): Option[Type] = tpe match {
+    def unapply(tpe: Type): Option[Type] = tpe.dealias match {
       case RefinedType(List(sym, tag, _*), _) if sym == symbolTpe ⇒ tag.typeArgs.headOption
       case _ ⇒ None
     }
   }
+
+  def freshIdent(name: String): Ident = Ident(freshName(name))
+  def freshName(name: String): TermName = TermName(c.freshName(name))
 
 }

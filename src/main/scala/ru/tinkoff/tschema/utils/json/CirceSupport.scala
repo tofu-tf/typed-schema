@@ -14,19 +14,30 @@ import scala.concurrent.Future
 object CirceSupport {
   val printer = Printer.noSpaces.copy(dropNullKeys = true)
 
-  implicit def marshallResponseCirce[T: Encoder]: ToResponseMarshaller[T] = Marshaller.fromToEntityMarshaller[T]()
+  def marshallResponse[T: Encoder]: ToResponseMarshaller[T] = Marshaller.fromToEntityMarshaller[T]()(marshallEntity)
 
-  implicit def unmarshallRequestCirce[T: Decoder]: FromRequestUnmarshaller[T] =
+  def unmarshallRequest[T: Decoder]: FromRequestUnmarshaller[T] =
     Unmarshaller.identityUnmarshaller[HttpRequest]
-      .map(_.entity)
-      .flatMap[T](unmarshallEntityCirce[T]: Unmarshaller[HttpEntity, T])
-      .asScala
+    .map(_.entity)
+    .flatMap[T](unmarshallEntity[T]: Unmarshaller[HttpEntity, T])
+    .asScala
 
-  implicit def marshallEntityCirce[T: Encoder]: ToEntityMarshaller[T] =
+  def marshallEntity[T: Encoder]: ToEntityMarshaller[T] =
     Marshaller.stringMarshaller(`application/json`).compose((_: T).asJson.pretty(printer))
 
-  implicit def unmarshallEntityCirce[T: Decoder]: FromEntityUnmarshaller[T] =
+  def unmarshallEntity[T: Decoder]: FromEntityUnmarshaller[T] =
     Unmarshaller.stringUnmarshaller
-      .forContentTypes(`application/json`)
-      .flatMap(implicit ec ⇒ _ ⇒ s ⇒ Future.fromTry(parse(s).toTry.flatMap(_.as[T].toTry)))
+    .forContentTypes(`application/json`)
+    .flatMap(implicit ec ⇒ _ ⇒ s ⇒ Future.fromTry(parse(s).toTry.flatMap(_.as[T].toTry)))
+
+  object implicits {
+    implicit def marshallResponseCirce[T: Encoder]: ToResponseMarshaller[T] = marshallResponse[T]
+
+    implicit def unmarshallRequestCirce[T: Decoder]: FromRequestUnmarshaller[T] = unmarshallRequest[T]
+
+    implicit def marshallEntityCirce[T: Encoder]: ToEntityMarshaller[T] = marshallEntity[T]
+
+    implicit def unmarshallEntityCirce[T: Decoder]: FromEntityUnmarshaller[T] = unmarshallEntity[T]
+  }
+
 }

@@ -2,7 +2,8 @@ name := "typedschema"
 
 Compiler.settings
 
-val akkaHttpVersion = "10.0.3"
+val akkaHttpVersion = "10.0.5"
+val akkaVersion = "2.5.1"
 
 libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % "1.12.0"
 
@@ -24,6 +25,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVers
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 
 libraryDependencies += "eu.timepit" %% "refined" % "0.7.0"
+
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % akkaVersion
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 

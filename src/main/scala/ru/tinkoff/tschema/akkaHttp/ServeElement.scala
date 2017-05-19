@@ -106,7 +106,6 @@ object ServeElement {
   }
 }
 
-
 sealed class Direct[A, S <: Symbol](val directive: Directive1[A])
 
 object Direct {

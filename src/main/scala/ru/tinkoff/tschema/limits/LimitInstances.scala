@@ -12,8 +12,9 @@ import scala.concurrent.{Future, ExecutionContext ⇒ EC}
 
 trait LimitInstances {
   implicit def limitMiddleware[P <: HList, l <: Limit[_, _], key]
-  (implicit limitDef: LimitDef[l, key, P], ec: EC): ServeMiddle[l, P, key] =
+  (implicit limitDef: LimitDef[l, key, P], ec: EC): ServeMiddle.Aux[l, P, key, P] =
     new ServeMiddle[l, P, key] {
+      type Input = P
       def apply(f: (P) ⇒ Route, provide: Provide[P]): Route = provide(
         p ⇒ ctx ⇒ limitDef.hasExceeded(p).flatMap {
           case None ⇒ f(p)(ctx)

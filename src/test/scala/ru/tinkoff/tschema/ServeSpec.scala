@@ -14,7 +14,7 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
 
   import syntax._
   import typeDSL._
-  val dsl = typeDSL
+  val dsl = syntax
 
   val intAnswer = 42
 
@@ -26,9 +26,9 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
     def multiply(x: Long, y: Double) = f"result is ${x * y}%.2f"
   }
 
-  def api = (keyPrefix('int) :> dsl.Get[Int]) <|>
-            (keyPrefix('repeat) :> ReqBody[String] :> queryParam[Int]('n) :> dsl.Post[String]) <|>
-            (keyPrefix('multiply) :> formField[Long]('x) :> formField[Double]('y) :> dsl.Post[String])
+  def api = (keyPrefix('int) :> dsl.get[Int]) <|>
+            (keyPrefix('repeat) :> ReqBody[String] :> queryParam[Int]('n) :> dsl.post[String]) <|>
+            (keyPrefix('multiply) :> formField[Long]('x) :> formField[Double]('y) :> dsl.post[String])
 
   val route = api.route(handler)
 

@@ -1,7 +1,9 @@
 package ru.tinkoff.tschema
 
 object typeDSL {
-  trait DSLAtom
+  trait DSLDef
+  trait DSLAtom extends DSLDef
+  trait DSLRes extends DSLDef
 
   /**
     * Any path component that is subtype of Meta will be ignored
@@ -18,49 +20,49 @@ object typeDSL {
     * via POST HTTP method
     * all `Get`s and `Post`s except last will be ignored
     */
-  final class Post[x] extends DSLAtom
+  final class Post[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via GET HTTP method
     * all `Get`s and `Post`s except last will be ignored
     */
-  final class Get[x] extends DSLAtom
+  final class Get[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via PUT HTTP method
     * all `Get`s and `Post`s except last will be ignored
     */
-  final class Put[x] extends DSLAtom
+  final class Put[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via DELETE HTTP method
     * all `Get`s and `Post`s except last will be ignored
     */
-  final class Delete[x] extends DSLAtom
+  final class Delete[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via HEAD HTTP method
     * all `Get`s and `Post`s except last will be ignored
     */
-  final class Head[x] extends DSLAtom
+  final class Head[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via OPTIONS HTTP method
     * all `Get`s and `Post`s except last will be ignored
     */
-  final class Options[x] extends DSLAtom
+  final class Options[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via PATCH HTTP method
     * all `Get`s and `Post`s except last will be ignored
     */
-  final class Patch[x] extends DSLAtom
+  final class Patch[x] extends DSLRes
 
   /**
     * Indicated single path prefix
@@ -137,28 +139,36 @@ object typeDSL {
   final class Record[place[_, _], x] extends DSLAtom
 
   /**
+    * transforms existing parameter
+    * introducing new parameter
+    * using known transformation
+    * @tparam source
+    */
+  final class Transform[source, name, t, a, b] extends DSLAtom
+
+  /**
+    * transforms existing parameter
+    * introducing new parameter
+    * using known transformation
+    * @tparam source
+    */
+  final class TransformReq[source, name, t, a, b, req] extends DSLAtom
+
+  /**
     * concatenates pair of paths into complete path
     *
     * @tparam path    prefix - always simple path without disjunctions
     * @tparam postfix postfix
     */
-  final class :>[path, postfix] extends DSLAtom
+  final class :>[path, postfix] extends DSLDef
 
   /**
     * disjunction operator
     * can be used both for defining API type and for joining different handlers
     * resulting type is effectively `Either[left input, right input] => Either[left output, right output]`
     */
-  final case class <|>[left, right](left: left, right: right) extends DSLAtom {
+  final case class <|>[left, right](left: left, right: right) extends DSLDef{
     override def toString = s"$left <|> $right"
-  }
-
-  object Get {
-    def apply[x]: Get[x] = new Get
-  }
-
-  object Post {
-    def apply[x]: Post[x] = new Post
   }
 
   object ReqBody {

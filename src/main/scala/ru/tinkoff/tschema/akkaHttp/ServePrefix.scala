@@ -29,11 +29,11 @@ trait LowLevelServePrefix {
   }
 
   implicit def middleServe[mid, P <: HList]
-  (implicit mid: ServeMiddle[mid, P, Nothing]): Aux[mid, P, P] =
+  (implicit mid: ServeMiddle[mid, P, Nothing]): Aux[mid, P, mid.Input] =
     new ServePrefix[mid, P] {
-      type Input = P
+      type Input = mid.Input
       type Key = Nothing
-      def apply(f: P ⇒ Route, p: Provide[P]): Route = mid(f, p)
+      def apply(f: Input ⇒ Route, p: Provide[P]): Route = mid(f, p)
     }
 }
 
@@ -46,8 +46,6 @@ object ServePrefix extends LowLevelServePrefix {
     def apply(f: (I) ⇒ Route, p: Provide[P]): Route = start(f, p)
   }
 
-  //TODO consider change order of Prefix and Element in Prepend (they are named anyway)
-  //TODO as I2 would be considerably shorter
   implicit def elementConsServe[start, elem, P <: HList, I1 <: HList, I2 <: HList]
   (implicit start: Aux[start, P, I1],
    end: ServeElement.Aux[elem, I2],
@@ -59,10 +57,10 @@ object ServePrefix extends LowLevelServePrefix {
   }
 
   implicit def middleConsServe[start, mid, key, P <: HList, I <: HList]
-  (implicit start: KAux[start, P, I, key], mid: ServeMiddle[mid, I, key]): KAux[start :> mid, P, I, key] =
+  (implicit start: KAux[start, P, I, key], mid: ServeMiddle[mid, I, key]): KAux[start :> mid, P, mid.Input, key] =
     new ServePrefix[start :> mid, P] {
       type Key = key
-      type Input = start.Input
+      type Input = mid.Input
       def apply(f: Input ⇒ Route, provide: Provide[P]): Route = mid(f, start.curry(provide))
     }
 }

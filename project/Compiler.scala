@@ -15,7 +15,7 @@ object Compiler {
       if (scalaVersion.value >= "2.12")
         Seq(
           "-Xstrict-patmat-analysis"
-//          ,
+//      ,
 //          "-Yinduction-heuristics"
         )
       else Seq()

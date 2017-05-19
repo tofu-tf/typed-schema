@@ -2,7 +2,6 @@ package ru.tinkoff.tschema.akka2
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.Route
-import ru.tinkoff.tschema.akkaHttp.Routable
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.Future

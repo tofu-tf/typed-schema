@@ -11,6 +11,9 @@ import catsInstances._
 import cats.syntax.traverse._
 import cats.instances.list._
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound("could not serve ${T} using input ${In}")
 trait Serve[T, In <: HList] {
   type Out <: HList
   def directive(in: In): Directive1[Out]
@@ -19,6 +22,8 @@ trait Serve[T, In <: HList] {
 object Serve {
   type Aux[T, In <: HList, O <: HList] = Serve[T, In] {type Out = O}
   type body = Witness.`'body`.T
+
+  case class key(name: String)
 
   object syntax {
     implicit class ServeOps[In <: HList](val in: In) extends AnyVal {
@@ -66,7 +71,9 @@ object Serve {
     pathPrefix(fromPathParam.matcher)
   }
 
-  implicit def reqBodyServe[x: FromRequestUnmarshaller, In <: HList] = serveAdd[ReqBody[x], In, x, body] {entity(as[x])}
+  implicit def reqBodyServe[x: FromRequestUnmarshaller, In <: HList] = serveAdd[ReqBody[x], In, x, body] {
+    entity(as[x])
+  }
 
   implicit def headerServe[name <: Symbol : Witness.Aux, x: FromHeader, In <: HList] = serveAdd[Header[name, x], In, x, name] {
     headerValueByName(name[name]).flatMap(str ⇒ tryParse[x, FromHeader, name](str))
@@ -77,6 +84,11 @@ object Serve {
   }
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
+
+  implicit def keyServe[name <: Symbol, In <: HList](implicit w: Witness.Aux[name]): Aux[Key[name], In, key :: In] = new Serve[Key[name], In] {
+    type Out = key :: In
+    def directive(in: In): Directive1[key :: In] = provide(in).map(key(w.value.name) :: _)
+  }
 }
 
 

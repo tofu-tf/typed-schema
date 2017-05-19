@@ -115,7 +115,7 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros {
   object Key extends CombMatcher(keyC)
 
   def constructDefPrefix(t: Type): (Vector[Type], Option[String]) = t match {
-    case Key(KeyName(key)) => (Vector(), Some(key))
+    case Key(KeyName(key)) => (Vector(t), Some(key))
     case _ if t <:< dslAtom => (Vector(t), None)
     case Cons(x, y) =>
       val (a, k1) = constructDefPrefix(x)

@@ -4,17 +4,25 @@ import java.util.ResourceBundle
 
 import io.circe.generic.JsonCodec
 import ru.tinkoff.tschema.FromQueryParam
-import ru.tinkoff.tschema.akka2.{MkRoute, Routable}
-import ru.tinkoff.tschema.limits._
+import ru.tinkoff.tschema.akka2.{MkRoute, Routable, Serve}
+import ru.tinkoff.tschema.limits
+import limits._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL._
-import shapeless.{Witness => W}
+import shapeless.{HNil, Witness => W}
+import shapeless.record.Record
+import ru.tinkoff.tschema.swagger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import ru.tinkoff.tschema.limits.LimitHandler.LimitRate
+import shapeless.labelled.FieldType
+import shapeless.ops.hlist.Reify
+
+import scala.concurrent.duration._
 
 object definitions {
   @JsonCodec case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
@@ -26,7 +34,7 @@ object definitions {
 
   def concat = operation('concat) :> queryParam[String]('left) :> queryParam[String]('right) :> get[String]
 
-  def combine = operation('combine) :> capture[Int]('y) :> get[Combine]
+  def combine = operation('combine) :> capture[Int]('y) :> (limit ! 'y) :> get[Combine]
 
   def sum = operation('sum) :> capture[Int]('y) :> get[Int]
 
@@ -35,7 +43,6 @@ object definitions {
   def intops = queryParam[Client]('x) :> (combine <|> sum)
 
   def api = tagPrefix('test) :> (concat <|> intops <|> stats)
-
 }
 
 object TestModule {
@@ -50,7 +57,6 @@ object TestModule {
   implicit lazy val clientSwaggerParam = AsSwaggerParam[Client](SwaggerIntValue())
 
   implicit lazy val bundle = ResourceBundle.getBundle("swagger")
-
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -72,20 +78,12 @@ object TestModule {
     def mutate(value: Long) = java.lang.Long.toBinaryString(value)
   }
 
-  implicit val limitHandler = LimitHandler.trieMap
+  implicit val limitHandler = LimitHandler.trieMap(_ => LimitRate(1, 1 second))
+
+  val swagger = api.mkSwagger
+
   val route = MkRoute(api)(handler)
-
-
-
-
-
-
   def main(args: Array[String]): Unit = {
-
   }
-
-
-
-
 }
 

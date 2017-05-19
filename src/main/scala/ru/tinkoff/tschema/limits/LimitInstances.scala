@@ -1,59 +1,54 @@
 package ru.tinkoff.tschema.limits
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.RouteResult.Rejected
 import ru.tinkoff.tschema.limits.LimitHandler.{LimitRate, Pattern}
-import ru.tinkoff.tschema.akkaHttp.{Name, Provide, ServeMiddle}
+import ru.tinkoff.tschema.akka2.{FindKey, Serve}
 import ru.tinkoff.tschema.swagger.SwaggerMapper
 import shapeless._
 import shapeless.ops.hlist.{Reify, ToList}
-import shapeless.ops.record._
+import shapeless.ops.record.SelectAll
+import shapeless.ops.hlist.Selector
 
-import scala.concurrent.{Future, ExecutionContext ⇒ EC}
+import scala.concurrent.{Future, ExecutionContext => EC}
 
 trait LimitInstances {
-  implicit def limitMiddleware[P <: HList, l <: Limit[_, _], key]
-  (implicit limitDef: LimitDef[l, key, P], ec: EC): ServeMiddle.Aux[l, P, key, P] =
-    new ServeMiddle[l, P, key] {
-      type Input = P
-      def apply(f: (P) ⇒ Route, provide: Provide[P]): Route = provide(
-        p ⇒ ctx ⇒ limitDef.hasExceeded(p).flatMap {
-          case None ⇒ f(p)(ctx)
-          case Some(rejection) ⇒ Future.successful(Rejected(List(rejection)))
+  implicit def limitMiddleware[In <: HList, Par <: HList]
+  (implicit  findKey: Selector[In, Serve.key],
+   selectParams: SelectAll[In, Par],
+   limitDef: LimitDef[Par],
+   ec: EC): Serve.Aux[Limit[Par], In, In] = new Serve[Limit[Par], In] {
+    type Out = In
+    def directive(in: In): Directive1[In] = Directive {
+      val params = selectParams(in)
+      f =>
+        limitDef.directive(params, "asdasd") {
+          f(Tuple1(in))
         }
-      )
     }
+  }
 
-  implicit def limitSwagger[l <: Limit[_, _]]: SwaggerMapper[l] = SwaggerMapper.empty[l]
+  implicit def limitSwagger[l <: Limit[_]]: SwaggerMapper[l] = SwaggerMapper.empty[l]
 }
 
-trait LimitDef[l <: Limit[_, _], key, P <: HList] {
-  type Params <: HList
-
-  def periodMillis: Long
-  def hasExceeded(params: P): Future[Option[LimitRejection]]
+trait LimitDef[Par <: HList] {
+  def directive(params: HList, key: String): Directive0
 }
 
 object LimitDef {
-  type Aux[l <: Limit[_, _], key, P <: HList, Ps <: HList] = LimitDef[l, key, P] {type Params = Ps}
-
-  implicit def fromHandler[count <: Int, unit <: TimeUnit, key, P <: HList, names <: HList, namesR <: HList]
+  implicit def instance[Par <: HList, paramR <: HList]
   (implicit handler: LimitHandler,
-   selectAll: SelectAll[P, names],
-   count: Witness.Aux[count],
-   unit: Witness.Aux[unit],
-   key: Name[key],
-   names: Reify.Aux[names, namesR],
-   nameList: ToList[namesR, Symbol],
-   ec: EC
-  ): Aux[Limit[names, Rate[count, unit]], key, P, selectAll.Out] =
-    new LimitDef[Limit[names, Rate[count, unit]], key, P] {
-      type Params = selectAll.Out
-      val rate = LimitRate(count.value, unit.value.millis)
-      def periodMillis: Long = unit.value.millis
-      def hasExceeded(params: P): Future[Option[LimitRejection]] =
-        handler.check(Pattern(key.string, selectAll(params)), rate).map {
-          case true ⇒ None
-          case false ⇒ Some(LimitRejection(key.string, count.value, unit.value.toString, nameList(names()).map(_.name)))
+   paramNames: Reify.Aux[Par, paramR],
+   toList: ToList[paramR, Symbol],
+   ec: EC): LimitDef[Par] = new LimitDef[Par] {
+    def directive(params: HList, key: String): Directive0 = Directive { f =>
+      ctx =>
+        handler.check(Pattern(key, params)) flatMap {
+          case LimitHandler.Exceeded(rate) =>
+            val parNames = toList(paramNames()).map(_.name)
+            Future.successful(Rejected(List(
+              LimitRejection(key, rate.count, rate.duration.toString, parNames))))
+          case LimitHandler.Success => f(())(ctx)
         }
     }
+  }
 }

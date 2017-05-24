@@ -1,7 +1,7 @@
-package ru.tinkoff.tschema.akka2
+package ru.tinkoff.tschema.akkaHttp
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.Directives._
-import ru.tinkoff.tschema.akka2.MkRoute.ResultApplier
+import ru.tinkoff.tschema.akkaHttp.MkRoute.ResultApplier
 import ru.tinkoff.tschema.typeDSL._
 
 trait Result[T] {

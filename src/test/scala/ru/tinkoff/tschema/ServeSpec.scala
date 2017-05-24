@@ -7,7 +7,6 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{Matchers, WordSpec}
 import de.heikoseeberger.akkahttpcirce.CirceSupport._
 import ru.tinkoff.tschema.akkaHttp._
-import ru.tinkoff.tschema.macros.NamedImpl
 
 class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
   trait Small
@@ -26,11 +25,11 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
     def multiply(x: Long, y: Double) = f"result is ${x * y}%.2f"
   }
 
-  def api = (keyPrefix('int) :> dsl.get[Int]) <|>
-            (keyPrefix('repeat) :> ReqBody[String] :> queryParam[Int]('n) :> dsl.post[String]) <|>
+  def api = (keyPrefix('int) :> dsl.get[Int]) ~
+            (keyPrefix('repeat) :> ReqBody[String] :> queryParam[Int]('n) :> dsl.post[String]) ~
             (keyPrefix('multiply) :> formField[Long]('x) :> formField[Double]('y) :> dsl.post[String])
 
-  val route = api.route(handler)
+  val route = MkRoute(api)(handler)
 
   "Simple service" should {
     "return a simple int" in {

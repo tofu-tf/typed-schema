@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.akka2
+package ru.tinkoff.tschema.akkaHttp
 import java.math.BigInteger
 
 import akka.http.scaladsl.server.Route

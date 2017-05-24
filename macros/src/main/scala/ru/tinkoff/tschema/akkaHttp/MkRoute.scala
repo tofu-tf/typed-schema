@@ -1,12 +1,13 @@
-package ru.tinkoff.tschema.akka2
+package ru.tinkoff.tschema.akkaHttp
 import akka.http.scaladsl.server.Route
-import ru.tinkoff.tschema.macros.{MacroMessages, ShapelessMacros, SymbolMacros}
+import ru.tinkoff.tschema.macros.{MacroMessages, ShapelessMacros, SingletonMacros, SymbolMacros}
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{CaseClassMacros, HList}
 
 import language.experimental.macros
 import scala.reflect.macros.blackbox
 import MkRouteMacro._
+import ru.tinkoff.tschema.utils.semigroups.First
 
 object MkRoute {
   def apply[Def <: DSLDef, Impl](definition: => Def)(impl: Impl): Route = macro MkRouteMacro.makeRoute[Def, Impl]
@@ -19,8 +20,10 @@ object MkRoute {
   }
 }
 
-class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros {
+class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros with SingletonMacros {
   import c.universe._
+
+  type Prefix = (Option[First[String]], Seq[Type])
 
   val ConsC = typeOf[:>[_, _]].typeConstructor
   val SplitC = typeOf[<|>[_, _]].typeConstructor
@@ -63,10 +66,10 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros {
        {
         import shapeless._
         import akka.http.scaladsl.server.Directives._
-        import ru.tinkoff.tschema.akka2.Routable.syntax._
-        import ru.tinkoff.tschema.akka2.Serve.syntax._
-        import ru.tinkoff.tschema.akka2.Result
-        import ru.tinkoff.tschema.akka2.MkRoute
+        import ru.tinkoff.tschema.akkaHttp.Routable.syntax._
+        import ru.tinkoff.tschema.akkaHttp.Serve.syntax._
+        import ru.tinkoff.tschema.akkaHttp.Result
+        import ru.tinkoff.tschema.akkaHttp.MkRoute
 
         $wholeTree
        }
@@ -129,13 +132,13 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros {
       key match {
         case Some(str) => DSLLeaf(t, str)
         case None =>
-          val typLine = (prefix :+ t).map(withoutPackage).mkString(" :> ")
+          val typLine = (prefix :+ t).map(showType).mkString(" :> ")
           abort(s"method key for $typLine is not defined")
       }
 
     case Cons(x, y) =>
       val (p1, k1) = constructDefPrefix(x)
-      constructDslTree(y, k1, prefix = prefix ++ p1) match {
+      constructDslTree(y, key orElse k1, prefix = prefix ++ p1) match {
         case DSLBranch(p2, cdn) => DSLBranch(p1 ++ p2, cdn)
         case res => DSLBranch(p1, Vector(res))
       }
@@ -162,7 +165,12 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros {
     EmptyTree
   }
 
-  def withoutPackage(t: Type) = t.toString.replaceFirst("(\\w+\\.)+", "")
+  def showType(t: Type): String = t.dealias match {
+    case SingletonTypeStr(s) => s
+    case TypeRef(_, s, Nil) => symbolName(s)
+    case TypeRef(_, s, xs) if xs.nonEmpty => xs.map(showType).mkString(s"${symbolName(s)}[", ",", "]")
+  }
+
 }
 
 object MkRouteMacro {

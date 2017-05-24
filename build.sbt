@@ -2,42 +2,74 @@ name := "typedschema"
 
 Compiler.settings
 
-val akkaHttpVersion = "10.0.5"
-val akkaVersion = "2.5.1"
+libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
-libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % "1.12.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akka
 
-libraryDependencies += "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
-
-libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.2"
+libraryDependencies += "com.chuusai" %% "shapeless" % Version.shapeless
 
 libraryDependencies ++= Seq("enumeratum", "enumeratum-circe")
-                        .map(module ⇒ "com.beachape" %% module % "1.5.2")
+                        .map(module ⇒ "com.beachape" %% module % Version.enumeratum)
 
 libraryDependencies ++= Seq("core", "parser", "generic", "generic-extras")
-                        .map(module ⇒ "io.circe" %% s"circe-$module" % "0.7.0")
+                        .map(module ⇒ "io.circe" %% s"circe-$module" % Version.circe)
 
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTest % "test"
 
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+libraryDependencies += "org.scalacheck" %% "scalacheck" % Version.scalaCheck % "test"
 
-libraryDependencies += "eu.timepit" %% "refined" % "0.7.0"
+libraryDependencies += "eu.timepit" %% "refined" % Version.refined
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % akkaVersion
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % Version.akka
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)
 
 libraryDependencies += {scalaOrganization.value} % "scala-compiler" % {scalaVersion.value}
 
-lazy val typedschema = (project in file("."))
-                       .dependsOn(macros)
-                       .aggregate(macros, typedsl)
 
-lazy val macros = project.dependsOn(typedsl)
+lazy val typedschema =
+  (project in file("."))
+  .dependsOn(macros)
+  .aggregate(macros, typedsl)
 
-lazy val typedsl = project
+lazy val macros =
+  project
+  .dependsOn(typedsl)
+  .settings(
+    name := "typed-schema-macros"
+    ,
+    Compiler.settings
+    ,
+    resolvers ++= Resolvers.tinkoff
+    ,
+    libraryDependencies += scalaOrganization.value % "scala-reflect" % scalaVersion.value
+    ,
+    libraryDependencies += "com.chuusai" %% "shapeless" % Version.shapeless
+    ,
+    libraryDependencies += "org.typelevel" %% "cats" % Version.cats
+    ,
+    libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akkaHttp
+    ,
+    libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
+    ,
+    libraryDependencies += "ru.tinkoff" %% "knapsack" % Version.knapsack
+    ,
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
+    ,
+    Publish.settings
+  )
+
+lazy val typedsl =
+  project
+  .settings(
+    name := "typed-schema-dsl"
+    ,
+    Compiler.settings
+    ,
+    Publish.settings
+  )

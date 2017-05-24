@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.akka2
+package ru.tinkoff.tschema.akkaHttp
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive, Directive1, Rejection}
 import cats.MonadCombine

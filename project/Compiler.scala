@@ -3,13 +3,13 @@ import sbt._
 
 object Compiler {
   def settings: Seq[Setting[_]] = Seq(
-    scalaVersion := "2.12.1"
+    scalaVersion := "2.12.2-bin-typelevel-4"
     ,
-    crossScalaVersions := Seq("2.11.8", "2.12.1")
+    crossScalaVersions := Seq("2.11.11", "2.12.2-bin-typelevel-4")
     ,
     scalaOrganization := "org.typelevel"
     ,
-    scalacOptions += "-Yliteral-types"
+    scalacOptions += "-Ypartial-unification"
     ,
     scalacOptions ++= {
       if (scalaVersion.value >= "2.12")
@@ -21,4 +21,5 @@ object Compiler {
       else Seq()
     }
   )
+
 }

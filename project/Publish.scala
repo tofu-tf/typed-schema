@@ -6,7 +6,7 @@ object Publish {
 
     organization := "ru.tinkoff"
     ,
-    description := "Typelevel DSL for defining webservices, covertable to akka-http and swagger definitions"
+    description := "Typelevel DSL for defining webservices, covertible to akka-http and swagger definitions"
     ,
     publishMavenStyle := true
     ,
@@ -20,6 +20,6 @@ object Publish {
     ,
     credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
     ,
-    version := "0.4.5"
+    version := "0.5.1"
   )
 }

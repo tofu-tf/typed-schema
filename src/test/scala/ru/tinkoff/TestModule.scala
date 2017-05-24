@@ -4,7 +4,7 @@ import java.util.ResourceBundle
 
 import io.circe.generic.JsonCodec
 import ru.tinkoff.tschema.FromQueryParam
-import ru.tinkoff.tschema.akka2.{MkRoute, Routable, Serve}
+import ru.tinkoff.tschema.akkaHttp.{MkRoute, Routable, Serve}
 import ru.tinkoff.tschema.limits
 import limits._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
@@ -34,15 +34,44 @@ object definitions {
 
   def concat = operation('concat) :> queryParam[String]('left) :> queryParam[String]('right) :> get[String]
 
-  def combine = operation('combine) :> capture[Int]('y) :> (limit ! 'y) :> get[Combine]
+  def combine = operation('combine) :> capture[Int]('y) :> (limit ! 'x) :> get[Combine]
 
   def sum = operation('sum) :> capture[Int]('y) :> get[Int]
 
-  def stats = operation('stats) :> ReqBody[Vector[BigDecimal]] :> post[StatsRes]
+  def stats = operation('stats) :> reqBody[Vector[BigDecimal]] :> post[StatsRes]
 
-  def intops = queryParam[Client]('x) :> (combine <|> sum)
+  def intops = queryParam[Client]('x) :> (combine ~ sum)
 
-  def api = tagPrefix('test) :> (concat <|> intops <|> stats)
+  def api = tagPrefix('test) :> (concat ~ intops ~ stats)
+
+  def api2 = tagPrefix('test) {
+    operation('concat) {
+      queryParam[String]('left) {
+        queryParam[String]('right) {
+          get[String]
+        }
+      }
+    } ~
+    queryParam[Client]('x) {
+      operation('combine) {
+        capture[Int]('y) {
+          (limit ! 'x) {
+            get[Combine]
+          }
+        }
+      } ~
+      operation('sum) {
+        capture[Int]('y) {
+          get[Int]
+        }
+      }
+    } ~
+    operation('stats) {
+      reqBody[Vector[BigDecimal]] {
+        post[StatsRes]
+      }
+    }
+  }
 }
 
 object TestModule {
@@ -81,8 +110,10 @@ object TestModule {
   implicit val limitHandler = LimitHandler.trieMap(_ => LimitRate(1, 1 second))
 
   val swagger = api.mkSwagger
+  val swagger2 = api2.mkSwagger
 
   val route = MkRoute(api)(handler)
+  val route2 = MkRoute(api2)(handler)
   def main(args: Array[String]): Unit = {
   }
 }

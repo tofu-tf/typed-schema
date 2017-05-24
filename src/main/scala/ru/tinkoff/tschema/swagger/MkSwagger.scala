@@ -6,10 +6,10 @@ import MkSwagger._
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.util.ByteString
 import cats.arrow.FunctionK
-import ru.tinkoff.tschema.akkaHttp.Name
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 import cats.{Monoid, MonoidK}
+import ru.tinkoff.tschema.common.Name
 
 import scala.language.higherKinds
 

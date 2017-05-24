@@ -2,7 +2,7 @@ package ru.tinkoff.tschema.limits
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.RouteResult.Rejected
 import ru.tinkoff.tschema.limits.LimitHandler.{LimitRate, Pattern}
-import ru.tinkoff.tschema.akka2.{FindKey, Serve}
+import ru.tinkoff.tschema.akkaHttp.{FindKey, Serve}
 import ru.tinkoff.tschema.swagger.SwaggerMapper
 import shapeless._
 import shapeless.ops.hlist.{Reify, ToList}
@@ -13,7 +13,7 @@ import scala.concurrent.{Future, ExecutionContext => EC}
 
 trait LimitInstances {
   implicit def limitMiddleware[In <: HList, Par <: HList]
-  (implicit  findKey: Selector[In, Serve.key],
+  (implicit  findKey: FindKey[In],
    selectParams: SelectAll[In, Par],
    limitDef: LimitDef[Par],
    ec: EC): Serve.Aux[Limit[Par], In, In] = new Serve[Limit[Par], In] {
@@ -21,7 +21,7 @@ trait LimitInstances {
     def directive(in: In): Directive1[In] = Directive {
       val params = selectParams(in)
       f =>
-        limitDef.directive(params, "asdasd") {
+        limitDef.directive(params, findKey().name) {
           f(Tuple1(in))
         }
     }

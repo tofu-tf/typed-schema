@@ -4,7 +4,7 @@ import shapeless.ReprTypes
 import scala.annotation.tailrec
 import scala.reflect.macros.blackbox
 
-trait ShapelessMacros extends ReprTypes with MacroMessages with SymbolMacros {
+trait ShapelessMacros extends ReprTypes with MacroMessages with SymbolMacros{
   val c: blackbox.Context
   import c.universe._
 
@@ -28,9 +28,6 @@ trait ShapelessMacros extends ReprTypes with MacroMessages with SymbolMacros {
       case FieldType(KeyName(name), value) ⇒ Some(name -> value)
       case _ => None
     }
-//
-//  def extractRecord(tpe: Type): List[(Type, String)] =
-//    hlistElements(tpe).collect { case FieldType(k@KeyName(s), value) ⇒ k -> s }
 
   object FieldType {
     import internal._

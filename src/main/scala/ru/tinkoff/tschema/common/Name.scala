@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.akkaHttp
+package ru.tinkoff.tschema.common
 
 import shapeless.Witness
 

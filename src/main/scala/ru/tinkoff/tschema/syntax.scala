@@ -17,6 +17,8 @@ object syntax {
   def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> key[s](witness)
   def operation[s](witness: Witness.Lt[s]) = keyPrefix[s](witness) :> descr.i18n[s](witness)
 
+  def reqBody[x] = new ReqBody[x]
+
   object descr {
     def static[s](witness: Witness.Lt[s]) = new Description.Static[s]
     def resource[s](witness: Witness.Lt[s]) = new Description.Resource[s]
@@ -47,10 +49,6 @@ object syntax {
     override def make[s]: Cookie[s, x] = new Cookie
   })
 
-  def transform[a, b] = new MkTransform[a, b]
-
-  def transformReq[a, b] = new MkTransformReq[a, b]
-
   abstract class Maker[x, T[_, _]] {
     def make[s]: T[s, x]
   }
@@ -68,7 +66,7 @@ object syntax {
   }
 
   implicit class TypeApiOps[x <: DSLDef](x: ⇒ x) {
-    def <|>[y](y: ⇒ y): x <|> y = new <|>(x, y)
+    def ~[y](y: ⇒ y): x <|> y = new <|>(x, y)
     def :>[y](y: ⇒ y): x :> y = new :>
     def apply[y](y: ⇒ y): x :> y = new :>
   }

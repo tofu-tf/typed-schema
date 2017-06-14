@@ -57,8 +57,6 @@ lazy val macros =
     ,
     libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
     ,
-    libraryDependencies += "ru.tinkoff" %% "knapsack" % Version.knapsack
-    ,
     addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
     ,
     Publish.settings

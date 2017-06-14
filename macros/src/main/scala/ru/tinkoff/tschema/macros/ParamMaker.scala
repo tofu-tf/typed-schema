@@ -14,7 +14,7 @@ class ParamMaker[T[_, _]] extends Dynamic {
 }
 
 object ParamMaker {
-  type Applyer = {def apply[A](x: ⇒ A): DSLAtom}
+  type Applyer = {def apply[A](x: => A): DSLAtom}
   def apply[T[_, _]]: ParamMaker[T] = new ParamMaker[T]
 }
 
@@ -27,8 +27,8 @@ class ParamMakerMacro(val c: whitebox.Context) extends SymbolMacros {
     val const = weakTypeTag[T].tpe.typeConstructor
 
     val result = extractNamesTypes(weakTypeOf[A])
-                 .map { case (name, tpe) ⇒ appliedType(const, KeyName(name), tpe) }
-                 .reduce((a, b) ⇒ appliedType(consTpe, a, b))
+                 .map { case (name, tpe) => appliedType(const, KeyName(name), tpe) }
+                 .reduce((a, b) => appliedType(consTpe, a, b))
 
     q"""
     new {
@@ -38,14 +38,14 @@ class ParamMakerMacro(val c: whitebox.Context) extends SymbolMacros {
   }
 
   def extractNamesTypes(ref: Type): List[(String, Type)] = ref match {
-    case RefinedType(tpes, scope) ⇒
+    case RefinedType(tpes, scope) =>
       info(tpes)
       scope.collect {
-        case m: MethodSymbol ⇒
+        case m: MethodSymbol =>
           info(m)
-          m.name.decodedName.toString → m.returnType
+          m.name.decodedName.toString -> m.returnType
       }.toList
-    case _ ⇒ List.empty
+    case _ => List.empty
   }
 
   def info[A](mess: A) = c.info(c.enclosingPosition, mess.toString, force = false)

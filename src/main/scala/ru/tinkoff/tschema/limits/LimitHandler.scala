@@ -33,14 +33,14 @@ class TrieMapLimitHandler private[limits](getRate: Pattern[_] => LimitRate)(impl
     val newRecord = Record(now, 1)
     val rate = getRate(pattern)
     counter.getOrElseUpdate(pattern, newRecord) match {
-      case req if newRecord eq req ⇒ LimitHandler.Success
-      case Record(time, count) if time + rate.duration.toMillis < now ⇒
+      case req if newRecord eq req => LimitHandler.Success
+      case Record(time, count) if time + rate.duration.toMillis < now =>
         counter.put(pattern, newRecord)
         LimitHandler.Success
-      case Record(time, count) if count < rate.count ⇒
+      case Record(time, count) if count < rate.count =>
         counter.put(pattern, Record(time, count + 1))
         LimitHandler.Success
-      case _ ⇒ LimitHandler.Exceeded(rate)
+      case _ => LimitHandler.Exceeded(rate)
     }
   }
 }

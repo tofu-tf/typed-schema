@@ -25,7 +25,7 @@ trait ShapelessMacros extends ReprTypes with MacroMessages with SymbolMacros{
 
   def extractRecord(tpe: Type): List[Option[(String, Type)]] =
     hlistElements(tpe).map {
-      case FieldType(KeyName(name), value) ⇒ Some(name -> value)
+      case FieldType(KeyName(name), value) => Some(name -> value)
       case _ => None
     }
 

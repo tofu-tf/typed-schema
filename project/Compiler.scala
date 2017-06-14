@@ -9,7 +9,16 @@ object Compiler {
     ,
     scalaOrganization := "org.typelevel"
     ,
-    scalacOptions += "-Ypartial-unification"
+    scalacOptions ++= Seq(
+      "-Ypartial-unification",
+      "-deprecation",
+      "-feature",
+      "-language:existentials",
+      "-language:experimental.macros",
+      "-language:higherKinds",
+      "-language:implicitConversions",
+      "-language:postfixOps"
+    )
     ,
     scalacOptions ++= {
       if (scalaVersion.value >= "2.12")

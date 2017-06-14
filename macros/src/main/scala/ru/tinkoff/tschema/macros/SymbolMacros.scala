@@ -16,8 +16,8 @@ trait SymbolMacros extends ReprTypes {
       NamedSymbol(appliedType(taggedType, constantType(Constant(name))))
 
     def unapply(tpe: Type): Option[String] = tpe match {
-      case NamedSymbol(ConstantType(Constant(name: String))) ⇒ Some(name)
-      case _ ⇒ None
+      case NamedSymbol(ConstantType(Constant(name: String))) => Some(name)
+      case _ => None
     }
   }
 
@@ -25,8 +25,8 @@ trait SymbolMacros extends ReprTypes {
     def apply(tpe: Type): Type = refinedType(List(symbolTpe, tpe), NoSymbol)
 
     def unapply(tpe: Type): Option[Type] = tpe.dealias match {
-      case RefinedType(List(sym, tag, _*), _) if sym == symbolTpe ⇒ tag.typeArgs.headOption
-      case _ ⇒ None
+      case RefinedType(List(sym, tag, _*), _) if sym == symbolTpe => tag.typeArgs.headOption
+      case _ => None
     }
   }
 

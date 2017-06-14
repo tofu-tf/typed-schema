@@ -6,7 +6,7 @@ import cats.MonadCombine
 object catsInstances {
   case object FilterRejection extends Rejection
 
-  implicit val directive1Applicative = new MonadCombine[Directive1]{
+  implicit val directive1Instance = new MonadCombine[Directive1]{
     def pure[A](x: A): Directive1[A] = provide(x)
     def empty[A]: Directive1[A] = Directive(_ => reject(FilterRejection))
     def flatMap[A, B](fa: Directive1[A])(f: (A) => Directive1[B]): Directive1[B] = fa.flatMap(f)

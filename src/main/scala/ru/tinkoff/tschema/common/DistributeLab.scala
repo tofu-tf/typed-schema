@@ -29,8 +29,8 @@ object DistributeLab {
     new DistributeLab[prefix, FieldType[key, value] :+: tail] {
       type Out = FieldType[key, prepend.Out] :+: recur.Out
       def apply(prefix: prefix, sum: FieldType[key, value] :+: tail): Out = sum match {
-        case Inl(head) ⇒ Inl(labelled.field[key](prepend(prefix, head)))
-        case Inr(tail) ⇒ Inr(recur(prefix, tail))
+        case Inl(head) => Inl(labelled.field[key](prepend(prefix, head)))
+        case Inr(tail) => Inr(recur(prefix, tail))
       }
     }
 }

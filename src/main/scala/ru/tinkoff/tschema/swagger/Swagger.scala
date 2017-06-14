@@ -10,17 +10,17 @@ import io.circe.syntax._
 import ru.tinkoff.tschema.utils.json.CirceKeyEnum
 import ru.tinkoff.tschema.utils.json.circeSyntax._
 
-case class Swagger(swagger: String = "2.0",
-                   info: SwaggerInfo,
-                   host: Option[String] = None,
-                   basePath: Option[String] = None,
-                   schemes: Option[Vector[String]] = None,
-                   consumes: Vector[String] = jsonMimeType,
-                   produces: Vector[String] = jsonMimeType,
-                   paths: Swagger.PathMap = Map.empty,
-                   definitions: Map[String, SwaggerType] = Map.empty,
-                   tags: Vector[SwaggerTag] = Vector.empty,
-                   externalDocs: Option[SwaggerExternalDocs] = None)
+final case class Swagger(swagger: String = "2.0",
+                         info: SwaggerInfo,
+                         host: Option[String] = None,
+                         basePath: Option[String] = None,
+                         schemes: Option[Vector[String]] = None,
+                         consumes: Vector[String] = jsonMimeType,
+                         produces: Vector[String] = jsonMimeType,
+                         paths: Swagger.PathMap = Map.empty,
+                         definitions: Map[String, SwaggerType] = Map.empty,
+                         tags: Vector[SwaggerTag] = Vector.empty,
+                         externalDocs: Option[SwaggerExternalDocs] = None)
 
 object Swagger {
   sealed trait Method extends EnumEntry
@@ -44,53 +44,53 @@ object Swagger {
 }
 
 @JsonCodec
-case class SwaggerInfo(title: String,
-                       description: Option[SwaggerDescription] = None,
-                       termsOfService: Option[String] = None,
-                       contact: Option[SwaggerContact] = None,
-                       license: Option[SwaggerLicense] = None,
-                       version: String)
+final case class SwaggerInfo(title: String = "",
+                             description: Option[SwaggerDescription] = None,
+                             termsOfService: Option[String] = None,
+                             contact: Option[SwaggerContact] = None,
+                             license: Option[SwaggerLicense] = None,
+                             version: String = "")
 
 @JsonCodec
-case class SwaggerContact(name: Option[String] = None,
-                          url: Option[String] = None,
-                          email: Option[String] = None)
+final case class SwaggerContact(name: Option[String] = None,
+                                url: Option[String] = None,
+                                email: Option[String] = None)
 
 @JsonCodec
-case class SwaggerLicense(name: String,
-                          url: Option[String] = None)
+final case class SwaggerLicense(name: String,
+                                url: Option[String] = None)
 
-case class SwaggerParam(base: SwaggerParamBase,
-                        specific: SwaggerParamSpecific)
+final case class SwaggerParam(base: SwaggerParamBase,
+                              specific: SwaggerParamSpecific)
 
 sealed trait SwaggerParamSpecific {
   def in: SwaggerParam.In
 }
 
-case class SwaggerParamBody(schema: SwaggerType) extends SwaggerParamSpecific {
+final case class SwaggerParamBody(schema: SwaggerType) extends SwaggerParamSpecific {
   def in = SwaggerParam.In.body
 }
 
-case class SwaggerParamGeneral(in: SwaggerParam.NonBodyIn,
-                               allowEmptyValue: Boolean = false,
-                               value: SwaggerValue) extends SwaggerParamSpecific
+final case class SwaggerParamGeneral(in: SwaggerParam.NonBodyIn,
+                                     allowEmptyValue: Boolean = false,
+                                     value: SwaggerValue) extends SwaggerParamSpecific
 
 object SwaggerParamSpecific {
   implicit lazy val specificParamFormat = new ObjectEncoder[SwaggerParamSpecific] {
     override def encodeObject(a: SwaggerParamSpecific): JsonObject = a match {
-      case SwaggerParamBody(schema) ⇒ JsonObject.fromIterable(Vector(
-        "schema" → schema.asJson,
-        "in" → Json.fromString("body")))
-      case SwaggerParamGeneral(in, allowEmptyValue, value) ⇒
+      case SwaggerParamBody(schema) => JsonObject.fromIterable(Vector(
+        "schema" -> schema.asJson,
+        "in" -> Json.fromString("body")))
+      case SwaggerParamGeneral(in, allowEmptyValue, value) =>
         value.asJsonObject.add("in", in.asJson).add("allowEmptyValue", Json.fromBoolean(allowEmptyValue))
     }
   }
 }
 
 @JsonCodec
-case class SwaggerParamBase(name: String,
-                            description: Option[String] = None,
-                            required: Boolean = false)
+final case class SwaggerParamBase(name: String,
+                                  description: Option[String] = None,
+                                  required: Boolean = false)
 
 case object SwaggerParam {
   sealed trait In extends EnumEntry
@@ -109,7 +109,7 @@ case object SwaggerParam {
   implicit lazy val nonBodyInEncoder: Encoder[SwaggerParam.NonBodyIn] =
     Encoder[SwaggerParam.In].contramap[SwaggerParam.NonBodyIn](identity)
 
-  implicit lazy val swaggerParamEncoder: ObjectEncoder[SwaggerParam] = ObjectEncoder.instance[SwaggerParam] { p ⇒
+  implicit lazy val swaggerParamEncoder: ObjectEncoder[SwaggerParam] = ObjectEncoder.instance[SwaggerParam] { p =>
     val base = p.base.asJsonObject
     val specific = p.specific.asJsonObject
     JsonObject.fromMap(specific.toMap ++ base.toMap)
@@ -120,33 +120,33 @@ sealed trait SwaggerValue {
   def typeName: String
 }
 
-case class SwaggerStringValue(format: Option[SwaggerFormat[SwaggerStringValue]] = None,
-                              default: Option[String] = None,
-                              maxLength: Option[Int] = None,
-                              minLength: Option[Int] = None,
-                              pattern: Option[String] = None,
-                              enum: Option[Vector[String]] = None) extends SwaggerValue {
+final case class SwaggerStringValue(format: Option[SwaggerFormat[SwaggerStringValue]] = None,
+                                    default: Option[String] = None,
+                                    maxLength: Option[Int] = None,
+                                    minLength: Option[Int] = None,
+                                    pattern: Option[String] = None,
+                                    enum: Option[Vector[String]] = None) extends SwaggerValue {
   def typeName = "string"
 }
 
-case class SwaggerNumberValue(format: Option[SwaggerFormat[SwaggerNumberValue]] = None,
-                              default: Option[BigDecimal] = None,
-                              maximum: Option[BigDecimal] = None,
-                              exclusiveMaximum: Boolean = false,
-                              minimum: Option[BigDecimal] = None,
-                              exclusiveMinimum: Boolean = false) extends SwaggerValue {
+final case class SwaggerNumberValue(format: Option[SwaggerFormat[SwaggerNumberValue]] = None,
+                                    default: Option[BigDecimal] = None,
+                                    maximum: Option[BigDecimal] = None,
+                                    exclusiveMaximum: Boolean = false,
+                                    minimum: Option[BigDecimal] = None,
+                                    exclusiveMinimum: Boolean = false) extends SwaggerValue {
   def typeName = "number"
 }
-case class SwaggerIntValue(format: Option[SwaggerFormat[SwaggerIntValue]] = None,
-                           default: Option[Int] = None,
-                           maximum: Option[Int] = None,
-                           exclusiveMaximum: Boolean = false,
-                           minimum: Option[Int] = None,
-                           exclusiveMinimum: Boolean = false) extends SwaggerValue {
+final case class SwaggerIntValue(format: Option[SwaggerFormat[SwaggerIntValue]] = None,
+                                 default: Option[Int] = None,
+                                 maximum: Option[Int] = None,
+                                 exclusiveMaximum: Boolean = false,
+                                 minimum: Option[Int] = None,
+                                 exclusiveMinimum: Boolean = false) extends SwaggerValue {
   override def typeName = "integer"
 }
 
-case class SwaggerBooleanValue(default: Option[Boolean] = None) extends SwaggerValue {
+final case class SwaggerBooleanValue(default: Option[Boolean] = None) extends SwaggerValue {
   override def typeName = "boolean"
 }
 
@@ -154,11 +154,11 @@ case object SwaggerFileValue extends SwaggerValue {
   override def typeName = "file"
 }
 
-case class SwaggerArrayValue(items: SwaggerValue,
-                             default: Option[Vector[Json]] = None,
-                             collFormat: Option[SwaggerValue.CollectionFormat] = None,
-                             minItems: Option[Int] = None,
-                             maxItems: Option[Int] = None) extends SwaggerValue {
+final case class SwaggerArrayValue(items: SwaggerValue,
+                                   default: Option[Vector[Json]] = None,
+                                   collFormat: Option[SwaggerValue.CollectionFormat] = None,
+                                   minItems: Option[Int] = None,
+                                   maxItems: Option[Int] = None) extends SwaggerValue {
   override def typeName = "array"
 }
 
@@ -175,9 +175,12 @@ object SwaggerValue {
     case object multi extends CollectionFormat
   }
 
-  private lazy val derivedEncoder: ObjectEncoder[SwaggerValue] = deriveEncoder
+  private lazy val derivedEncoder: ObjectEncoder[SwaggerValue] = deriveEncoder[SwaggerValue].mapJsonObject{
+    obj => obj(obj.fields.head).flatMap(_.asObject).getOrElse(JsonObject.empty)
+  }
   implicit lazy val encodeSwaggerValue: ObjectEncoder[SwaggerValue] = derivedEncoder.mapObjWithSrc {
-    (x, obj) ⇒ obj.add("type", Json.fromString(x.typeName))
+    (x, obj) => obj.add("type", Json.fromString(x.typeName))
+
   }
 }
 
@@ -199,23 +202,23 @@ object SwaggerFormat {
 }
 
 @JsonCodec
-case class SwaggerTag(name: String,
-                      description: Option[SwaggerDescription] = None,
-                      externalDocs: Option[SwaggerExternalDocs] = None)
+final case class SwaggerTag(name: String,
+                            description: Option[SwaggerDescription] = None,
+                            externalDocs: Option[SwaggerExternalDocs] = None)
 
 @JsonCodec
-case class SwaggerExternalDocs(description: Option[SwaggerDescription] = None,
-                               url: String)
+final case class SwaggerExternalDocs(description: Option[SwaggerDescription] = None,
+                                     url: String)
 
-case class SwaggerOp(tags: Vector[String] = Vector.empty,
-                     summary: Option[String] = None,
-                     description: Option[SwaggerDescription] = None,
-                     externalDocs: Option[SwaggerExternalDocs] = None,
-                     operationId: Option[String] = None,
-                     consumes: Vector[String] = jsonMimeType,
-                     produces: Vector[String] = jsonMimeType,
-                     parameters: Vector[SwaggerParam] = Vector.empty,
-                     responses: SwaggerResponses) {
+final case class SwaggerOp(tags: Vector[String] = Vector.empty,
+                           summary: Option[String] = None,
+                           description: Option[SwaggerDescription] = None,
+                           externalDocs: Option[SwaggerExternalDocs] = None,
+                           operationId: Option[String] = None,
+                           consumes: Vector[String] = jsonMimeType,
+                           produces: Vector[String] = jsonMimeType,
+                           parameters: Vector[SwaggerParam] = Vector.empty,
+                           responses: SwaggerResponses) {
   def addParam(param: SwaggerParam) = copy(parameters = parameters :+ param)
   def addTag(tag: String) = copy(tags = tags :+ tag)
 }
@@ -224,8 +227,8 @@ object SwaggerOp {
   implicit lazy val swaggerOpDecoder: ObjectEncoder[SwaggerOp] = deriveEncoder
 }
 
-case class SwaggerResponses(default: Option[SwaggerResponse] = None,
-                            codes: Map[StatusCode, SwaggerResponse] = Map.empty)
+final case class SwaggerResponses(default: Option[SwaggerResponse] = None,
+                                  codes: Map[StatusCode, SwaggerResponse] = Map.empty)
 
 object SwaggerResponses {
   implicit lazy val statusCodeEncoder = KeyEncoder.encodeKeyInt.contramap[StatusCode](_.intValue)
@@ -233,18 +236,18 @@ object SwaggerResponses {
   val mapEnc = Encoder.encodeMapLike[Map, StatusCode, SwaggerResponse]
 
   implicit lazy val responsesEncoder: ObjectEncoder[SwaggerResponses] = ObjectEncoder.instance[SwaggerResponses] {
-    resps ⇒
+    resps =>
       val codesObj = mapEnc.encodeObject(resps.codes)
       resps.default match {
-        case None ⇒ codesObj
-        case Some(default) ⇒ codesObj.add("default", default.asJson)
+        case None => codesObj
+        case Some(default) => codesObj.add("default", default.asJson)
       }
   }
 }
 
-case class SwaggerResponse(description: Option[SwaggerDescription] = None,
-                           schema: SwaggerType,
-                           headers: Map[String, SwaggerValue] = Map.empty)
+final case class SwaggerResponse(description: Option[SwaggerDescription] = None,
+                                 schema: SwaggerType,
+                                 headers: Map[String, SwaggerValue] = Map.empty)
 
 object SwaggerResponse {
   implicit lazy val responseEncoder: Encoder[SwaggerResponse] = deriveEncoder

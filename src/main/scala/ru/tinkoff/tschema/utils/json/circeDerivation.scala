@@ -6,7 +6,7 @@ import shapeless.labelled.FieldType
 
 import scala.language.higherKinds
 object circeDerivation {
-  @deprecated("use standard derivation")
+  @deprecated("use standard derivation", since = "0.3.0")
   def deriveObjEncoder[T](implicit enc: Lazy[DerivedCirceEncoder[T]]) = new ObjectEncoder[T]{
     def encodeObject(a: T): JsonObject = enc.value.encodeObject(a)
   }
@@ -39,8 +39,8 @@ object DerivedCirceEncoder extends LowPriorityCirceEncoder {
       def encodeObject(obj: ::[FieldType[S, A], L]): JsonObject = {
         val tailEnc = tail.encodeObject(obj.tail)
         (obj.head: A) match {
-          case nullable.zero ⇒ tailEnc
-          case x ⇒ tailEnc.add(witness.value.name, head.value.apply(x))
+          case nullable.zero => tailEnc
+          case x => tailEnc.add(witness.value.name, head.value.apply(x))
         }
       }
     }
@@ -48,8 +48,8 @@ object DerivedCirceEncoder extends LowPriorityCirceEncoder {
   implicit def orEncoder[left, right <: Coproduct]
   (implicit left: DerivedCirceEncoder[left], right: DerivedCirceEncoder[right]) = new DerivedCirceEncoder[left :+: right] {
     def encodeObject(a: left :+: right): JsonObject = a match {
-      case Inl(l: left@unchecked) ⇒ left.encodeObject(l)
-      case Inr(r: right@unchecked) ⇒ right.encodeObject(r)
+      case Inl(l: left@unchecked) => left.encodeObject(l)
+      case Inr(r: right@unchecked) => right.encodeObject(r)
     }
   }
 

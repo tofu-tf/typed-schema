@@ -3,10 +3,10 @@ package ru.tinkoff.tschema
 import ru.tinkoff.tschema.macros.NamedImpl
 import shapeless.ops.{coproduct, hlist, union}
 import shapeless.union._
-import shapeless.{Witness ⇒ W, _}
+import shapeless.{Witness => W, _}
 
 object toProduct extends Poly1 {
-  implicit def labelled[T](implicit lgen: LabelledGeneric[T]): Case.Aux[T, lgen.Repr] = at[T](t ⇒ lgen.to(t))
+  implicit def labelled[T](implicit lgen: LabelledGeneric[T]): Case.Aux[T, lgen.Repr] = at[T](t => lgen.to(t))
 }
 
 object NamedImplSuite extends App {

@@ -22,11 +22,6 @@ trait Serve[T, In <: HList] {
 }
 
 object Serve extends ServeInstances {
-  object syntax {
-    implicit class ServeOps[In <: HList](val in: In) extends AnyVal {
-      def serve[T](implicit serve: Serve[T, In]): Directive1[serve.Out] = serve.directive(in)
-    }
-  }
 }
 
 private[akkaHttp] trait ServeTypes {
@@ -38,8 +33,8 @@ private[akkaHttp] trait ServeTypes {
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
   protected def tryParse[T, F[x] <: FromParam[x], name <: Symbol](value: String)(implicit parse: F[T], w: Witness.Aux[name]): Directive1[T] =
     Directive[Tuple1[T]](f => parse(value) match {
-      case Right(result) ⇒ f(Tuple1(result))
-      case Left(err) ⇒ reject(ParamFormatRejection(w.value.name, err))
+      case Right(result) => f(Tuple1(result))
+      case Left(err) => reject(ParamFormatRejection(w.value.name, err))
     })
 
   protected def name[name <: Symbol](implicit w: Witness.Aux[name]): String = w.value.name
@@ -125,11 +120,11 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
   }
 
   implicit def headerServe[name <: Symbol : Witness.Aux, x: FromHeader, In <: HList] = serveAdd[Header[name, x], In, x, name] {
-    headerValueByName(name[name]).flatMap(str ⇒ tryParse[x, FromHeader, name](str))
+    headerValueByName(name[name]).flatMap(str => tryParse[x, FromHeader, name](str))
   }
 
   implicit def cookieServe[name <: Symbol : Witness.Aux, x: FromCookie, In <: HList] = serveAdd[Cookie[name, x], In, x, name] {
-    cookie(name[name]).flatMap(cook ⇒ tryParse[x, FromCookie, name](cook.value))
+    cookie(name[name]).flatMap(cook => tryParse[x, FromCookie, name](cook.value))
   }
 
   implicit def formFieldServe[name <: Symbol : Witness.Aux, x: FromFormField, In <: HList] = serveAdd[FormField[name, x], In, x, name] {

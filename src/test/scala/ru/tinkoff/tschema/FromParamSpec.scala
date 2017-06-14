@@ -54,15 +54,15 @@ class FromFormParamSpec extends FromParamSpec[FromFormField] {
         val name = typeTag[T].tpe.toString
 
         property(s"$name should be parsed as itself") {
-          forAll((value: T) ⇒ fromParam[T](value.toString) === value)
+          forAll((value: T) => fromParam[T](value.toString) === value)
         }
 
         property(s"List[$name] should be parsed as itself ") {
-          forAll((list: List[T]) ⇒ fromParam[List[T]](list.mkString(",")) === list)
+          forAll((list: List[T]) => fromParam[List[T]](list.mkString(",")) === list)
         }
 
         property(s"List[List[$name]] should be parsed as itself") {
-          forAll((list2: List[List[T]]) ⇒ fromParam[List[List[T]]](list2.map(_.mkString(",")).mkString(";")) === list2)
+          forAll((list2: List[List[T]]) => fromParam[List[List[T]]](list2.map(_.mkString(",")).mkString(";")) === list2)
         }
       }
     })
@@ -75,15 +75,15 @@ class FromQueryParamSpec extends FromParamSpec[FromQueryParam] {
         val name = typeTag[T].tpe.toString
 
         property(s"$name should be parsed as itself") {
-          forAll((value: T) ⇒ fromParam[T](value.toString) === value)
+          forAll((value: T) => fromParam[T](value.toString) === value)
         }
 
         property(s"List[$name] should be parsed as itself ") {
-          forAll((list: List[T]) ⇒ fromParam[List[T]](list.mkString(",")) === list)
+          forAll((list: List[T]) => fromParam[List[T]](list.mkString(",")) === list)
         }
 
         property(s"List[List[$name]] should be parsed as itself") {
-          forAll((list2: List[List[T]]) ⇒ fromParam[List[List[T]]](list2.map(_.mkString(",")).mkString(";")) === list2)
+          forAll((list2: List[List[T]]) => fromParam[List[List[T]]](list2.map(_.mkString(",")).mkString(";")) === list2)
         }
       }
     })
@@ -96,15 +96,15 @@ class FromCookieParamSpec extends FromParamSpec[FromCookie] {
         val name = typeTag[T].tpe.toString
 
         property(s"$name should be parsed as itself") {
-          forAll((value: T) ⇒ fromParam[T](value.toString) === value)
+          forAll((value: T) => fromParam[T](value.toString) === value)
         }
 
         property(s"List[$name] should be parsed as itself ") {
-          forAll((list: List[T]) ⇒ fromParam[List[T]](list.mkString(",")) === list)
+          forAll((list: List[T]) => fromParam[List[T]](list.mkString(",")) === list)
         }
 
         property(s"List[List[$name]] should be parsed as itself") {
-          forAll((list2: List[List[T]]) ⇒ fromParam[List[List[T]]](list2.map(_.mkString(",")).mkString(";")) === list2)
+          forAll((list2: List[List[T]]) => fromParam[List[List[T]]](list2.map(_.mkString(",")).mkString(";")) === list2)
         }
       }
     })

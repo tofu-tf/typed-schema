@@ -1,4 +1,5 @@
 package ru.tinkoff.tschema.akkaHttp
+
 import akka.http.scaladsl.server.Route
 import ru.tinkoff.tschema.macros.{MacroMessages, ShapelessMacros, SingletonMacros, SymbolMacros}
 import ru.tinkoff.tschema.typeDSL._
@@ -6,21 +7,12 @@ import shapeless.{CaseClassMacros, HList}
 
 import language.experimental.macros
 import scala.reflect.macros.blackbox
-import MkRouteMacro._
+import MakerMacro._
 import ru.tinkoff.tschema.utils.semigroups.First
 
-object MkRoute {
-  def apply[Def <: DSLDef, Impl](definition: => Def)(impl: Impl): Route = macro MkRouteMacro.makeRoute[Def, Impl]
 
-  /** for internal use */
-  def applyResult[Out] = new ResultApplier[Out]
+class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with SingletonMacros {
 
-  class ResultApplier[Out] {
-    def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String): Route = macro MkRouteMacro.makeResult[In, Out, Impl]
-  }
-}
-
-class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros with SingletonMacros {
   import c.universe._
 
   type Prefix = (Option[First[String]], Seq[Type])
@@ -33,28 +25,27 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros with Singlet
 
   class RouteTreeMaker(impl: Tree) {
     type DSL = DSLTree[Type]
-    def makeRouteTree(dsl: DSL, input: Tree): Tree =
-      dsl match {
-        case DSLLeaf(resTyp, key) => q"Result.make[$resTyp].apply($input)($impl)($key)"
-        case DSLBranch(pref +: next, dsls) =>
-          val ident = freshName("input")
-          val tpt = tq""
-          val param = q"val $ident: $tpt"
-          val rest = makeRouteTree(DSLBranch(next, dsls), Ident(ident))
-          q"""$input.serve[$pref].apply{
+    def makeRouteTree(dsl: DSL, input: Tree): Tree = dsl match {
+      case DSLLeaf(resTyp, key) => q"makeResult[$resTyp].apply($input)($impl)($key)"
+      case DSLBranch(pref +: next, dsls) =>
+        val ident = freshName("input")
+        val tpt = tq""
+        val param = q"val $ident: $tpt"
+        val rest = makeRouteTree(DSLBranch(next, dsls), Ident(ident))
+        q"""$input.serve[$pref].apply{
                $param => $rest
              }"""
-        case DSLBranch(_, dsls) => makeRouteSumTree(dsls, input)
-      }
+      case DSLBranch(_, dsls) => makeRouteSumTree(dsls, input)
+    }
 
     def makeRouteSumTree(dsls: Vector[DSL], input: Tree): Tree =
       dsls.map(makeRouteTree(_, input)).reduce { (l, r) =>
-        q"""$l ~
-            $r"""
+        q"""concatResults($l,$r)"""
       }
   }
 
-  def makeRoute[Def: WeakTypeTag, Impl: WeakTypeTag](definition: Tree)(impl: Tree): Tree = {
+  def makeRoute[If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag](definition: Tree)(impl: Tree): Tree = {
+    val ifP = getPackage(weakTypeOf[If])
     val defT = weakTypeOf[Def]
     val implT = weakTypeOf[Impl]
     val dsl = constructDslTree(defT)
@@ -64,12 +55,8 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros with Singlet
     val tree =
       q"""
        {
-        import shapeless._
-        import akka.http.scaladsl.server.Directives._
-        import ru.tinkoff.tschema.akkaHttp.Routable.syntax._
-        import ru.tinkoff.tschema.akkaHttp.Serve.syntax._
-        import ru.tinkoff.tschema.akkaHttp.Result
-        import ru.tinkoff.tschema.akkaHttp.MkRoute
+        import $ifP._
+        import shapeless.{::, HNil}
 
         $wholeTree
        }
@@ -92,7 +79,7 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros with Singlet
 
     val rec = extractRecord(inT)
     val syms = rec.flatten.map { case (paramName, _) => paramName -> freshName(paramName) }.toMap
-    val params = meth.paramLists.map(_.map { p ⇒
+    val params = meth.paramLists.map(_.map { p =>
       val name = symbolName(p)
       syms.getOrElse(name, abort(s"could not find input for parameter $name of method $keyS "))
     })
@@ -155,7 +142,7 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros with Singlet
   }
 
   def extractMethod(meth: MethodSymbol): MethodDecl[Type] =
-    meth.paramLists.map(lst ⇒ lst.map(p ⇒ symbolName(p) → p.typeSignature)) -> meth.returnType
+    meth.paramLists.map(lst => lst.map(p => symbolName(p) -> p.typeSignature)) -> meth.returnType
 
   def symbolName(symbol: Symbol) = symbol.name.decodedName.toString
 
@@ -171,9 +158,14 @@ class MkRouteMacro(val c: blackbox.Context) extends ShapelessMacros with Singlet
     case TypeRef(_, s, xs) if xs.nonEmpty => xs.map(showType).mkString(s"${symbolName(s)}[", ",", "]")
   }
 
+  def getPackage(t: Type): Tree =
+    t.typeSymbol.fullName.split("\\.")
+    .foldLeft[Tree](q"_root_") { (pack, name) => q"$pack.${TermName(name)}" }
+
+
 }
 
-object MkRouteMacro {
+object MakerMacro {
   sealed trait DSLTree[T]
   case class DSLBranch[T](pref: Vector[T], children: Vector[DSLTree[T]]) extends DSLTree[T]
   case class DSLLeaf[T](res: T, key: String) extends DSLTree[T]

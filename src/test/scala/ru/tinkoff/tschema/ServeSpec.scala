@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{Matchers, WordSpec}
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import ru.tinkoff.tschema.akkaHttp._
 
 class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
@@ -25,9 +25,9 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
     def multiply(x: Long, y: Double) = f"result is ${x * y}%.2f"
   }
 
-  def api = (keyPrefix('int) :> dsl.get[Int]) ~
-            (keyPrefix('repeat) :> ReqBody[String] :> queryParam[Int]('n) :> dsl.post[String]) ~
-            (keyPrefix('multiply) :> formField[Long]('x) :> formField[Double]('y) :> dsl.post[String])
+  def api = (keyPrefix('int) :> get[Int]) ~
+            (keyPrefix('repeat) :> reqBody[String] :> queryParam[Int]('n) :> post[String]) ~
+            (keyPrefix('multiply) :> formField[Long]('x) :> formField[Double]('y) :> post[String])
 
   val route = MkRoute(api)(handler)
 
@@ -39,7 +39,7 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
     }
 
     "multiply string by n times" in {
-      Post(Uri("/repeat").withQuery(Query("n" → "5")), "batman") ~> route ~> check {
+      Post(Uri("/repeat").withQuery(Query("n" -> "5")), "batman") ~> route ~> check {
         responseAs[String] shouldEqual ("batman" * 5)
       }
     }
@@ -47,8 +47,8 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
     "multuply numbers from formdata" in {
       Post(Uri("/multiply"),
            FormData(Map(
-             "x" → HttpEntity("3"),
-             "y" → HttpEntity("1.211")))) ~>
+             "x" -> HttpEntity("3"),
+             "y" -> HttpEntity("1.211")))) ~>
       route ~>
       check {
         responseAs[String] shouldEqual f"result is ${3.63}%.2f"

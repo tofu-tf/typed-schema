@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.named
 import shapeless.labelled.FieldType
-import shapeless.{Witness ⇒ W, _}
+import shapeless.{Witness => W, _}
 
 
 object RoutableSpec {

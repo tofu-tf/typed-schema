@@ -18,17 +18,17 @@ object CirceSupport {
 
   def unmarshallRequest[T: Decoder]: FromRequestUnmarshaller[T] =
     Unmarshaller.identityUnmarshaller[HttpRequest]
-    .map(_.entity)
-    .flatMap[T](unmarshallEntity[T]: Unmarshaller[HttpEntity, T])
-    .asScala
+      .map(_.entity)
+      .flatMap[T](unmarshallEntity[T]: Unmarshaller[HttpEntity, T])
+      .asScala
 
   def marshallEntity[T: Encoder]: ToEntityMarshaller[T] =
     Marshaller.stringMarshaller(`application/json`).compose((_: T).asJson.pretty(printer))
 
   def unmarshallEntity[T: Decoder]: FromEntityUnmarshaller[T] =
     Unmarshaller.stringUnmarshaller
-    .forContentTypes(`application/json`)
-    .flatMap(implicit ec ⇒ _ ⇒ s ⇒ Future.fromTry(parse(s).toTry.flatMap(_.as[T].toTry)))
+      .forContentTypes(`application/json`)
+      .flatMap(implicit ec => _ => s => Future.fromTry(parse(s).toTry.flatMap(_.as[T].toTry)))
 
   object implicits {
     implicit def marshallResponseCirce[T: Encoder]: ToResponseMarshaller[T] = marshallResponse[T]

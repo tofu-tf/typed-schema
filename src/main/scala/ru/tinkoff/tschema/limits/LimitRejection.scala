@@ -8,9 +8,9 @@ case class LimitRejection(key: String, count: Long, periodName: String, params: 
 
 object LimitRejection{
   def handler: PartialFunction[Rejection, Route] = {
-    case LimitRejection(key, count, periodName, Seq()) ⇒
+    case LimitRejection(key, count, periodName, Seq()) =>
       complete((TooManyRequests, s"for service $key only $count requests permitted per $periodName "))
-    case LimitRejection(key, count, periodName, names) ⇒
+    case LimitRejection(key, count, periodName, names) =>
       val nameDescr = names.mkString(",")
       complete((TooManyRequests, s"for service $key only $count requests permitted per $periodName for unique values of $nameDescr"))
   }

@@ -17,10 +17,11 @@ import ru.tinkoff.tschema.swagger._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import io.circe.Printer
 import ru.tinkoff.tschema.limits.LimitHandler.LimitRate
 import shapeless.labelled.FieldType
-import shapeless.ops.hlist.Reify
+import io.circe.syntax._
 
 import scala.concurrent.duration._
 
@@ -32,17 +33,17 @@ object definitions {
 
   case class Client(value: Int)
 
-  def concat = operation('concat) :> queryParam[String]('left) :> queryParam[String]('right) :> get[String]
+  def concat = operation('concat) |> queryParam[String]('left) |> queryParam[String]('right) |> get[String]
 
-  def combine = operation('combine) :> capture[Int]('y) :> (limit ! 'x) :> get[Combine]
+  def combine = operation('combine) |> capture[Int]('y) |> (limit ! 'x) |> get[Combine]
 
-  def sum = operation('sum) :> capture[Int]('y) :> get[Int]
+  def sum = operation('sum) |> capture[Int]('y) |> get[Int]
 
-  def stats = operation('stats) :> reqBody[Vector[BigDecimal]] :> post[StatsRes]
+  def stats = operation('stats) |> reqBody[Vector[BigDecimal]] |> post[StatsRes]
 
-  def intops = queryParam[Client]('x) :> (combine ~ sum)
+  def intops = queryParam[Client]('x) |> (combine ~ sum)
 
-  def api = tagPrefix('test) :> (concat ~ intops ~ stats)
+  def api = tagPrefix('test) |> (concat <> intops <> stats)
 
   def api2 = tagPrefix('test) {
     operation('concat) {
@@ -52,29 +53,30 @@ object definitions {
         }
       }
     } ~
-    queryParam[Client]('x) {
-      operation('combine) {
-        capture[Int]('y) {
-          (limit ! 'x) {
-            get[Combine]
+      queryParam[Client]('x) {
+        operation('combine) {
+          capture[Int]('y) {
+            (limit ! 'x) {
+              get[Combine]
+            }
           }
-        }
+        } ~
+          operation('sum) {
+            capture[Int]('y) {
+              get[Int]
+            }
+          }
       } ~
-      operation('sum) {
-        capture[Int]('y) {
-          get[Int]
+      operation('stats) {
+        reqBody[Vector[BigDecimal]] {
+          post[StatsRes]
         }
       }
-    } ~
-    operation('stats) {
-      reqBody[Vector[BigDecimal]] {
-        post[StatsRes]
-      }
-    }
   }
 }
 
 object TestModule {
+
   import definitions._
 
   implicit lazy val statResTypeable = genNamedTypeable[StatsRes]("Stats")
@@ -89,7 +91,7 @@ object TestModule {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val handler = new {
+  object handler {
     def concat(left: String, right: String) = left + right
 
     def combine(x: Client, y: Int) = Combine(CombSource(x.value, y), CombRes(mul = x.value * y, sum = x.value + y))
@@ -100,7 +102,7 @@ object TestModule {
       val mean = body.sum / body.size
       val mid = body.size / 2
       val median = if (body.size % 2 == 1) body(mid) else (body(mid) + body(mid - 1)) / 2
-      val std = body.view.map(x ⇒ x * x).sum / body.size - mean * mean
+      val std = body.view.map(x => x * x).sum / body.size - mean * mean
       StatsRes(mean, std, median)
     }
 
@@ -114,7 +116,15 @@ object TestModule {
 
   val route = MkRoute(api)(handler)
   val route2 = MkRoute(api2)(handler)
+  val printer = Printer.spaces2.copy(dropNullKeys = true)
   def main(args: Array[String]): Unit = {
+
+    swagger
+    .make(SwaggerInfo(title = "test"))
+    .paths.foreach{case (name, map) =>
+      val (meth, op) = map.head
+      println(s"$name : $meth \n------------  ${op.asJson.pretty(printer)}\n------------")}
+
   }
 }
 

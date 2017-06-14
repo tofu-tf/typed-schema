@@ -12,11 +12,6 @@ trait Routable[In, Out] {
 }
 
 object Routable {
-  object syntax {
-    implicit class RoutableOps[In](val in: In) extends AnyVal {
-      def route[Out](implicit routable: Routable[In, Out]): Route = routable.route(in)
-    }
-  }
 
   implicit def single[A](implicit marshaller: ToResponseMarshaller[A]): Routable[A, A] =
     new Routable[A, A] {

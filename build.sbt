@@ -9,10 +9,10 @@ libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akka
 libraryDependencies += "com.chuusai" %% "shapeless" % Version.shapeless
 
 libraryDependencies ++= Seq("enumeratum", "enumeratum-circe")
-                        .map(module ⇒ "com.beachape" %% module % Version.enumeratum)
+                        .map(module => "com.beachape" %% module % Version.enumeratum)
 
 libraryDependencies ++= Seq("core", "parser", "generic", "generic-extras")
-                        .map(module ⇒ "io.circe" %% s"circe-$module" % Version.circe)
+                        .map(module => "io.circe" %% s"circe-$module" % Version.circe)
 
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"

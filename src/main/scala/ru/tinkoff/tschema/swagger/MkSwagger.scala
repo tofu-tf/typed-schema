@@ -14,7 +14,7 @@ import ru.tinkoff.tschema.common.Name
 import scala.language.higherKinds
 
 sealed trait MkSwagger[T] {
-  self ⇒
+  self =>
 
   def paths: PathSeq
 
@@ -22,7 +22,7 @@ sealed trait MkSwagger[T] {
 
   def as[U]: MkSwagger[U] = self.asInstanceOf[MkSwagger[U]]
 
-  def map(f: PathSpec ⇒ PathSpec) = new MkSwagger[T] {
+  def map(f: PathSpec => PathSpec) = new MkSwagger[T] {
     val paths = self.paths.map(f)
     val types = self.types
   }
@@ -35,16 +35,16 @@ sealed trait MkSwagger[T] {
   def make(info: SwaggerInfo) =
     Swagger(
       info = info,
-      paths = paths.groupBy(_.path).map { case (parts, specs) ⇒ parts.mkString("/", "/", "") → specs.map { case PathSpec(_, method, op) ⇒ method -> op }.toMap },
+      paths = paths.groupBy(_.path).map { case (parts, specs) => parts.mkString("/", "/", "") -> specs.map { case PathSpec(_, method, op) => method -> op }.toMap },
       definitions = types
     )
 
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
-      val paths: PathSeq = self.paths.map(_.modOp { op ⇒
+      val paths: PathSeq = self.paths.map(_.modOp { op =>
         val codes = op.responses.codes
         op.copy(responses = op.responses.copy(codes = codes ++ Map(
-          code → SwaggerResponse(schema = typeable.swaggerType, description = description)
+          code -> SwaggerResponse(schema = typeable.swaggerType, description = description)
         )))
       })
       val types: TypePool = self.types ++ typeable.swaggerType.collectTypes
@@ -60,8 +60,8 @@ object MkSwagger {
   def apply[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
 
   case class PathSpec(path: Vector[String], method: Swagger.Method, op: SwaggerOp) {
-    def modPath(f: Vector[String] ⇒ Vector[String]) = copy(path = f(path))
-    def modOp(f: SwaggerOp ⇒ SwaggerOp) = copy(op = f(op))
+    def modPath(f: Vector[String] => Vector[String]) = copy(path = f(path))
+    def modOp(f: SwaggerOp => SwaggerOp) = copy(op = f(op))
   }
 
   type PathSeq = Vector[PathSpec]
@@ -78,7 +78,7 @@ object MkSwagger {
       method = method,
       op = SwaggerOp(
         responses = SwaggerResponses(codes = Map(
-          StatusCodes.OK → SwaggerResponse(
+          StatusCodes.OK -> SwaggerResponse(
             schema = typ.swaggerType
           )))),
       typeList = typ.swaggerType.collectTypes)
@@ -129,7 +129,7 @@ object AsSwaggerParam {
 }
 
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
-  self ⇒
+  self =>
   def mapSpec(spec: PathSpec): PathSpec
   def types: Map[String, SwaggerType]
 
@@ -143,7 +143,7 @@ trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
     val types = self.types ++ other.types
   }
 
-  def map(f: PathSpec ⇒ PathSpec) = new SwaggerMapper[T] {
+  def map(f: PathSpec => PathSpec) = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = f(self.mapSpec(spec))
     def types: Map[String, SwaggerType] = self.types
   }
@@ -172,7 +172,7 @@ object SwaggerMapper {
 
   import SwaggerParam.{In, NonBodyIn}
 
-  def fromFunc[T](f: PathSpec ⇒ PathSpec) = new FromFunc[T] {
+  def fromFunc[T](f: PathSpec => PathSpec) = new FromFunc[T] {
     def mapSpec(spec: PathSpec): PathSpec = f(spec)
   }
 

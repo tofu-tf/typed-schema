@@ -13,9 +13,9 @@ object syntax {
   def queryFlag[s](witness: Witness.Lt[s]) = new QueryFlag[s]
   def tag[s](witness: Witness.Lt[s]) = new Tag[s]
   def key[s](witness: Witness.Lt[s]) = new Key[s]
-  def tagPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> tag[s](witness)
-  def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> key[s](witness)
-  def operation[s](witness: Witness.Lt[s]) = keyPrefix[s](witness) :> descr.i18n[s](witness)
+  def tagPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) |> tag[s](witness)
+  def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) |> key[s](witness)
+  def operation[s](witness: Witness.Lt[s]) = keyPrefix[s](witness) |> descr.i18n[s](witness)
 
   def reqBody[x] = new ReqBody[x]
 
@@ -65,10 +65,13 @@ object syntax {
     def apply[t <: HasReq, u, s](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
   }
 
-  implicit class TypeApiOps[x <: DSLDef](x: ⇒ x) {
-    def ~[y](y: ⇒ y): x <|> y = new <|>(x, y)
-    def :>[y](y: ⇒ y): x :> y = new :>
-    def apply[y](y: ⇒ y): x :> y = new :>
+  implicit class TypeApiOps[x <: DSLDef](x: => x) {
+    def ~[y](y: => y): x <|> y = new <|>(x, y)
+    def <|>[y](y: => y): x <|> y = new <|>(x, y)
+    def <>[y](y: => y): x <|> y = new <|>(x, y)
+    def :>[y](y: => y): x :> y = new :>
+    def |>[y](y: => y): x :> y = new :>
+    def apply[y](y: => y): x :> y = new :>
   }
 
   object query extends ParamMaker[QueryParam]

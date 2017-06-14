@@ -8,14 +8,12 @@ import shapeless.{CaseClassMacros, HList}
 import language.experimental.macros
 import scala.reflect.macros.blackbox
 import MakerMacro._
-import ru.tinkoff.tschema.utils.semigroups.First
+
 
 
 class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with SingletonMacros {
 
   import c.universe._
-
-  type Prefix = (Option[First[String]], Seq[Type])
 
   val ConsC = typeOf[:>[_, _]].typeConstructor
   val SplitC = typeOf[<|>[_, _]].typeConstructor

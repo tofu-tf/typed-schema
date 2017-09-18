@@ -116,15 +116,13 @@ object TestModule {
 
   val route = MkRoute(api)(handler)
   val route2 = MkRoute(api2)(handler)
-  val printer = Printer.spaces2.copy(dropNullKeys = true)
+  val printer = Printer.spaces2.copy(dropNullValues = true)
   def main(args: Array[String]): Unit = {
-
     swagger
     .make(SwaggerInfo(title = "test"))
     .paths.foreach{case (name, map) =>
       val (meth, op) = map.head
       println(s"$name : $meth \n------------  ${op.asJson.pretty(printer)}\n------------")}
-
   }
 }
 

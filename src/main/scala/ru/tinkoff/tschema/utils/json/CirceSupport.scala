@@ -12,7 +12,7 @@ import cats.syntax.either._
 import scala.concurrent.Future
 
 object CirceSupport {
-  val printer = Printer.noSpaces.copy(dropNullKeys = true)
+  val printer = Printer.noSpaces.copy(dropNullValues = true)
 
   def marshallResponse[T: Encoder]: ToResponseMarshaller[T] = Marshaller.fromToEntityMarshaller[T]()(marshallEntity)
 

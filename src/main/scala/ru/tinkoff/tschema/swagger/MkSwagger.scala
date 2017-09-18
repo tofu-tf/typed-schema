@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
-import java.util.{Date, ResourceBundle}
+import java.util.{Date, ResourceBundle, UUID}
 
 import MkSwagger._
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
@@ -52,6 +52,11 @@ sealed trait MkSwagger[T] {
 }
 
 object MkSwagger {
+
+  object macroInterface{
+  }
+
+
   def empty[T]: MkSwagger[T] = new MkSwagger[T] {
     override def paths = Vector.empty
     override def types = Map.empty
@@ -118,9 +123,11 @@ object AsSwaggerParam {
 
   implicit lazy val stringParam = AsSwaggerParam[String](SwaggerStringValue())
   implicit lazy val byteParam = AsSwaggerParam[Byte](SwaggerStringValue(format = Some(SwaggerFormat.byte)))
+
   implicit lazy val byteStringParam = AsSwaggerParam[ByteString](SwaggerStringValue(format = Some(SwaggerFormat.binary)))
   implicit lazy val byteArrayParam = AsSwaggerParam[Array[Byte]](SwaggerStringValue(format = Some(SwaggerFormat.binary)))
   implicit lazy val utilDateParam = AsSwaggerParam[Date](SwaggerStringValue(format = Some(SwaggerFormat.dateTime)))
+  implicit lazy val uuidParam = AsSwaggerParam[UUID](SwaggerStringValue.uuid)
 
   implicit def optionParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Option[T]](param.value, required = false)
   implicit def vectorParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Vector[T]](SwaggerArrayValue(param.value), param.required)

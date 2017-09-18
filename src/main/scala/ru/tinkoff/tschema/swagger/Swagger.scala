@@ -129,6 +129,11 @@ final case class SwaggerStringValue(format: Option[SwaggerFormat[SwaggerStringVa
   def typeName = "string"
 }
 
+object SwaggerStringValue {
+  val uuidPattern = Seq(8, 4, 4, 4, 12).map(k => s"[0-9a-fA-F]{$k}").mkString("-")
+  def uuid = SwaggerStringValue(pattern = Some(uuidPattern))
+}
+
 final case class SwaggerNumberValue(format: Option[SwaggerFormat[SwaggerNumberValue]] = None,
                                     default: Option[BigDecimal] = None,
                                     maximum: Option[BigDecimal] = None,
@@ -175,8 +180,8 @@ object SwaggerValue {
     case object multi extends CollectionFormat
   }
 
-  private lazy val derivedEncoder: ObjectEncoder[SwaggerValue] = deriveEncoder[SwaggerValue].mapJsonObject{
-    obj => obj(obj.fields.head).flatMap(_.asObject).getOrElse(JsonObject.empty)
+  private lazy val derivedEncoder: ObjectEncoder[SwaggerValue] = deriveEncoder[SwaggerValue].mapJsonObject {
+    obj => obj(obj.keys.head).flatMap(_.asObject).getOrElse(JsonObject.empty)
   }
   implicit lazy val encodeSwaggerValue: ObjectEncoder[SwaggerValue] = derivedEncoder.mapObjWithSrc {
     (x, obj) => obj.add("type", Json.fromString(x.typeName))
@@ -233,7 +238,7 @@ final case class SwaggerResponses(default: Option[SwaggerResponse] = None,
 object SwaggerResponses {
   implicit lazy val statusCodeEncoder = KeyEncoder.encodeKeyInt.contramap[StatusCode](_.intValue)
 
-  val mapEnc = Encoder.encodeMapLike[Map, StatusCode, SwaggerResponse]
+  val mapEnc = Encoder.encodeMapLike[StatusCode, SwaggerResponse, Map]
 
   implicit lazy val responsesEncoder: ObjectEncoder[SwaggerResponses] = ObjectEncoder.instance[SwaggerResponses] {
     resps =>

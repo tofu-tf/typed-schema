@@ -12,12 +12,14 @@ import ru.tinkoff.TestModule
 import ru.tinkoff.definitions.StatsRes
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import MkRoute.macroInterface.{RoutableOps, ServeOps}
 
 object TestRoute {
+  implicit val system = ActorSystem()
+  import system.dispatcher
+  implicit val materializer = ActorMaterializer()
   val uuu = queryParam[String]('uuu) :> operation('stats) :> ReqBody[Vector[BigDecimal]] :> get[StatsRes]
 
   type uuu = QueryParam[Witness.`'uuu`.T, String]
@@ -45,9 +47,9 @@ object TestRoute {
   }
 
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
-    import system.dispatcher
+
+
+
 
     val req = Get("/stats?uuu", content = Vector(BigDecimal(1), BigDecimal(2)))
 

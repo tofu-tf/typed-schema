@@ -1,6 +1,6 @@
-name := "typedschema"
+name := "Typed Schema"
 
-Compiler.settings
+moduleName := "typed-schema"
 
 libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
@@ -13,7 +13,6 @@ libraryDependencies ++= Seq("enumeratum", "enumeratum-circe")
 
 libraryDependencies ++= Seq("core", "parser", "generic", "generic-extras")
                         .map(module => "io.circe" %% s"circe-$module" % Version.circe)
-
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
 
@@ -37,37 +36,6 @@ lazy val typedschema =
   .dependsOn(macros)
   .aggregate(macros, typedsl)
 
-lazy val macros =
-  project
-  .dependsOn(typedsl)
-  .settings(
-    name := "typed-schema-macros"
-    ,
-    Compiler.settings
-    ,
-    resolvers ++= Resolvers.tinkoff
-    ,
-    libraryDependencies += scalaOrganization.value % "scala-reflect" % scalaVersion.value
-    ,
-    libraryDependencies += "com.chuusai" %% "shapeless" % Version.shapeless
-    ,
-    libraryDependencies += "org.typelevel" %% "cats" % Version.cats
-    ,
-    libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akkaHttp
-    ,
-    libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
-    ,
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
-    ,
-    Publish.settings
-  )
+lazy val macros = project.dependsOn(typedsl)
 
-lazy val typedsl =
-  project
-  .settings(
-    name := "typed-schema-dsl"
-    ,
-    Compiler.settings
-    ,
-    Publish.settings
-  )
+lazy val typedsl = project

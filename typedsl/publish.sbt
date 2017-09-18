@@ -1,2 +1,2 @@
-
+moduleName := "typed-schema-typedsl"
 

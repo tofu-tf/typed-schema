@@ -27,11 +27,9 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
       case DSLLeaf(resTyp, key) => q"makeResult[$resTyp].apply($input)($impl)($key)"
       case DSLBranch(pref +: next, dsls) =>
         val ident = freshName("input")
-        val tpt = tq""
-        val param = q"val $ident: $tpt"
         val rest = makeRouteTree(DSLBranch(next, dsls), Ident(ident))
-        q"""$input.serve[$pref].apply{
-               $param => $rest
+        q"""$input.serve[$pref].tapply{
+               case Tuple1($ident) => $rest
              }"""
       case DSLBranch(_, dsls) => makeRouteSumTree(dsls, input)
     }

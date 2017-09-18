@@ -1,20 +1,10 @@
-scalaVersion := "2.12.1"
-
-crossScalaVersions := Seq("2.11.8", "2.12.1")
-
-scalaOrganization := "org.typelevel"
-
-scalacOptions ++= {
-  if (scalaVersion.value >= "2.12")
-    Seq(
-      "-Yinduction-heuristics",
-      "-Yliteral-types",
-      "-Xstrict-patmat-analysis"
-    )
-  else Seq()
-}
-
-
+name := "typed-schema-macros"
+resolvers ++= Resolvers.tinkoff
 libraryDependencies += scalaOrganization.value % "scala-reflect" % scalaVersion.value
+libraryDependencies += "com.chuusai" %% "shapeless" % Version.shapeless
+libraryDependencies += "org.typelevel" %% "cats-core" % Version.cats
+libraryDependencies += "org.typelevel" %% "cats-mtl-core" % Version.catsMtl
+libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akkaHttp
+libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
 
-libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.2"
+addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)

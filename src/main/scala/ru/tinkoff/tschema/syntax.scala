@@ -1,12 +1,10 @@
 package ru.tinkoff.tschema
 
-import akka.http.scaladsl.server._
-import ru.tinkoff.tschema.named.RoutableUnion$
-import ru.tinkoff.tschema.serve.{Serve, ToServable}
-import ru.tinkoff.tschema.swagger.{DerivedMkSwagger, Description, Tag}
+import ru.tinkoff.tschema.common.HasReq
+import ru.tinkoff.tschema.macros.ParamMaker
+import ru.tinkoff.tschema.swagger.{Description, Tag}
+import shapeless._
 import typeDSL._
-import shapeless.{Coproduct, Witness}
-import shapeless.ops.coproduct.Align
 
 import scala.language.higherKinds
 
@@ -15,8 +13,11 @@ object syntax {
   def queryFlag[s](witness: Witness.Lt[s]) = new QueryFlag[s]
   def tag[s](witness: Witness.Lt[s]) = new Tag[s]
   def key[s](witness: Witness.Lt[s]) = new Key[s]
-  def tagPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> tag[s](witness)
-  def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) :> key[s](witness)
+  def tagPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) |> tag[s](witness)
+  def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) |> key[s](witness)
+  def operation[s](witness: Witness.Lt[s]) = keyPrefix[s](witness) |> descr.i18n[s](witness)
+
+  def reqBody[x] = new ReqBody[x]
 
   object descr {
     def static[s](witness: Witness.Lt[s]) = new Description.Static[s]
@@ -56,4 +57,37 @@ object syntax {
     def apply[s](witness: Witness.Lt[s]) = maker.make[s]
   }
 
+  class MkTransform[a, b] {
+    def apply[t, u, s](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
+  }
+
+  class MkTransformReq[a, b] {
+    def apply[t <: HasReq, u, s](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
+  }
+
+  implicit class TypeApiOps[x <: DSLDef](x: => x) {
+    def ~[y](y: => y): x <|> y = new <|>(x, y)
+    def <|>[y](y: => y): x <|> y = new <|>(x, y)
+    def <>[y](y: => y): x <|> y = new <|>(x, y)
+    def :>[y](y: => y): x :> y = new :>
+    def |>[y](y: => y): x :> y = new :>
+    def apply[y](y: => y): x :> y = new :>
+  }
+
+  object query extends ParamMaker[QueryParam]
+  object path extends ParamMaker[Capture]
+  object headers extends ParamMaker[Header]
+  object form extends ParamMaker[FormField]
+
+  sealed class ResultMaker[F[_]](x: => F[Nothing]){
+    def apply[x]: F[x] = x.asInstanceOf[F[x]]
+  }
+
+  object get extends ResultMaker(new Get)
+  object post extends ResultMaker(new Post)
+  object put extends ResultMaker(new Put)
+  object delete extends ResultMaker(new Delete)
+  object head extends ResultMaker(new Head)
+  object options extends ResultMaker(new Options)
+  object patch extends ResultMaker(new Patch)
 }

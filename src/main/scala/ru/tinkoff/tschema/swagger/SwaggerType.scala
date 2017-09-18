@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
-import java.util.Date
+import java.util.{Date, UUID}
 
 import akka.util.ByteString
 import cats.Eval
@@ -19,18 +19,21 @@ import scala.language.higherKinds
 import SwaggerTypeable.Config
 
 
-
 sealed trait SwaggerType {
   def merge: PartialFunction[SwaggerType, SwaggerType] = PartialFunction.empty
 
   def or(that: SwaggerType): SwaggerType =
-    merge.applyOrElse(that, Function.const(SwaggerObject(Vector("left" → Eval.now(this), "right" → Eval.now(that)))))
+    merge.applyOrElse(that, Function.const(SwaggerObject(Vector("left" -> Eval.now(this), "right" -> Eval.now(that)))))
+
+  def deref: Eval[SwaggerType] = Eval.now(this)
 }
+
 class SwaggerPrimitive[Typ <: SwaggerValue](val typ: Typ, val format: Option[SwaggerFormat[Typ]] = None) extends SwaggerType {
   override def merge = {
-    case prim: SwaggerPrimitive[_] if typ == prim.typ ⇒
+    case prim: SwaggerPrimitive[_] if typ == prim.typ =>
       if (format == prim.format) this else new SwaggerPrimitive(typ)
   }
+  def mod(f: Typ => Typ) = new SwaggerPrimitive[Typ](f(typ), format)
 }
 
 object SwaggerPrimitive {
@@ -48,26 +51,25 @@ object SwaggerPrimitive {
   case object date extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.date))
   case object dateTime extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.dateTime))
   case object password extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.password))
-
 }
 
 case class SwaggerEnumeration(alts: Vector[String]) extends SwaggerType {
   override def merge = {
-    case SwaggerEnumeration(alts2) ⇒ SwaggerEnumeration((alts ++ alts2).distinct)
+    case SwaggerEnumeration(alts2) => SwaggerEnumeration((alts ++ alts2).distinct)
   }
 }
 case class SwaggerArray(items: Eval[SwaggerType]) extends SwaggerType {
   override def merge = {
-    case SwaggerArray(items2) ⇒ SwaggerArray(items.map2(items2)(_ or _))
+    case SwaggerArray(items2) => SwaggerArray(items.map2(items2)(_ or _))
   }
 }
 case class SwaggerObject(properties: Vector[(String, Eval[SwaggerType])] = Vector.empty, required: Vector[String] = Vector.empty) extends SwaggerType {
   override def merge = {
-    case SwaggerObject(p2, req2) ⇒
+    case SwaggerObject(p2, req2) =>
       val thisMap = properties.toMap
       val thatMap = p2.toMap
       val unionProps = (thisMap -- thatMap.keySet).toVector ++ thatMap.map {
-        case (name, prop) ⇒ name -> thisMap.get(name).map(_.map2(prop)(_ or _)).getOrElse(prop)
+        case (name, prop) => name -> thisMap.get(name).map(_.map2(prop)(_ or _)).getOrElse(prop)
       }
       val reqs = required.toSet.intersect(req2.toSet).toVector
       SwaggerObject(unionProps, reqs)
@@ -76,8 +78,9 @@ case class SwaggerObject(properties: Vector[(String, Eval[SwaggerType])] = Vecto
 
 case class SwaggerRef(name: String, typ: Eval[SwaggerType]) extends SwaggerType {
   override def merge = {
-    case SwaggerRef(`name`, t2) ⇒ SwaggerRef(name, typ.map2(typ)(_ or _))
+    case SwaggerRef(`name`, t2) => SwaggerRef(name, typ.map2(typ)(_ or _))
   }
+  override def deref = typ.flatMap(_.deref)
 }
 case class SwaggerEither(left: Eval[SwaggerType], right: Eval[SwaggerType]) extends SwaggerType
 
@@ -85,54 +88,63 @@ object SwaggerType {
 
   implicit object encodeSwaggerType extends ObjectEncoder[SwaggerType] {
     def encode(a: SwaggerType): Eval[JsonObject] = a match {
-      case pt: SwaggerPrimitive[_] ⇒
+      case pt: SwaggerPrimitive[_] =>
         val typeJson = (pt.typ: SwaggerValue).asJsonObject
         val result = pt.format match {
-          case None ⇒ typeJson
-          case Some(x) ⇒ typeJson.add("format", x.asJson)
+          case None    => typeJson
+          case Some(x) => typeJson.add("format", x.asJson)
         }
         result.pure[Eval]
 
-      case SwaggerEnumeration(alts) ⇒ JsonObject.fromIterable(Vector(
-        "type" → Json.fromString("string"),
-        "enum" → Json.arr(alts.map(Json.fromString): _*)
+      case SwaggerEnumeration(alts) => JsonObject.fromIterable(Vector(
+        "type" -> Json.fromString("string"),
+        "enum" -> Json.arr(alts.map(Json.fromString): _*)
       )).pure[Eval]
 
-      case SwaggerRef(name, _) ⇒ JsonObject.singleton(
+      case SwaggerRef(name, _) => JsonObject.singleton(
         "$ref", Json.fromString(s"#/definitions/$name")
       ).pure[Eval]
 
-      case SwaggerArray(items) ⇒ items.flatMap(encode).map(enc ⇒ JsonObject.fromIterable(Vector(
-        "type" → Json.fromString("array"),
-        "items" → enc.asJson
+      case SwaggerArray(items) => items.flatMap(encode).map(enc => JsonObject.fromIterable(Vector(
+        "type" -> Json.fromString("array"),
+        "items" -> enc.asJson
       )))
 
-      case SwaggerObject(properties, required) ⇒ properties
-        .traverse[Eval, (String, Json)] { case (name, prop) ⇒ prop.flatMap(encode).map(name → _.asJson) }
-        .map(enc ⇒ JsonObject.fromIterable(Vector(
-          "type" → Json.fromString("object"),
-          "required" → Json.arr(required.map(Json.fromString): _*),
-          "properties" → JsonObject.fromIterable(enc).asJson)))
+      case SwaggerObject(properties, required) => properties
+                                                  .traverse[Eval, (String, Json)] { case (name, prop) => prop.flatMap(encode).map(name -> _.asJson) }
+                                                  .map(enc => JsonObject.fromIterable(Vector(
+                                                    "type" -> Json.fromString("object"),
+                                                    "required" -> Json.arr(required.map(Json.fromString): _*),
+                                                    "properties" -> JsonObject.fromIterable(enc).asJson)))
 
-      case SwaggerEither(left, right) ⇒ left.map2(right)(_ or _).flatMap(encode)
+      case SwaggerEither(left, right) => for {
+        leftType <- left
+        leftJson <- encode(leftType)
+        rightType <- right
+        rightJson <- encode(rightType)
+      } yield JsonObject(
+        "oneOf" -> Json.arr(leftJson.asJson, rightJson.asJson)
+      )
+
     }
 
     override def encodeObject(a: SwaggerType): JsonObject = encode(a).value
   }
 
   implicit class Ops(val typ: SwaggerType) extends AnyVal {
+
     import scala.::
 
     @tailrec private def collectTypesImpl(stack: List[SwaggerType], acc: Map[String, SwaggerType]): Map[String, SwaggerType] =
       stack match {
-        case Nil ⇒ acc
-        case cur :: rest ⇒ cur match {
-          case SwaggerRef(name, _) if acc contains name ⇒ collectTypesImpl(rest, acc)
-          case SwaggerRef(name, t) ⇒ collectTypesImpl(t.value :: rest, acc + (name → t.value))
-          case SwaggerArray(items) ⇒ collectTypesImpl(items.value :: rest, acc)
-          case SwaggerObject(props, _) ⇒ collectTypesImpl(props.foldLeft(rest) { case (next, (_, t)) ⇒ t.value :: next }, acc)
-          case SwaggerEither(left, right) ⇒ collectTypesImpl(left.value :: right.value :: rest, acc)
-          case _ ⇒ collectTypesImpl(rest, acc)
+        case Nil         => acc
+        case cur :: rest => cur match {
+          case SwaggerRef(name, _) if acc contains name => collectTypesImpl(rest, acc)
+          case SwaggerRef(name, t)                      => collectTypesImpl(t.value :: rest, acc + (name -> t.value))
+          case SwaggerArray(items)                      => collectTypesImpl(items.value :: rest, acc)
+          case SwaggerObject(props, _)                  => collectTypesImpl(props.foldLeft(rest) { case (next, (_, t)) => t.value :: next }, acc)
+          case SwaggerEither(left, right)               => collectTypesImpl(left.value :: right.value :: rest, acc)
+          case _                                        => collectTypesImpl(rest, acc)
         }
       }
 
@@ -145,7 +157,7 @@ trait SwaggerTypeable[T] {
 }
 
 object SwaggerTypeable {
-  case class Config(propMod: String ⇒ String) {
+  case class Config(propMod: String => String) {
     def withCamelCase = copy(
       propMod = _.replaceAll(
         "([A-Z]+)([A-Z][a-z])",
@@ -160,7 +172,7 @@ object SwaggerTypeable {
     def later = Eval.later(lazt.value.swaggerType)
   }
 
-  def apply[T](typ: ⇒ SwaggerType) = new SwaggerTypeable[T] {
+  def apply[T](typ: => SwaggerType) = new SwaggerTypeable[T] {
     lazy val swaggerType = typ
   }
 
@@ -175,6 +187,8 @@ object SwaggerTypeable {
   implicit val swaggerTypeableBoolean = SwaggerTypeable[Boolean](SwaggerPrimitive.boolean)
   implicit val swaggerTypeableBigIng = SwaggerTypeable[BigInt](SwaggerPrimitive.integer)
   implicit val swaggerTypeableBigDecimal = SwaggerTypeable[BigDecimal](SwaggerPrimitive.double)
+  implicit val swaggerTypeableUUID = SwaggerTypeable[UUID](new SwaggerPrimitive(SwaggerStringValue.uuid))
+
 
   implicit val swaggerTypeableJsonObject = SwaggerTypeable[JsonObject](SwaggerObject())
 
@@ -195,13 +209,13 @@ object SwaggerTypeable {
   def genWrappedTypeable[T](implicit gen: Lazy[WrappedSwaggerTypeable[T]]) = gen.value
 
   trait SwaggerTypeableEnum[X <: EnumEntry] {
-    self: Enum[X] ⇒
+    self: Enum[X] =>
 
     lazy implicit val swaggerTypeable: SwaggerTypeable[X] = SwaggerTypeable(SwaggerEnumeration(namesToValuesMap.keys.toVector))
   }
 
   trait SwaggerTypeableEnumeration {
-    self: Enumeration ⇒
+    self: Enumeration =>
 
     lazy implicit val swaggerTypeable: SwaggerTypeable[Value] = SwaggerTypeable(SwaggerEnumeration(values.map(_.toString).toVector))
   }
@@ -225,7 +239,7 @@ object GenericSwaggerTypeable {
   implicit def genericTypeable[T, L <: HList]
   (implicit lgen: LabelledGeneric.Aux[T, L], list: HListProps[L]): GenericSwaggerTypeable[T] = {
     def required = list.props.filter(_._3).map(_._1).toVector
-    def props = list.props.map { case (name, t, _) ⇒ name -> t }.toVector
+    def props = list.props.map { case (name, t, _) => name -> t }.toVector
     def typ = SwaggerObject(props, required)
 
     GenericSwaggerTypeable[T](typ)

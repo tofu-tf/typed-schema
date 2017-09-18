@@ -5,28 +5,31 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{Matchers, WordSpec}
-import de.heikoseeberger.akkahttpcirce.CirceSupport._
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import ru.tinkoff.tschema.akkaHttp._
 
 class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
   trait Small
 
   import syntax._
   import typeDSL._
-  import serve.syntax._
-
-  val dsl = typeDSL
+  val dsl = syntax
 
   val intAnswer = 42
 
-  def handleRepeat(body: String, n: Int) = body * n
+  object handler {
+    val int = 42
 
-  def handleMultiply(x: Long, y: Double) = f"result is ${x * y}%.2f"
+    def repeat(body: String, n: Int) = body * n
 
-  def api = (prefix('int) :> dsl.Get[Int]) <|>
-    (prefix("repeat") :> ReqBody[String] :> queryParam[Int]("n") :> dsl.Post[String]) <|>
-    (formField[Long]("x") :> formField[Double]("y") :> prefix("multiply") :> dsl.Post[String])
+    def multiply(x: Long, y: Double) = f"result is ${x * y}%.2f"
+  }
 
-  val route = api.serve(intAnswer <|> handleRepeat _ <|> handleMultiply _)
+  def api = (keyPrefix('int) :> get[Int]) ~
+            (keyPrefix('repeat) :> reqBody[String] :> queryParam[Int]('n) :> post[String]) ~
+            (keyPrefix('multiply) :> formField[Long]('x) :> formField[Double]('y) :> post[String])
+
+  val route = MkRoute(api)(handler)
 
   "Simple service" should {
     "return a simple int" in {
@@ -36,13 +39,18 @@ class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
     }
 
     "multiply string by n times" in {
-      Post(Uri("/repeat").withQuery(Query("n" → "5")), "batman") ~> route ~> check {
+      Post(Uri("/repeat").withQuery(Query("n" -> "5")), "batman") ~> route ~> check {
         responseAs[String] shouldEqual ("batman" * 5)
       }
     }
 
     "multuply numbers from formdata" in {
-      Post(Uri("/multiply"), FormData(Map("x" → HttpEntity("3"), "y" -> HttpEntity("1.211")))) ~> route ~> check {
+      Post(Uri("/multiply"),
+           FormData(Map(
+             "x" -> HttpEntity("3"),
+             "y" -> HttpEntity("1.211")))) ~>
+      route ~>
+      check {
         responseAs[String] shouldEqual f"result is ${3.63}%.2f"
       }
     }

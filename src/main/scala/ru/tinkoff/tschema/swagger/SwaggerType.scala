@@ -22,8 +22,7 @@ import SwaggerTypeable.Config
 sealed trait SwaggerType {
   def merge: PartialFunction[SwaggerType, SwaggerType] = PartialFunction.empty
 
-  def or(that: SwaggerType): SwaggerType =
-    merge.applyOrElse(that, Function.const(SwaggerObject(Vector("left" -> Eval.now(this), "right" -> Eval.now(that)))))
+  def or(that: SwaggerType): SwaggerType = SwaggerOneOf(Vector(Eval.now(this), Eval.now(that)))
 
   def deref: Eval[SwaggerType] = Eval.now(this)
 }
@@ -82,7 +81,9 @@ case class SwaggerRef(name: String, typ: Eval[SwaggerType]) extends SwaggerType 
   }
   override def deref = typ.flatMap(_.deref)
 }
-case class SwaggerEither(left: Eval[SwaggerType], right: Eval[SwaggerType]) extends SwaggerType
+case class SwaggerOneOf(alts: Vector[Eval[SwaggerType]]) extends SwaggerType {
+  override def or(that: SwaggerType) = SwaggerOneOf(alts :+ Eval.now(that))
+}
 
 object SwaggerType {
 
@@ -102,7 +103,7 @@ object SwaggerType {
       )).pure[Eval]
 
       case SwaggerRef(name, _) => JsonObject.singleton(
-        "$ref", Json.fromString(s"#/definitions/$name")
+        "$ref", Json.fromString(s"#/components/schemas/$name")
       ).pure[Eval]
 
       case SwaggerArray(items) => items.flatMap(encode).map(enc => JsonObject.fromIterable(Vector(
@@ -115,15 +116,13 @@ object SwaggerType {
                                                   .map(enc => JsonObject.fromIterable(Vector(
                                                     "type" -> Json.fromString("object"),
                                                     "required" -> Json.arr(required.map(Json.fromString): _*),
-                                                    "properties" -> JsonObject.fromIterable(enc).asJson)))
+                                                    "properties" -> Json.obj(enc: _*))))
 
-      case SwaggerEither(left, right) => for {
-        leftType <- left
-        leftJson <- encode(leftType)
-        rightType <- right
-        rightJson <- encode(rightType)
+      case SwaggerOneOf(alts) => for {
+        altsV <- alts.sequence
+        altTypes <- altsV.traverse(encode)
       } yield JsonObject(
-        "oneOf" -> Json.arr(leftJson.asJson, rightJson.asJson)
+        "oneOf" -> Json.arr(altTypes.map(Json.fromJsonObject): _*)
       )
 
     }
@@ -142,8 +141,8 @@ object SwaggerType {
           case SwaggerRef(name, _) if acc contains name => collectTypesImpl(rest, acc)
           case SwaggerRef(name, t)                      => collectTypesImpl(t.value :: rest, acc + (name -> t.value))
           case SwaggerArray(items)                      => collectTypesImpl(items.value :: rest, acc)
-          case SwaggerObject(props, _)                  => collectTypesImpl(props.foldLeft(rest) { case (next, (_, t)) => t.value :: next }, acc)
-          case SwaggerEither(left, right)               => collectTypesImpl(left.value :: right.value :: rest, acc)
+          case SwaggerObject(props, _)                  => collectTypesImpl(props.map(_._2.value) ++: rest, acc)
+          case SwaggerOneOf(alts)                       => collectTypesImpl(alts.map(_.value) ++: rest, acc)
           case _                                        => collectTypesImpl(rest, acc)
         }
       }
@@ -199,7 +198,7 @@ object SwaggerTypeable {
   implicit def swaggerSetTypeable[T: SwaggerTypeable] = seq[Set, T]
 
   private def coproduct[X[_, _], A, B](implicit left: Lazy[SwaggerTypeable[A]], right: Lazy[SwaggerTypeable[B]]) =
-    SwaggerTypeable[X[A, B]](SwaggerEither(left.later, right.later))
+    SwaggerTypeable[X[A, B]](SwaggerOneOf(Vector(left.later, right.later)))
 
   implicit def swaggerEitherTypeable[A: SwaggerTypeable, B: SwaggerTypeable] = coproduct[Either, A, B]
 
@@ -224,7 +223,8 @@ object SwaggerTypeable {
 case class GenericSwaggerTypeable[T](swaggerType: SwaggerType) extends SwaggerTypeable[T]
 
 object GenericSwaggerTypeable {
-  case class HListProps[L <: HList](props: List[(String, Eval[SwaggerType], Boolean)]) extends AnyVal
+  final case class HListProps[L <: HList](props: List[(String, Eval[SwaggerType], Boolean)])
+  final case class CoproductAlts[C <: Coproduct](alts: List[Eval[SwaggerType]])
 
   implicit val hNilProps = HListProps[HNil](Nil)
 
@@ -236,7 +236,7 @@ object GenericSwaggerTypeable {
   (implicit headProp: Lazy[SwaggerTypeable[Value]], tail: HListProps[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.default) =
     HListProps[FieldType[Name, Option[Value]] :: Tail]((cfg.propMod(name.value.name), headProp.later, false) :: tail.props)
 
-  implicit def genericTypeable[T, L <: HList]
+  implicit def genericProductTypeable[T, L <: HList]
   (implicit lgen: LabelledGeneric.Aux[T, L], list: HListProps[L]): GenericSwaggerTypeable[T] = {
     def required = list.props.filter(_._3).map(_._1).toVector
     def props = list.props.map { case (name, t, _) => name -> t }.toVector
@@ -244,6 +244,16 @@ object GenericSwaggerTypeable {
 
     GenericSwaggerTypeable[T](typ)
   }
+
+  implicit val cNilAlts = CoproductAlts[CNil](Nil)
+
+  implicit def cConsAlts[Head, Tail <: Coproduct]
+  (implicit headAlt: Lazy[SwaggerTypeable[Head]], tail: CoproductAlts[Tail]) =
+    CoproductAlts[Head :+: Tail](headAlt.later :: tail.alts)
+
+  implicit def genericSumTypeable[T, C <: Coproduct]
+  (implicit gen: Generic.Aux[T, C], sum: CoproductAlts[C]): GenericSwaggerTypeable[T] =
+    GenericSwaggerTypeable[T](SwaggerOneOf(sum.alts.toVector))
 }
 
 case class WrappedSwaggerTypeable[T](swaggerType: SwaggerType) extends SwaggerTypeable[T]

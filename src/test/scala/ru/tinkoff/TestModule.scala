@@ -119,7 +119,7 @@ object TestModule {
   val printer = Printer.spaces2.copy(dropNullValues = true)
   def main(args: Array[String]): Unit = {
     swagger
-    .make(SwaggerInfo(title = "test"))
+    .make(OpenApiInfo(title = "test"))
     .paths.foreach{case (name, map) =>
       val (meth, op) = map.head
       println(s"$name : $meth \n------------  ${op.asJson.pretty(printer)}\n------------")}

@@ -32,12 +32,20 @@ sealed trait MkSwagger[T] {
     val types = self.types ++ other.types
   }
 
-  def make(info: SwaggerInfo) =
-    Swagger(
+  def make(info: OpenApiInfo) = {
+    val openApiPaths =
+      paths
+      .groupBy(_.path)
+      .map {
+        case (parts, specs) => parts.mkString("/", "/", "") ->
+                               specs.map { case PathSpec(_, method, op) => method -> op }.toMap
+      }
+    OpenApi(
       info = info,
-      paths = paths.groupBy(_.path).map { case (parts, specs) => parts.mkString("/", "/", "") -> specs.map { case PathSpec(_, method, op) => method -> op }.toMap },
-      definitions = types
+      paths = openApiPaths,
+      components = OpenApiComponents(schemas = types)
     )
+  }
 
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
@@ -53,7 +61,7 @@ sealed trait MkSwagger[T] {
 
 object MkSwagger {
 
-  object macroInterface{
+  object macroInterface {
   }
 
 
@@ -64,7 +72,7 @@ object MkSwagger {
 
   def apply[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
 
-  case class PathSpec(path: Vector[String], method: Swagger.Method, op: SwaggerOp) {
+  case class PathSpec(path: Vector[String], method: OpenApi.Method, op: SwaggerOp) {
     def modPath(f: Vector[String] => Vector[String]) = copy(path = f(path))
     def modOp(f: SwaggerOp => SwaggerOp) = copy(op = f(op))
   }
@@ -73,12 +81,12 @@ object MkSwagger {
 
   type TypePool = Map[String, SwaggerType]
 
-  def single[T](op: SwaggerOp, method: Swagger.Method, typeList: Map[String, SwaggerType]) = new MkSwagger[T] {
+  def single[T](op: SwaggerOp, method: OpenApi.Method, typeList: Map[String, SwaggerType]) = new MkSwagger[T] {
     val paths = Vector(PathSpec(Vector.empty, method, op))
     val types = typeList
   }
 
-  private def derivedMethod[T, meth[_]](method: Swagger.Method)(implicit typ: SwaggerTypeable[T]) =
+  private def derivedMethod[T, meth[_]](method: OpenApi.Method)(implicit typ: SwaggerTypeable[T]) =
     single[meth[T]](
       method = method,
       op = SwaggerOp(
@@ -88,12 +96,12 @@ object MkSwagger {
           )))),
       typeList = typ.swaggerType.collectTypes)
 
-  implicit def deriveGet[T: SwaggerTypeable] = derivedMethod[T, Get](Swagger.Method.get)
-  implicit def derivePost[T: SwaggerTypeable] = derivedMethod[T, Post](Swagger.Method.post)
-  implicit def deriveHead[T: SwaggerTypeable] = derivedMethod[T, Head](Swagger.Method.head)
-  implicit def derivePut[T: SwaggerTypeable] = derivedMethod[T, Put](Swagger.Method.put)
-  implicit def deriveDelete[T: SwaggerTypeable] = derivedMethod[T, Delete](Swagger.Method.delete)
-  implicit def deriveOptions[T: SwaggerTypeable] = derivedMethod[T, Options](Swagger.Method.options)
+  implicit def deriveGet[T: SwaggerTypeable] = derivedMethod[T, Get](OpenApi.Method.get)
+  implicit def derivePost[T: SwaggerTypeable] = derivedMethod[T, Post](OpenApi.Method.post)
+  implicit def deriveHead[T: SwaggerTypeable] = derivedMethod[T, Head](OpenApi.Method.head)
+  implicit def derivePut[T: SwaggerTypeable] = derivedMethod[T, Put](OpenApi.Method.put)
+  implicit def deriveDelete[T: SwaggerTypeable] = derivedMethod[T, Delete](OpenApi.Method.delete)
+  implicit def deriveOptions[T: SwaggerTypeable] = derivedMethod[T, Options](OpenApi.Method.options)
 
   implicit def deriveJoin[left, right]
   (implicit left: MkSwagger[left], right: MkSwagger[right]) = (left ++ right).as[left <|> right]

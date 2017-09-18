@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
-import Swagger.jsonMimeType
+import OpenApi.jsonMimeType
 import akka.http.scaladsl.model.StatusCode
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe._
@@ -10,19 +10,18 @@ import io.circe.syntax._
 import ru.tinkoff.tschema.utils.json.CirceKeyEnum
 import ru.tinkoff.tschema.utils.json.circeSyntax._
 
-final case class Swagger(swagger: String = "2.0",
-                         info: SwaggerInfo,
-                         host: Option[String] = None,
-                         basePath: Option[String] = None,
-                         schemes: Option[Vector[String]] = None,
-                         consumes: Vector[String] = jsonMimeType,
-                         produces: Vector[String] = jsonMimeType,
-                         paths: Swagger.PathMap = Map.empty,
-                         definitions: Map[String, SwaggerType] = Map.empty,
-                         tags: Vector[SwaggerTag] = Vector.empty,
-                         externalDocs: Option[SwaggerExternalDocs] = None)
+final case class OpenApi(openapi: String = "3.0.0",
+                         info: OpenApiInfo = OpenApiInfo(),
+                         servers: Vector[OpenApiServer] = Vector.empty,
+                         components: OpenApiComponents = OpenApiComponents(),
+                         paths: OpenApi.PathMap = Map.empty,
+                         tags: Vector[OpenApiTag] = Vector.empty,
+                         externalDocs: Option[OpenApiExternalDocs] = None) {
+  def addServer(url: String, description: Option[String] = None, variables: Map[String, OpenApiServerVariable] = Map.empty) =
+    copy(servers = servers :+ OpenApiServer(url = url, description = description, variables = variables))
+}
 
-object Swagger {
+object OpenApi {
   sealed trait Method extends EnumEntry
   object Method extends Enum[Method] with CirceKeyEnum[Method] {
     val values = findValues
@@ -40,16 +39,25 @@ object Swagger {
 
   private[tschema] val jsonMimeType = Vector("application/json")
 
-  implicit lazy val swaggerEncoder: ObjectEncoder[Swagger] = deriveEncoder
+  implicit lazy val swaggerEncoder: ObjectEncoder[OpenApi] = deriveEncoder
 }
 
 @JsonCodec
-final case class SwaggerInfo(title: String = "",
+final case class OpenApiInfo(title: String = "",
                              description: Option[SwaggerDescription] = None,
                              termsOfService: Option[String] = None,
                              contact: Option[SwaggerContact] = None,
                              license: Option[SwaggerLicense] = None,
                              version: String = "")
+
+final case class OpenApiComponents(schemas: Map[String, SwaggerType] = Map.empty)
+
+object OpenApiComponents {
+  implicit def encoder: Encoder[OpenApiComponents] = deriveEncoder
+}
+
+@JsonCodec
+final case class OpenApiSchema()
 
 @JsonCodec
 final case class SwaggerContact(name: Option[String] = None,
@@ -62,6 +70,16 @@ final case class SwaggerLicense(name: String,
 
 final case class SwaggerParam(base: SwaggerParamBase,
                               specific: SwaggerParamSpecific)
+
+@JsonCodec
+final case class OpenApiServer(url: String,
+                               description: Option[String] = None,
+                               variables: Map[String, OpenApiServerVariable] = Map.empty)
+
+@JsonCodec
+final case class OpenApiServerVariable(enum: Vector[String],
+                                       default: String,
+                                       description: Option[String])
 
 sealed trait SwaggerParamSpecific {
   def in: SwaggerParam.In
@@ -78,7 +96,7 @@ final case class SwaggerParamGeneral(in: SwaggerParam.NonBodyIn,
 object SwaggerParamSpecific {
   implicit lazy val specificParamFormat = new ObjectEncoder[SwaggerParamSpecific] {
     override def encodeObject(a: SwaggerParamSpecific): JsonObject = a match {
-      case SwaggerParamBody(schema) => JsonObject.fromIterable(Vector(
+      case SwaggerParamBody(schema)                        => JsonObject.fromIterable(Vector(
         "schema" -> schema.asJson,
         "in" -> Json.fromString("body")))
       case SwaggerParamGeneral(in, allowEmptyValue, value) =>
@@ -207,18 +225,18 @@ object SwaggerFormat {
 }
 
 @JsonCodec
-final case class SwaggerTag(name: String,
+final case class OpenApiTag(name: String,
                             description: Option[SwaggerDescription] = None,
-                            externalDocs: Option[SwaggerExternalDocs] = None)
+                            externalDocs: Option[OpenApiExternalDocs] = None)
 
 @JsonCodec
-final case class SwaggerExternalDocs(description: Option[SwaggerDescription] = None,
+final case class OpenApiExternalDocs(description: Option[SwaggerDescription] = None,
                                      url: String)
 
 final case class SwaggerOp(tags: Vector[String] = Vector.empty,
                            summary: Option[String] = None,
                            description: Option[SwaggerDescription] = None,
-                           externalDocs: Option[SwaggerExternalDocs] = None,
+                           externalDocs: Option[OpenApiExternalDocs] = None,
                            operationId: Option[String] = None,
                            consumes: Vector[String] = jsonMimeType,
                            produces: Vector[String] = jsonMimeType,
@@ -244,7 +262,7 @@ object SwaggerResponses {
     resps =>
       val codesObj = mapEnc.encodeObject(resps.codes)
       resps.default match {
-        case None => codesObj
+        case None          => codesObj
         case Some(default) => codesObj.add("default", default.asJson)
       }
   }

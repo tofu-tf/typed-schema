@@ -167,7 +167,6 @@ object MakerMacro {
   case class DSLLeaf[T](res: T, key: String) extends DSLTree[T]
 
   type NList[T] = List[(String, T)]
-  type NMap[T] = Map[String, T]
   type MethodDecl[T] = (List[NList[T]], T)
 }
 

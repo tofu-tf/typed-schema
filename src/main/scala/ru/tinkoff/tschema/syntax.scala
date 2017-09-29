@@ -9,13 +9,14 @@ import typeDSL._
 import scala.language.higherKinds
 
 object syntax {
-  def prefix[s](witness: Witness.Lt[s]) = new Prefix[s]
-  def queryFlag[s](witness: Witness.Lt[s]) = new QueryFlag[s]
-  def tag[s](witness: Witness.Lt[s]) = new Tag[s]
-  def key[s](witness: Witness.Lt[s]) = new Key[s]
-  def tagPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) |> tag[s](witness)
-  def keyPrefix[s](witness: Witness.Lt[s]) = prefix[s](witness) |> key[s](witness)
-  def operation[s](witness: Witness.Lt[s]) = keyPrefix[s](witness) |> descr.i18n[s](witness)
+  def prefix[s <: Symbol](witness: Witness.Lt[s]) = new Prefix[s]
+  def queryFlag[s <: Symbol](witness: Witness.Lt[s]) = new QueryFlag[s]
+  def tag[s <: Symbol](witness: Witness.Lt[s]) = new Tag[s]
+  def key[s <: Symbol](witness: Witness.Lt[s]) = new Key[s]
+  def tagPrefix[s <: Symbol](witness: Witness.Lt[s]) = prefix[s](witness) |> tag[s](witness)
+  def keyPrefix[s <: Symbol](witness: Witness.Lt[s]) = prefix[s](witness) |> key[s](witness)
+  def operation[s <: Symbol](witness: Witness.Lt[s]) = keyPrefix[s](witness) |> descr.i18n[s](witness)
+  def keyi18n[s <: Symbol](witness: Witness.Lt[s]) = key[s](witness) |> descr.i18n[s](witness)
 
   def reqBody[x] = new ReqBody[x]
 
@@ -26,43 +27,43 @@ object syntax {
   }
 
   def capture[x] = new MkComplex(new Maker[x, Capture] {
-    override def make[s]: Capture[s, x] = new Capture
+    override def make[s <: Symbol]: Capture[s, x] = new Capture
   })
 
   def queryParam[x] = new MkComplex(new Maker[x, QueryParam] {
-    override def make[s]: QueryParam[s, x] = new QueryParam
+    override def make[s <: Symbol]: QueryParam[s, x] = new QueryParam
   })
 
   def queryParams[x] = new MkComplex(new Maker[x, QueryParams] {
-    override def make[s]: QueryParams[s, x] = new QueryParams
+    override def make[s <: Symbol]: QueryParams[s, x] = new QueryParams
   })
 
   def header[x] = new MkComplex(new Maker[x, Header] {
-    override def make[s]: Header[s, x] = new Header
+    override def make[s <: Symbol]: Header[s, x] = new Header
   })
 
   def formField[x] = new MkComplex(new Maker[x, FormField] {
-    override def make[s]: FormField[s, x] = new FormField
+    override def make[s <: Symbol]: FormField[s, x] = new FormField
   })
 
   def cookie[x] = new MkComplex(new Maker[x, Cookie] {
-    override def make[s]: Cookie[s, x] = new Cookie
+    override def make[s <: Symbol]: Cookie[s, x] = new Cookie
   })
 
   abstract class Maker[x, T[_, _]] {
-    def make[s]: T[s, x]
+    def make[s <: Symbol]: T[s, x]
   }
 
   class MkComplex[x, T[_, _]](maker: Maker[x, T]) {
-    def apply[s](witness: Witness.Lt[s]) = maker.make[s]
+    def apply[s <: Symbol](witness: Witness.Lt[s]) = maker.make[s]
   }
 
   class MkTransform[a, b] {
-    def apply[t, u, s](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
+    def apply[t, u <: Symbol, s <: Symbol](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
   }
 
   class MkTransformReq[a, b] {
-    def apply[t <: HasReq, u, s](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
+    def apply[t <: HasReq, u <: Symbol, s <: Symbol](t: t)(wu: Witness.Lt[u], ws: Witness.Lt[s]) = new Transform[u, s, t, a, b]
   }
 
   implicit class TypeApiOps[x <: DSLDef](x: => x) {

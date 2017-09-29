@@ -1,5 +1,7 @@
 package ru.tinkoff.tschema
 
+import java.util.UUID
+
 import akka.http.scaladsl.server._
 import Directives._
 import FromParam.Result
@@ -84,6 +86,7 @@ trait FromParamCompanion[F[x] <: FromParam.Aux[x, F]] extends LowPriorityFromPar
   implicit val bigIntParam = tryParam(BigInt.apply)
   implicit val booleanParam = tryParam(_.toBoolean)
   implicit val bigDecimalParam = tryParam(BigDecimal.apply)
+  implicit val uuidParam = tryParam(UUID.fromString)
 
   implicit def list2Param[X](implicit fromParam: F[List[X]], options: ListParamOptions[F] = default[F]): F[List[List[X]]] =
     param(_.split(options.sep2).toList.traverse[Result, List[X]](fromParam.apply))

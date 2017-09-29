@@ -9,12 +9,16 @@ import io.circe.generic.semiauto._
 import io.circe.syntax._
 import ru.tinkoff.tschema.utils.json.CirceKeyEnum
 import ru.tinkoff.tschema.utils.json.circeSyntax._
+import ru.tinkoff.tschema.utils.json.circeCodecs._
 
+import scala.collection.immutable.TreeMap
+
+@JsonCodec(encodeOnly = true)
 final case class OpenApi(openapi: String = "3.0.0",
                          info: OpenApiInfo = OpenApiInfo(),
                          servers: Vector[OpenApiServer] = Vector.empty,
                          components: OpenApiComponents = OpenApiComponents(),
-                         paths: OpenApi.PathMap = Map.empty,
+                         paths: OpenApi.PathMap = TreeMap.empty,
                          tags: Vector[OpenApiTag] = Vector.empty,
                          externalDocs: Option[OpenApiExternalDocs] = None) {
   def addServer(url: String, description: Option[String] = None, variables: Map[String, OpenApiServerVariable] = Map.empty) =
@@ -34,39 +38,34 @@ object OpenApi {
     case object options extends Method
   }
 
-  type Path = Map[Method, SwaggerOp]
-  type PathMap = Map[String, Path]
+  type Path = Map[Method, OpenApiOp]
+  type PathMap = TreeMap[String, Path]
 
   private[tschema] val jsonMimeType = Vector("application/json")
-
-  implicit lazy val swaggerEncoder: ObjectEncoder[OpenApi] = deriveEncoder
 }
 
 @JsonCodec
 final case class OpenApiInfo(title: String = "",
                              description: Option[SwaggerDescription] = None,
                              termsOfService: Option[String] = None,
-                             contact: Option[SwaggerContact] = None,
-                             license: Option[SwaggerLicense] = None,
+                             contact: Option[OpenApiContact] = None,
+                             license: Option[OpeApiLicense] = None,
                              version: String = "")
 
-final case class OpenApiComponents(schemas: Map[String, SwaggerType] = Map.empty)
-
-object OpenApiComponents {
-  implicit def encoder: Encoder[OpenApiComponents] = deriveEncoder
-}
+@JsonCodec(encodeOnly = true)
+final case class OpenApiComponents(schemas: TreeMap[String, SwaggerType] = TreeMap.empty)
 
 @JsonCodec
 final case class OpenApiSchema()
 
 @JsonCodec
-final case class SwaggerContact(name: Option[String] = None,
+final case class OpenApiContact(name: Option[String] = None,
                                 url: Option[String] = None,
                                 email: Option[String] = None)
 
 @JsonCodec
-final case class SwaggerLicense(name: String,
-                                url: Option[String] = None)
+final case class OpeApiLicense(name: String,
+                               url: Option[String] = None)
 
 final case class SwaggerParam(base: SwaggerParamBase,
                               specific: SwaggerParamSpecific)
@@ -233,7 +232,7 @@ final case class OpenApiTag(name: String,
 final case class OpenApiExternalDocs(description: Option[SwaggerDescription] = None,
                                      url: String)
 
-final case class SwaggerOp(tags: Vector[String] = Vector.empty,
+final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            summary: Option[String] = None,
                            description: Option[SwaggerDescription] = None,
                            externalDocs: Option[OpenApiExternalDocs] = None,
@@ -241,24 +240,24 @@ final case class SwaggerOp(tags: Vector[String] = Vector.empty,
                            consumes: Vector[String] = jsonMimeType,
                            produces: Vector[String] = jsonMimeType,
                            parameters: Vector[SwaggerParam] = Vector.empty,
-                           responses: SwaggerResponses) {
+                           responses: OpenApiResponses) {
   def addParam(param: SwaggerParam) = copy(parameters = parameters :+ param)
   def addTag(tag: String) = copy(tags = tags :+ tag)
 }
 
-object SwaggerOp {
-  implicit lazy val swaggerOpDecoder: ObjectEncoder[SwaggerOp] = deriveEncoder
+object OpenApiOp {
+  implicit lazy val swaggerOpDecoder: ObjectEncoder[OpenApiOp] = deriveEncoder
 }
 
-final case class SwaggerResponses(default: Option[SwaggerResponse] = None,
-                                  codes: Map[StatusCode, SwaggerResponse] = Map.empty)
+final case class OpenApiResponses(default: Option[OpenApiResponse] = None,
+                                  codes: Map[StatusCode, OpenApiResponse] = Map.empty)
 
-object SwaggerResponses {
+object OpenApiResponses {
   implicit lazy val statusCodeEncoder = KeyEncoder.encodeKeyInt.contramap[StatusCode](_.intValue)
 
-  val mapEnc = Encoder.encodeMapLike[StatusCode, SwaggerResponse, Map]
+  val mapEnc = Encoder.encodeMapLike[StatusCode, OpenApiResponse, Map]
 
-  implicit lazy val responsesEncoder: ObjectEncoder[SwaggerResponses] = ObjectEncoder.instance[SwaggerResponses] {
+  implicit lazy val responsesEncoder: ObjectEncoder[OpenApiResponses] = ObjectEncoder.instance[OpenApiResponses] {
     resps =>
       val codesObj = mapEnc.encodeObject(resps.codes)
       resps.default match {
@@ -268,13 +267,19 @@ object SwaggerResponses {
   }
 }
 
-final case class SwaggerResponse(description: Option[SwaggerDescription] = None,
-                                 schema: SwaggerType,
+@JsonCodec(encodeOnly = true)
+final case class OpenApiResponse(description: Option[SwaggerDescription] = None,
+                                 content: Map[String, OpenApiMediaType],
                                  headers: Map[String, SwaggerValue] = Map.empty)
 
-object SwaggerResponse {
-  implicit lazy val responseEncoder: Encoder[SwaggerResponse] = deriveEncoder
+object OpenApiResponse {
+  def json(description: Option[SwaggerDescription] = None, swaggerType: SwaggerType): OpenApiResponse =
+    OpenApiResponse(description = description, content = Map("application/json" -> OpenApiMediaType(Some(swaggerType))))
 }
+
+@JsonCodec(encodeOnly = true)
+final case class OpenApiMediaType(schema: Option[SwaggerType] = None,
+                                  example: Option[Json] = None)
 
 
 

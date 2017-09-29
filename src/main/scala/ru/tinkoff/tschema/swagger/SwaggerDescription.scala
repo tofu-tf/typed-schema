@@ -1,10 +1,11 @@
 package ru.tinkoff.tschema.swagger
 
-import java.util.ResourceBundle
+import java.util.{MissingResourceException, ResourceBundle}
 
 import io.circe._
 
 import scala.io.Source
+import scala.util.Try
 
 sealed trait SwaggerDescription {
   def string: String
@@ -16,7 +17,7 @@ case class TraverseDescription(iterable: TraversableOnce[String]) extends Swagge
 }
 
 case class I18nDescription(key: String)(implicit bundle: ResourceBundle) extends SwaggerDescription {
-  def string = bundle.getString(key)
+  def string = Try(bundle.getString(key)).recover { case _: MissingResourceException => "" }.get
 }
 
 case class ResourceDescription(name: String) extends SwaggerDescription {

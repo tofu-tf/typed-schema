@@ -9,7 +9,7 @@ publishTo in ThisBuild := {
     Some("releases" at nexus + "content/repositories/tcs")
 }
 credentials in ThisBuild += Credentials(Path.userHome / ".sbt" / ".credentials")
-version in ThisBuild := "0.6.14"
+version in ThisBuild := "0.6.15"
 
 
 

@@ -120,6 +120,16 @@ object MkSwagger {
   implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 }
 
+final case class AsOpenApiParam[T](typ: SwaggerType, required: Boolean = true){
+  def types = typ.collectTypes
+}
+
+object AsOpenApiParam {
+  implicit def requiredParam[T](implicit typ: SwaggerTypeable[T]): AsOpenApiParam[T] = AsOpenApiParam[T](typ = typ.typ, required = true)
+  implicit def optionalParam[T](implicit typ: SwaggerTypeable[T]): AsOpenApiParam[Option[T]] = AsOpenApiParam[Option[T]](typ = typ.typ, required = false)
+}
+
+
 case class AsSwaggerParam[T](value: SwaggerValue, required: Boolean = true)
 
 object AsSwaggerParam {
@@ -145,6 +155,12 @@ object AsSwaggerParam {
   implicit def vectorParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Vector[T]](SwaggerArrayValue(param.value), param.required)
   implicit def listParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[List[T]](SwaggerArrayValue(param.value), param.required)
   implicit def streamParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Stream[T]](SwaggerArrayValue(param.value), param.required)
+
+  trait Enum[E <: enumeratum.EnumEntry] {
+    self: enumeratum.Enum[E] =>
+    implicit lazy val asSwaggerParam: AsSwaggerParam[E] =
+      AsSwaggerParam[E](SwaggerStringValue(enum = Some(self.values.map(_.entryName).toVector)))
+  }
 }
 
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
@@ -176,6 +192,8 @@ trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
 }
 
 object SwaggerMapper {
+  def apply[T](implicit mapper: SwaggerMapper[T]): SwaggerMapper[T] = mapper
+
   def empty[T] = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = spec
     def types: Map[String, SwaggerType] = TreeMap.empty
@@ -189,7 +207,7 @@ object SwaggerMapper {
     def mapSpec(spec: PathSpec): PathSpec = spec
   }
 
-  import SwaggerParam.{In, NonBodyIn}
+  import OpenApiParam.In
 
   def fromFunc[T](f: PathSpec => PathSpec) = new FromFunc[T] {
     def mapSpec(spec: PathSpec): PathSpec = f(spec)
@@ -200,13 +218,15 @@ object SwaggerMapper {
   }
 
   private def derivedParam[name, T, param[_, _]]
-  (in: NonBodyIn)
-  (implicit name: Name[name], param: AsSwaggerParam[T]) =
-    fromFunc[param[name, T]](_.modOp(_.addParam(SwaggerParam(
-      base = SwaggerParamBase(name.string, required = param.required),
-      specific = SwaggerParamGeneral(
-        in = in,
-        value = param.value)))))
+  (in: In)
+  (implicit name: Name[name], param: AsOpenApiParam[T]) = new SwaggerMapper[param[name, T]] {
+    def mapSpec(spec: PathSpec) = spec.modOp(_.addParam(OpenApiParam(
+      name = name.string,
+      in = in,
+      required = param.required,
+      schema = Some(param.typ))))
+    def types = param.types
+  }
 
   implicit def derivePath[path](implicit name: Name[path]) =
     fromFunc[path](_.modPath(name.string +: _))
@@ -217,29 +237,27 @@ object SwaggerMapper {
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
-  implicit def deriveQueryParam[name: Name, T: AsSwaggerParam] =
+  implicit def deriveQueryParam[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, QueryParam](In.query)
 
   implicit def deriveQueryFlag[name: Name]: SwaggerMapper[QueryFlag[name]] =
     derivedParam[name, Option[Boolean], λ[(n, x) => QueryFlag[n]]](In.query)
 
-  implicit def deriveHeader[name: Name, T: AsSwaggerParam] =
+  implicit def deriveHeader[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, Header](In.header)
 
-  implicit def deriveFormField[name: Name, T: AsSwaggerParam] =
+  implicit def deriveFormField[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, FormField](In.formData)
 
-  implicit def deriveCookie[name: Name, T: AsSwaggerParam] =
+  implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, Cookie](In.cookie)
 
-  implicit def derivePathParam[name, T: AsSwaggerParam](implicit name: Name[name]) =
+  implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
     derivedParam[name, T, Capture](In.path) map (_.modPath(s"{$name}" +: _))
 
   implicit def deriveReqBody[T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[T]] =
     new SwaggerMapper[ReqBody[T]] {
-      def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.addParam(SwaggerParam(
-        base = SwaggerParamBase("body", required = true),
-        specific = SwaggerParamBody(typeable.typ))))
+      def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.addBody(typeable.typ))
       val types: Map[String, SwaggerType] = typeable.typ.collectTypes
     }
 

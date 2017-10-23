@@ -38,6 +38,7 @@ class SwaggerPrimitive[Typ <: SwaggerValue](val typ: Typ, val format: Option[Swa
 
 object SwaggerPrimitive {
   case object string extends SwaggerPrimitive(SwaggerStringValue())
+  case object uuid extends SwaggerPrimitive(SwaggerStringValue.uuid)
   case object number extends SwaggerPrimitive(SwaggerNumberValue())
   case object boolean extends SwaggerPrimitive(SwaggerBooleanValue())
   //  case object `null` extends SwaggerPrimitive(SwaggerN)
@@ -186,9 +187,19 @@ object SwaggerType {
 
 trait SwaggerTypeable[T] {
   def typ: SwaggerType
+  def as[U]: SwaggerTypeable[U] = this.asInstanceOf[SwaggerTypeable[U]]
 }
 
-object SwaggerTypeable {
+trait LowLevelSwaggerTypeable{
+  @inline final protected def make[T](t: SwaggerType) = new SwaggerTypeable[T] {
+    val typ = t
+  }
+  @inline final protected def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]) = make[X[T]](SwaggerArray(items.later))
+
+  final implicit def seqTypeable[T: SwaggerTypeable] = seq[Seq, T]
+}
+
+object SwaggerTypeable extends LowLevelSwaggerTypeable {
   def apply[T](implicit typeable: SwaggerTypeable[T]): SwaggerTypeable[T] = typeable
 
   case class Config(propMod: String => String = identity,
@@ -216,10 +227,6 @@ object SwaggerTypeable {
     lazy val typ = t
   }
 
-  def make[T](t: SwaggerType) = new SwaggerTypeable[T] {
-    val typ = t
-  }
-
 
   implicit val swaggerTypeableInteger = make[Int](SwaggerPrimitive.integer)
   implicit val swaggerTypeableLong = make[Long](SwaggerPrimitive.long)
@@ -236,8 +243,6 @@ object SwaggerTypeable {
 
 
   implicit val swaggerTypeableJsonObject = make[JsonObject](SwaggerObject())
-
-  private def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]) = make[X[T]](SwaggerArray(items.later))
 
   implicit def swaggerVectorTypeable[T: SwaggerTypeable] = seq[Vector, T]
   implicit def swaggerListTypeable[T: SwaggerTypeable] = seq[List, T]

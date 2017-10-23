@@ -1,4 +1,5 @@
 package ru.tinkoff.tschema.akkaHttp
+
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
@@ -34,7 +35,13 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   protected def tryParse[T, F[x] <: FromParam[x], name <: Symbol](value: String)(implicit parse: F[T], w: Witness.Aux[name]): Directive1[T] =
     Directive[Tuple1[T]](f => parse(value) match {
       case Right(result) => f(Tuple1(result))
-      case Left(err) => reject(ParamFormatRejection(w.value.name, err))
+      case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
+    })
+
+  protected def tryParseOpt[T, F[x] <: FromParam[x], name <: Symbol](value: String)(implicit parse: F[T], w: Witness.Aux[name]): Directive1[Option[T]] =
+    Directive[Tuple1[Option[T]]](f => parse(value) match {
+      case Right(result) => f(Tuple1(Some(result)))
+      case Left(err)     => f(Tuple1(None))
     })
 
   protected def name[name <: Symbol](implicit w: Witness.Aux[name]): String = w.value.name
@@ -86,7 +93,7 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
     def directive(in: In): Directive1[In] = Directive { handle =>
       f(select(in)) match {
         case Some(rej) => reject(rej)
-        case None => handle(Tuple1(in))
+        case None      => handle(Tuple1(in))
       }
     }
   }
@@ -100,7 +107,7 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
   )
 
   implicit def queryOptParamServe[name <: Symbol : Witness.Aux, x: FromQueryParam, In <: HList] = serveAdd[QueryParam[name, Option[x]], In, Option[x], name](
-    OptionT[Directive1, String](parameter(name[name].?)).flatMap { param => OptionT.liftF(tryParse[x, FromQueryParam, name](param)) }.value
+    OptionT[Directive1, String](parameter(name[name].?)).flatMap { param => OptionT(tryParseOpt[x, FromQueryParam, name](param)) }.value
   )
 
   implicit def queryParamsServe[name <: Symbol : Witness.Aux, x: FromQueryParam, In <: HList] = serveAdd[QueryParams[name, x], In, List[x], name] {
@@ -123,13 +130,37 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
     headerValueByName(name[name]).flatMap(str => tryParse[x, FromHeader, name](str))
   }
 
+  implicit def headerOptionServe[name <: Symbol : Witness.Aux, x: FromHeader, In <: HList] = serveAdd[Header[name, Option[x]], In, Option[x], name] {
+    optionalHeaderValueByName(name[name]).flatMap {
+      case Some(str) => tryParseOpt[x, FromHeader, name](str)
+      case None      => provide(Option.empty[x])
+    }
+  }
+
   implicit def cookieServe[name <: Symbol : Witness.Aux, x: FromCookie, In <: HList] = serveAdd[Cookie[name, x], In, x, name] {
     cookie(name[name]).flatMap(cook => tryParse[x, FromCookie, name](cook.value))
+  }
+
+  implicit def cookieOptionServe[name <: Symbol : Witness.Aux, x: FromCookie, In <: HList] = serveAdd[Cookie[name, Option[x]], In, Option[x], name] {
+    optionalCookie(name[name]).flatMap {
+      case Some(cook) => tryParseOpt[x, FromCookie, name](cook.value)
+      case None       => provide(Option.empty[x])
+    }
   }
 
   implicit def formFieldServe[name <: Symbol : Witness.Aux, x: FromFormField, In <: HList] = serveAdd[FormField[name, x], In, x, name] {
     formField(name[name]).flatMap(str => tryParse[x, FromFormField, name](str))
   }
+
+  implicit def formFieldOptionServe[name <: Symbol : Witness.Aux, x: FromFormField, In <: HList] = serveAdd[FormField[name, Option[x]], In, Option[x], name] {
+    formFieldMap.flatMap { m =>
+      m.get(name[name]) match {
+        case Some(str) => tryParseOpt[x, FromFormField, name](str)
+        case None => provide(Option.empty[x])
+      }
+    }
+  }
+
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
 

@@ -43,13 +43,13 @@ object FromParam {
   trait Enum[E <: enumeratum.EnumEntry] {
     self: enumeratum.Enum[E] =>
     private def fromParam[C <: FromParamFactory](comp: C): comp.TC[E] =
-      comp.param(s => self.withNameOption(s).fold[Either[String, E]](Left(s"could not $comp value: $s"))(x => Right(x)))
+      comp.param(s => self.withNameOption(s).fold[Either[String, E]](Left(s"could not find $self value: $s"))(x => Right(x)))
 
 
-    implicit val fromQueryParam: FromQueryParam[E] = fromParam(FromQueryParam)
-    implicit val fromHeader: FromHeader[E] = fromParam(FromHeader)
-    implicit val fromFormField: FromFormField[E] = fromParam(FromFormField)
-    implicit object fromPathParam extends FromPathParam[E](Segment.flatMap(self.withNameOption))
+    implicit lazy val fromQueryParam: FromQueryParam[E] = fromParam(FromQueryParam)
+    implicit lazy val fromHeader: FromHeader[E] = fromParam(FromHeader)
+    implicit lazy val fromFormField: FromFormField[E] = fromParam(FromFormField)
+    implicit lazy val fromPathParam = new FromPathParam[E](Segment.flatMap(self.withNameOption))
   }
 }
 /**

@@ -67,8 +67,24 @@ final case class OpenApiContact(name: Option[String] = None,
 final case class OpeApiLicense(name: String,
                                url: Option[String] = None)
 
-final case class SwaggerParam(base: SwaggerParamBase,
-                              specific: SwaggerParamSpecific)
+@JsonCodec(encodeOnly = true)
+final case class OpenApiParam(name: String,
+                              in: OpenApiParam.In,
+                              description: Option[String] = None,
+                              required: Boolean = true,
+                              schema: Option[SwaggerType] = None)
+
+object OpenApiParam {
+  sealed trait In extends EnumEntry
+  object In extends Enum[In] with CirceEnum[In] {
+    override val values = findValues
+    case object query extends In
+    case object header extends In
+    case object path extends In
+    case object cookie extends In
+    case object formData extends In
+  }
+}
 
 @JsonCodec
 final case class OpenApiServer(url: String,
@@ -80,58 +96,7 @@ final case class OpenApiServerVariable(enum: Vector[String],
                                        default: String,
                                        description: Option[String])
 
-sealed trait SwaggerParamSpecific {
-  def in: SwaggerParam.In
-}
 
-final case class SwaggerParamBody(schema: SwaggerType) extends SwaggerParamSpecific {
-  def in = SwaggerParam.In.body
-}
-
-final case class SwaggerParamGeneral(in: SwaggerParam.NonBodyIn,
-                                     allowEmptyValue: Boolean = false,
-                                     value: SwaggerValue) extends SwaggerParamSpecific
-
-object SwaggerParamSpecific {
-  implicit lazy val specificParamFormat = new ObjectEncoder[SwaggerParamSpecific] {
-    override def encodeObject(a: SwaggerParamSpecific): JsonObject = a match {
-      case SwaggerParamBody(schema)                        => JsonObject.fromIterable(Vector(
-        "schema" -> schema.asJson,
-        "in" -> Json.fromString("body")))
-      case SwaggerParamGeneral(in, allowEmptyValue, value) =>
-        value.asJsonObject.add("in", in.asJson).add("allowEmptyValue", Json.fromBoolean(allowEmptyValue))
-    }
-  }
-}
-
-@JsonCodec
-final case class SwaggerParamBase(name: String,
-                                  description: Option[String] = None,
-                                  required: Boolean = false)
-
-case object SwaggerParam {
-  sealed trait In extends EnumEntry
-  sealed trait NonBodyIn extends In
-
-  object In extends Enum[In] with CirceEnum[In] {
-    override val values = findValues
-    case object query extends NonBodyIn
-    case object header extends NonBodyIn
-    case object path extends NonBodyIn
-    case object formData extends NonBodyIn
-    case object cookie extends NonBodyIn
-    case object body extends In
-  }
-
-  implicit lazy val nonBodyInEncoder: Encoder[SwaggerParam.NonBodyIn] =
-    Encoder[SwaggerParam.In].contramap[SwaggerParam.NonBodyIn](identity)
-
-  implicit lazy val swaggerParamEncoder: ObjectEncoder[SwaggerParam] = ObjectEncoder.instance[SwaggerParam] { p =>
-    val base = p.base.asJsonObject
-    val specific = p.specific.asJsonObject
-    JsonObject.fromMap(specific.toMap ++ base.toMap)
-  }
-}
 
 sealed trait SwaggerValue {
   def typeName: String
@@ -148,7 +113,7 @@ final case class SwaggerStringValue(format: Option[SwaggerFormat[SwaggerStringVa
 
 object SwaggerStringValue {
   val uuidPattern = Seq(8, 4, 4, 4, 12).map(k => s"[0-9a-fA-F]{$k}").mkString("-")
-  def uuid = SwaggerStringValue(pattern = Some(uuidPattern))
+  val uuid = SwaggerStringValue(pattern = Some(uuidPattern))
 }
 
 final case class SwaggerNumberValue(format: Option[SwaggerFormat[SwaggerNumberValue]] = None,
@@ -223,6 +188,19 @@ object SwaggerFormat {
     Encoder.encodeString.contramap[SwaggerFormat[T]](_.toString)
 }
 
+@JsonCodec(encodeOnly = true)
+final case class OpenApiRequestBody(
+                                     description: Option[String] = None,
+                                     content: Map[String, OpenApiMediaType] = Map.empty,
+                                     required: Boolean = true
+                                   )
+
+object OpenApiRequestBody {
+  def apply(description: Option[String], swaggerType: SwaggerType): OpenApiRequestBody =
+    OpenApiRequestBody(description = description, content = Map("application/json" -> OpenApiMediaType(Some(swaggerType))))
+
+}
+
 @JsonCodec
 final case class OpenApiTag(name: String,
                             description: Option[SwaggerDescription] = None,
@@ -239,9 +217,12 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            operationId: Option[String] = None,
                            consumes: Vector[String] = jsonMimeType,
                            produces: Vector[String] = jsonMimeType,
-                           parameters: Vector[SwaggerParam] = Vector.empty,
+                           parameters: Vector[OpenApiParam] = Vector.empty,
+                           requestBody: Option[OpenApiRequestBody] = None,
                            responses: OpenApiResponses) {
-  def addParam(param: SwaggerParam) = copy(parameters = parameters :+ param)
+  def addParam(param: OpenApiParam) = copy(parameters = parameters :+ param)
+  def addBody(typ: SwaggerType, description: Option[String] = None) =
+    copy(requestBody = Some(OpenApiRequestBody(description, typ)))
   def addTag(tag: String) = copy(tags = tags :+ tag)
 }
 

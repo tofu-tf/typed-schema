@@ -33,13 +33,14 @@ object definitions {
 
   case class Client(value: Int)
 
+
   def concat = operation('concat) |> queryParam[String]('left) |> queryParam[String]('right) |> get[String]
 
   def combine = operation('combine) |> capture[Int]('y) |> (limit ! 'x) |> get[Combine]
 
   def sum = operation('sum) |> capture[Int]('y) |> get[Int]
 
-  def stats = operation('stats) |> reqBody[Vector[BigDecimal]] |> post[StatsRes]
+  def stats = operation('stats) |> reqBody[Seq[BigDecimal]] |> post[StatsRes]
 
   def intops = queryParam[Client]('x) |> (combine ~ sum)
 
@@ -53,25 +54,25 @@ object definitions {
         }
       }
     } ~
-      queryParam[Client]('x) {
-        operation('combine) {
-          capture[Int]('y) {
-            (limit ! 'x) {
-              get[Combine]
-            }
+    queryParam[Client]('x) {
+      operation('combine) {
+        capture[Int]('y) {
+          (limit ! 'x) {
+            get[Combine]
           }
-        } ~
-          operation('sum) {
-            capture[Int]('y) {
-              get[Int]
-            }
-          }
+        }
       } ~
-      operation('stats) {
-        reqBody[Vector[BigDecimal]] {
-          post[StatsRes]
+      operation('sum) {
+        capture[Int]('y) {
+          get[Int]
         }
       }
+    } ~
+    operation('stats) {
+      reqBody[Seq[BigDecimal]] {
+        post[StatsRes]
+      }
+    }
   }
 }
 
@@ -85,7 +86,7 @@ object TestModule {
   implicit lazy val combineTypeable = genNamedTypeable[Combine]("Combine")
 
   implicit lazy val clientFromParam = FromQueryParam.intParam.map(Client)
-  implicit lazy val clientSwaggerParam = AsSwaggerParam[Client](SwaggerIntValue())
+  implicit val clientSwagger: SwaggerTypeable[Client] = SwaggerTypeable.swaggerTypeableInteger.as[Client]
 
   implicit lazy val bundle = ResourceBundle.getBundle("swagger")
 
@@ -98,7 +99,7 @@ object TestModule {
 
     def sum(x: Client, y: Int): Future[Int] = Future(x.value + y)
 
-    def stats(body: Vector[BigDecimal]) = {
+    def stats(body: Seq[BigDecimal]) = {
       val mean = body.sum / body.size
       val mid = body.size / 2
       val median = if (body.size % 2 == 1) body(mid) else (body(mid) + body(mid - 1)) / 2
@@ -114,15 +115,17 @@ object TestModule {
   val swagger = api.mkSwagger
   val swagger2 = api2.mkSwagger
 
+
   val route = MkRoute(api)(handler)
   val route2 = MkRoute(api2)(handler)
   val printer = Printer.spaces2.copy(dropNullValues = true)
   def main(args: Array[String]): Unit = {
     swagger
     .make(OpenApiInfo(title = "test"))
-    .paths.foreach{case (name, map) =>
+    .paths.foreach { case (name, map) =>
       val (meth, op) = map.head
-      println(s"$name : $meth \n------------  ${op.asJson.pretty(printer)}\n------------")}
+      println(s"$name : $meth \n------------  ${op.asJson.pretty(printer) }\n------------")
+    }
   }
 }
 

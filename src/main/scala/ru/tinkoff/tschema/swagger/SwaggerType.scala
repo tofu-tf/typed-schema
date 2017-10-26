@@ -191,10 +191,10 @@ trait SwaggerTypeable[T] {
 }
 
 trait LowLevelSwaggerTypeable{
-  @inline final protected def make[T](t: SwaggerType) = new SwaggerTypeable[T] {
+  @inline final def make[T](t: SwaggerType) = new SwaggerTypeable[T] {
     val typ = t
   }
-  @inline final protected def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]) = make[X[T]](SwaggerArray(items.later))
+  @inline final def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]) = make[X[T]](SwaggerArray(items.later))
 
   final implicit def seqTypeable[T: SwaggerTypeable] = seq[Seq, T]
 }

@@ -92,7 +92,11 @@ object TestModule {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  object handler {
+  trait Mutate{
+    def mutate(value: Long) = java.lang.Long.toBinaryString(value)
+  }
+
+  object handler extends Mutate {
     def concat(left: String, right: String) = left + right
 
     def combine(x: Client, y: Int) = Combine(CombSource(x.value, y), CombRes(mul = x.value * y, sum = x.value + y))
@@ -106,8 +110,6 @@ object TestModule {
       val std = body.view.map(x => x * x).sum / body.size - mean * mean
       StatsRes(mean, std, median)
     }
-
-    def mutate(value: Long) = java.lang.Long.toBinaryString(value)
   }
 
   implicit val limitHandler = LimitHandler.trieMap(_ => LimitRate(1, 1 second))

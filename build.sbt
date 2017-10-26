@@ -22,19 +22,20 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % Version.scalaCheck % "
 
 libraryDependencies += "eu.timepit" %% "refined" % Version.refined
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % Version.akka
+libraryDependencies ++= Seq("actor", "stream")
+                        .map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)
 
-libraryDependencies += {scalaOrganization.value} % "scala-compiler" % {scalaVersion.value}
+libraryDependencies += { scalaOrganization.value } % "scala-compiler" % { scalaVersion.value }
 
 
 lazy val typedschema =
   (project in file("."))
-  .dependsOn(macros)
-  .aggregate(macros, typedsl)
+    .dependsOn(macros)
+    .aggregate(macros, typedsl)
 
 lazy val macros = project.dependsOn(typedsl)
 

@@ -9,8 +9,10 @@ import cats.arrow.FunctionK
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 import cats.{Monoid, MonoidK}
+import io.circe.Encoder
 import ru.tinkoff.tschema.common.Name
 
+import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
 
 sealed trait MkSwagger[T] {
@@ -32,68 +34,78 @@ sealed trait MkSwagger[T] {
     val types = self.types ++ other.types
   }
 
-  def make(info: SwaggerInfo) =
-    Swagger(
+  def make(info: OpenApiInfo) = {
+    val openApiPaths =
+      paths.groupBy(_.path)
+      .map {
+        case (parts, specs) => parts.mkString("/", "/", "") ->
+                               specs.map { case PathSpec(_, method, op) => method -> op }.toMap
+      }
+    OpenApi(
       info = info,
-      paths = paths.groupBy(_.path).map { case (parts, specs) => parts.mkString("/", "/", "") -> specs.map { case PathSpec(_, method, op) => method -> op }.toMap },
-      definitions = types
+      paths = TreeMap(openApiPaths.toSeq: _*),
+      components = OpenApiComponents(schemas = types)
     )
+  }
+
+  implicitly[Encoder[TypePool]]
 
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
       val paths: PathSeq = self.paths.map(_.modOp { op =>
         val codes = op.responses.codes
         op.copy(responses = op.responses.copy(codes = codes ++ Map(
-          code -> SwaggerResponse(schema = typeable.swaggerType, description = description)
+          code -> OpenApiResponse.json(description = description,
+                                       swaggerType = typeable.typ)
         )))
       })
-      val types: TypePool = self.types ++ typeable.swaggerType.collectTypes
+      val types: TypePool = self.types ++ typeable.typ.collectTypes
     }
 }
 
 object MkSwagger {
 
-  object macroInterface{
+  object macroInterface {
   }
 
 
   def empty[T]: MkSwagger[T] = new MkSwagger[T] {
     override def paths = Vector.empty
-    override def types = Map.empty
+    override def types = TreeMap.empty
   }
 
   def apply[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
 
-  case class PathSpec(path: Vector[String], method: Swagger.Method, op: SwaggerOp) {
+  case class PathSpec(path: Vector[String], method: OpenApi.Method, op: OpenApiOp) {
     def modPath(f: Vector[String] => Vector[String]) = copy(path = f(path))
-    def modOp(f: SwaggerOp => SwaggerOp) = copy(op = f(op))
+    def modOp(f: OpenApiOp => OpenApiOp) = copy(op = f(op))
   }
 
   type PathSeq = Vector[PathSpec]
 
-  type TypePool = Map[String, SwaggerType]
+  type TypePool = TreeMap[String, SwaggerType]
 
-  def single[T](op: SwaggerOp, method: Swagger.Method, typeList: Map[String, SwaggerType]) = new MkSwagger[T] {
+  def single[T](op: OpenApiOp, method: OpenApi.Method, typeList: TreeMap[String, SwaggerType]) = new MkSwagger[T] {
     val paths = Vector(PathSpec(Vector.empty, method, op))
     val types = typeList
   }
 
-  private def derivedMethod[T, meth[_]](method: Swagger.Method)(implicit typ: SwaggerTypeable[T]) =
+  private def derivedMethod[T, meth[_]](method: OpenApi.Method)(implicit typ: SwaggerTypeable[T]) =
     single[meth[T]](
       method = method,
-      op = SwaggerOp(
-        responses = SwaggerResponses(codes = Map(
-          StatusCodes.OK -> SwaggerResponse(
-            schema = typ.swaggerType
+      op = OpenApiOp(
+        responses = OpenApiResponses(codes = Map(
+          StatusCodes.OK -> OpenApiResponse.json(
+            swaggerType = typ.typ
           )))),
-      typeList = typ.swaggerType.collectTypes)
+      typeList = TreeMap(typ.typ.collectTypes.toSeq: _*))
 
-  implicit def deriveGet[T: SwaggerTypeable] = derivedMethod[T, Get](Swagger.Method.get)
-  implicit def derivePost[T: SwaggerTypeable] = derivedMethod[T, Post](Swagger.Method.post)
-  implicit def deriveHead[T: SwaggerTypeable] = derivedMethod[T, Head](Swagger.Method.head)
-  implicit def derivePut[T: SwaggerTypeable] = derivedMethod[T, Put](Swagger.Method.put)
-  implicit def deriveDelete[T: SwaggerTypeable] = derivedMethod[T, Delete](Swagger.Method.delete)
-  implicit def deriveOptions[T: SwaggerTypeable] = derivedMethod[T, Options](Swagger.Method.options)
+  implicit def deriveGet[T: SwaggerTypeable] = derivedMethod[T, Get](OpenApi.Method.get)
+  implicit def derivePost[T: SwaggerTypeable] = derivedMethod[T, Post](OpenApi.Method.post)
+  implicit def deriveHead[T: SwaggerTypeable] = derivedMethod[T, Head](OpenApi.Method.head)
+  implicit def derivePut[T: SwaggerTypeable] = derivedMethod[T, Put](OpenApi.Method.put)
+  implicit def deriveDelete[T: SwaggerTypeable] = derivedMethod[T, Delete](OpenApi.Method.delete)
+  implicit def deriveOptions[T: SwaggerTypeable] = derivedMethod[T, Options](OpenApi.Method.options)
 
   implicit def deriveJoin[left, right]
   (implicit left: MkSwagger[left], right: MkSwagger[right]) = (left ++ right).as[left <|> right]
@@ -107,6 +119,16 @@ object MkSwagger {
   }
   implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 }
+
+final case class AsOpenApiParam[T](typ: SwaggerType, required: Boolean = true){
+  def types = typ.collectTypes
+}
+
+object AsOpenApiParam {
+  implicit def requiredParam[T](implicit typ: SwaggerTypeable[T]): AsOpenApiParam[T] = AsOpenApiParam[T](typ = typ.typ, required = true)
+  implicit def optionalParam[T](implicit typ: SwaggerTypeable[T]): AsOpenApiParam[Option[T]] = AsOpenApiParam[Option[T]](typ = typ.typ, required = false)
+}
+
 
 case class AsSwaggerParam[T](value: SwaggerValue, required: Boolean = true)
 
@@ -133,6 +155,12 @@ object AsSwaggerParam {
   implicit def vectorParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Vector[T]](SwaggerArrayValue(param.value), param.required)
   implicit def listParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[List[T]](SwaggerArrayValue(param.value), param.required)
   implicit def streamParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Stream[T]](SwaggerArrayValue(param.value), param.required)
+
+  trait Enum[E <: enumeratum.EnumEntry] {
+    self: enumeratum.Enum[E] =>
+    implicit lazy val asSwaggerParam: AsSwaggerParam[E] =
+      AsSwaggerParam[E](SwaggerStringValue(enum = Some(self.values.map(_.entryName).toVector)))
+  }
 }
 
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
@@ -164,20 +192,22 @@ trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
 }
 
 object SwaggerMapper {
+  def apply[T](implicit mapper: SwaggerMapper[T]): SwaggerMapper[T] = mapper
+
   def empty[T] = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = spec
-    def types: Map[String, SwaggerType] = Map.empty
+    def types: Map[String, SwaggerType] = TreeMap.empty
   }
 
   abstract class FromFunc[T] extends SwaggerMapper[T] {
-    def types: Map[String, SwaggerType] = Map.empty
+    def types: Map[String, SwaggerType] = TreeMap.empty
   }
 
   abstract class FromTypes[T] extends SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = spec
   }
 
-  import SwaggerParam.{In, NonBodyIn}
+  import OpenApiParam.In
 
   def fromFunc[T](f: PathSpec => PathSpec) = new FromFunc[T] {
     def mapSpec(spec: PathSpec): PathSpec = f(spec)
@@ -188,13 +218,15 @@ object SwaggerMapper {
   }
 
   private def derivedParam[name, T, param[_, _]]
-  (in: NonBodyIn)
-  (implicit name: Name[name], param: AsSwaggerParam[T]) =
-    fromFunc[param[name, T]](_.modOp(_.addParam(SwaggerParam(
-      base = SwaggerParamBase(name.string, required = param.required),
-      specific = SwaggerParamGeneral(
-        in = in,
-        value = param.value)))))
+  (in: In)
+  (implicit name: Name[name], param: AsOpenApiParam[T]) = new SwaggerMapper[param[name, T]] {
+    def mapSpec(spec: PathSpec) = spec.modOp(_.addParam(OpenApiParam(
+      name = name.string,
+      in = in,
+      required = param.required,
+      schema = Some(param.typ))))
+    def types = param.types
+  }
 
   implicit def derivePath[path](implicit name: Name[path]) =
     fromFunc[path](_.modPath(name.string +: _))
@@ -205,30 +237,28 @@ object SwaggerMapper {
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
-  implicit def deriveQueryParam[name: Name, T: AsSwaggerParam] =
+  implicit def deriveQueryParam[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, QueryParam](In.query)
 
   implicit def deriveQueryFlag[name: Name]: SwaggerMapper[QueryFlag[name]] =
     derivedParam[name, Option[Boolean], λ[(n, x) => QueryFlag[n]]](In.query)
 
-  implicit def deriveHeader[name: Name, T: AsSwaggerParam] =
+  implicit def deriveHeader[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, Header](In.header)
 
-  implicit def deriveFormField[name: Name, T: AsSwaggerParam] =
+  implicit def deriveFormField[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, FormField](In.formData)
 
-  implicit def deriveCookie[name: Name, T: AsSwaggerParam] =
+  implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, Cookie](In.cookie)
 
-  implicit def derivePathParam[name, T: AsSwaggerParam](implicit name: Name[name]) =
+  implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
     derivedParam[name, T, Capture](In.path) map (_.modPath(s"{$name}" +: _))
 
   implicit def deriveReqBody[T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[T]] =
     new SwaggerMapper[ReqBody[T]] {
-      def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.addParam(SwaggerParam(
-        base = SwaggerParamBase("body", required = true),
-        specific = SwaggerParamBody(typeable.swaggerType))))
-      val types: Map[String, SwaggerType] = typeable.swaggerType.collectTypes
+      def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.addBody(typeable.typ))
+      val types: Map[String, SwaggerType] = typeable.typ.collectTypes
     }
 
   implicit def deriveCons[start, end]

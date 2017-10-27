@@ -1,5 +1,7 @@
 package ru.tinkoff.tschema
 
+import java.util.UUID
+
 import akka.http.scaladsl.server._
 import Directives._
 import FromParam.Result
@@ -33,9 +35,21 @@ object FromParam {
 
   def rejectionHandler: PartialFunction[Rejection, Route] = {
     case ParamFormatRejection(name, error) => complete(BadRequest, s"could not parse parameter $name : $error")
-    case ParamRecordRejection(errors) =>
+    case ParamRecordRejection(errors)      =>
       val parStr = errors.map { case (name, error) => s"$name : $error" }.mkString("\n")
       complete(BadRequest, s"could not parse parameters:\n $parStr")
+  }
+
+  trait Enum[E <: enumeratum.EnumEntry] {
+    self: enumeratum.Enum[E] =>
+    private def fromParam[C <: FromParamFactory](comp: C): comp.TC[E] =
+      comp.param(s => self.withNameOption(s).fold[Either[String, E]](Left(s"could not find $self value: $s"))(x => Right(x)))
+
+
+    implicit lazy val fromQueryParam: FromQueryParam[E] = fromParam(FromQueryParam)
+    implicit lazy val fromHeader: FromHeader[E] = fromParam(FromHeader)
+    implicit lazy val fromFormField: FromFormField[E] = fromParam(FromFormField)
+    implicit lazy val fromPathParam = new FromPathParam[E](Segment.flatMap(self.withNameOption))
   }
 }
 /**
@@ -66,15 +80,20 @@ trait LowPriorityFromParamCompanion[F[x] <: FromParam.Aux[x, F]] {
 
   implicit def listParam[X](implicit fromParam: F[X], options: ListParamOptions[F] = default[F]) =
     param {
-      case "" => Right(List.empty[X])
+      case ""  => Right(List.empty[X])
       case str => str.split(options.sep).toList.traverse[Result, X](fromParam.apply)
     }
 }
 
-trait FromParamCompanion[F[x] <: FromParam.Aux[x, F]] extends LowPriorityFromParamCompanion[F] {
+trait FromParamFactory {
+  type TC[x] <: FromParam.Aux[x, TC]
+  def param[T](f: String => Result[T]): TC[T]
+  def tryParam[T](f: String => T): TC[T] = param(s => try Right(f(s)) catch {case NonFatal(ex) => Left(ex.toString)})
+}
 
-  def param[T](f: String => Result[T]): F[T]
-  def tryParam[T](f: String => T): F[T] = param(s => try Right(f(s)) catch {case NonFatal(ex) => Left(ex.toString)})
+trait FromParamCompanion[F[x] <: FromParam.Aux[x, F]] extends LowPriorityFromParamCompanion[F] with FromParamFactory {
+
+  type TC[x] = F[x]
 
   implicit val stringParam = tryParam(identity)
   implicit val intParam = tryParam(_.toInt)
@@ -84,6 +103,7 @@ trait FromParamCompanion[F[x] <: FromParam.Aux[x, F]] extends LowPriorityFromPar
   implicit val bigIntParam = tryParam(BigInt.apply)
   implicit val booleanParam = tryParam(_.toBoolean)
   implicit val bigDecimalParam = tryParam(BigDecimal.apply)
+  implicit val uuidParam = tryParam(UUID.fromString)
 
   implicit def list2Param[X](implicit fromParam: F[List[X]], options: ListParamOptions[F] = default[F]): F[List[List[X]]] =
     param(_.split(options.sep2).toList.traverse[Result, List[X]](fromParam.apply))
@@ -124,6 +144,11 @@ trait FromHeader[T] extends FromParam[T] {
   type Self[x] = FromHeader[x]
   def map[X](f: (T) => X): FromHeader[X] = new FromHeader[X] {
     def apply(name: String): Result[X] = self(name).map(f)
+  }
+}
+object FromHeader extends FromParamCompanion[FromHeader] {
+  def param[T](f: (String) => Result[T]) = new FromHeader[T] {
+    def apply(param: String): Result[T] = f(param)
   }
 }
 
@@ -177,9 +202,9 @@ object ParamRecord {
 
   private def concatErrors[S, A, T <: HList](name: String, head: Either[String, A], tail: NelRes[T]): NelRes[A :: T] =
     (head, tail) match {
-      case (Right(h), Right(t)) => Right(h :: t)
-      case (Right(h), Left(errs)) => Left(errs)
-      case (Left(err), Right(_)) => Left(NonEmptyList.of(name -> err))
+      case (Right(h), Right(t))     => Right(h :: t)
+      case (Right(h), Left(errs))   => Left(errs)
+      case (Left(err), Right(_))    => Left(NonEmptyList.of(name -> err))
       case (Left(err), Left(names)) => Left((name -> err) :: names)
     }
 

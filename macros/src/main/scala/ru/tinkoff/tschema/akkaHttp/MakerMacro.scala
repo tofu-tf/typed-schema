@@ -62,7 +62,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   def findMeth(typ: Type, name: Name): Option[MethodSymbol] =
     typ.decl(name) match {
       case ms: MethodSymbol => Some(ms)
-      case _                => typ.baseClasses.iterator.collect {
+      case _                => typ.baseClasses.tail.iterator.collect {
         case base: TypeSymbol if base != typ => base.toType
       }.flatMap { findMeth(_, name) }.collectFirst { case x => x }
     }
@@ -75,16 +75,8 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
       case Literal(Constant(s: String)) => s
       case _                            => abort("inproper use of `makeResult` key should be a string constant")
     }
-    val meth = implT.decl(TermName(keyS)) match {
-      case ms: MethodSymbol => ms
-      case _                =>
+    val meth = findMeth(implT, TermName(keyS)) getOrElse abort(s"method $keyS is not implemented")
 
-        implT.baseClasses.collect {
-          case sym: TypeSymbol if sym != implT.typeSymbol =>
-
-        }
-        abort(s"method $keyS is not implemented")
-    }
 
     val rec = extractRecord(inT)
     val syms = rec.flatten.map { case (paramName, _) => paramName -> freshName(paramName) }.toMap

@@ -94,10 +94,11 @@ object TestModule {
 
   trait Mutate{
     def mutate(value: Long) = java.lang.Long.toBinaryString(value)
+    def concat(left: String, right: String) = left + right
   }
 
   object handler extends Mutate {
-    def concat(left: String, right: String) = left + right
+
 
     def combine(x: Client, y: Int) = Combine(CombSource(x.value, y), CombRes(mul = x.value * y, sum = x.value + y))
 

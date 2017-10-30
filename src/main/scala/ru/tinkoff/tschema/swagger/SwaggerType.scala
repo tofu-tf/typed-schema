@@ -199,7 +199,7 @@ trait LowLevelSwaggerTypeable{
   final implicit def seqTypeable[T: SwaggerTypeable] = seq[Seq, T]
 }
 
-object SwaggerTypeable extends LowLevelSwaggerTypeable {
+object SwaggerTypeable extends LowLevelSwaggerTypeable with CirceSwaggerInstances {
   def apply[T](implicit typeable: SwaggerTypeable[T]): SwaggerTypeable[T] = typeable
 
   case class Config(propMod: String => String = identity,
@@ -240,6 +240,7 @@ object SwaggerTypeable extends LowLevelSwaggerTypeable {
   implicit val swaggerTypeableBigIng = make[BigInt](SwaggerPrimitive.integer)
   implicit val swaggerTypeableBigDecimal = make[BigDecimal](SwaggerPrimitive.double)
   implicit val swaggerTypeableUUID = make[UUID](new SwaggerPrimitive(SwaggerStringValue.uuid))
+  implicit val swaggerTypeableUnit = make[Unit](SwaggerObject())
 
 
   implicit val swaggerTypeableJsonObject = make[JsonObject](SwaggerObject())
@@ -331,6 +332,10 @@ object WrappedSwaggerTypeable {
   implicit def hListWrap[X]
   (implicit inner: SwaggerTypeable[X]) =
     HListWrap[X :: HNil](inner.typ)
+}
+
+sealed trait CirceSwaggerInstances{
+  implicit def jsonObjectSwagger = SwaggerTypeable.make(SwaggerObject()).as[JsonObject]
 }
 
 

@@ -14,7 +14,7 @@ object Result {
 
   private def mkResult[X, F[_]](dir: Directive0): Aux[F[X], X] = new Result[F[X]] {
     type Out = X
-    override def directive: Directive0 = dir
+    override def directive: Directive0 = pathEnd & dir
   }
 
   implicit def getResult[X] = mkResult[X, Get](get)

@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.akkaHttp
 
-import akka.http.scaladsl.server.{Directive1, Route}
+import akka.http.scaladsl.server.{Directive0, Directive1, Route}
 import ru.tinkoff.tschema.typeDSL.DSLDef
 import shapeless.HList
 import akka.http.scaladsl.server.Directives._
@@ -11,11 +11,11 @@ object MkRoute {
   def apply[Def <: DSLDef, Impl](definition: => Def)(impl: Impl): Route = macro MakerMacro.makeRoute[macroInterface.type, Def, Impl]
 
   object macroInterface {
-    class ResultApplier[Out] {
+    class ResultApplier[Out](val wrap: Directive0) {
       def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String): Route = macro MakerMacro.makeResult[In, Out, Impl]
     }
 
-    def makeResult[T](implicit result: Result[T]): ResultApplier[result.Out] = new ResultApplier[result.Out]
+    def makeResult[T](implicit result: Result[T]): ResultApplier[result.Out] = new ResultApplier[result.Out](result.directive)
     def concatResults(x: Route, y: Route): Route = x ~ y
 
     implicit class RoutableOps[In](val in: In) extends AnyVal {

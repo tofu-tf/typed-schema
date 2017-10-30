@@ -217,6 +217,7 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            operationId: Option[String] = None,
                            consumes: Vector[String] = jsonMimeType,
                            produces: Vector[String] = jsonMimeType,
+                           servers: Vector[OpenApiServer] = Vector.empty,
                            parameters: Vector[OpenApiParam] = Vector.empty,
                            requestBody: Option[OpenApiRequestBody] = None,
                            responses: OpenApiResponses) {

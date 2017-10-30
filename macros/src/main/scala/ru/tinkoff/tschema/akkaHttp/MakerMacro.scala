@@ -23,7 +23,12 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   class RouteTreeMaker(impl: Tree) {
     type DSL = DSLTree[Type]
     def makeRouteTree(dsl: DSL, input: Tree): Tree = dsl match {
-      case DSLLeaf(resTyp, key)          => q"makeResult[$resTyp].apply($input)($impl)($key)"
+      case DSLLeaf(resTyp, key)          =>
+        q"""{
+          val maker = makeResult[$resTyp]
+          val result = maker.apply($input)($impl)($key)
+          maker.wrap(result)
+          }"""
       case DSLBranch(pref +: next, dsls) =>
         val ident = freshName("input")
         val rest = makeRouteTree(DSLBranch(next, dsls), Ident(ident))

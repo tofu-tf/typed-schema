@@ -91,4 +91,5 @@ object syntax {
   object head extends ResultMaker(new Head)
   object options extends ResultMaker(new Options)
   object patch extends ResultMaker(new Patch)
+  object complete extends ResultMaker(new Complete)
 }

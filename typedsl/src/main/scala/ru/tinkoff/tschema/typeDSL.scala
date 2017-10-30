@@ -15,52 +15,52 @@ object typeDSL {
     * naming symbol of single route in complex route
     */
   class Key[key] extends DSLAtom
+
+  /**
+    * indicates result of element of type `x`
+    * does not check HTTP method
+    */
+  final class Complete[x] extends DSLRes
+
   /**
     * indicates result of element of type `x`
     * via POST HTTP method
-    * all `Get`s and `Post`s except last will be ignored
     */
   final class Post[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via GET HTTP method
-    * all `Get`s and `Post`s except last will be ignored
     */
   final class Get[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via PUT HTTP method
-    * all `Get`s and `Post`s except last will be ignored
     */
   final class Put[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via DELETE HTTP method
-    * all `Get`s and `Post`s except last will be ignored
     */
   final class Delete[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via HEAD HTTP method
-    * all `Get`s and `Post`s except last will be ignored
     */
   final class Head[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via OPTIONS HTTP method
-    * all `Get`s and `Post`s except last will be ignored
     */
   final class Options[x] extends DSLRes
 
   /**
     * indicates result of element of type `x`
     * via PATCH HTTP method
-    * all `Get`s and `Post`s except last will be ignored
     */
   final class Patch[x] extends DSLRes
 
@@ -142,6 +142,7 @@ object typeDSL {
     * transforms existing parameter
     * introducing new parameter
     * using known transformation
+    *
     * @tparam source
     */
   final class Transform[source, name, t, a, b] extends DSLAtom
@@ -150,6 +151,7 @@ object typeDSL {
     * transforms existing parameter
     * introducing new parameter
     * using known transformation
+    *
     * @tparam source
     */
   final class TransformReq[source, name, t, a, b, req] extends DSLAtom
@@ -167,7 +169,7 @@ object typeDSL {
     * can be used both for defining API type and for joining different handlers
     * resulting type is effectively `Either[left input, right input] => Either[left output, right output]`
     */
-  final case class <|>[left, right](left: left, right: right) extends DSLDef{
+  final case class <|>[left, right](left: left, right: right) extends DSLDef {
     override def toString = s"$left <|> $right"
   }
 

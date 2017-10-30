@@ -24,4 +24,5 @@ object Result {
   implicit def headResult[X] = mkResult[X, Head](head)
   implicit def optionsResult[X] = mkResult[X, Options](options)
   implicit def patchResult[X] = mkResult[X, Patch](patch)
+  implicit def completeResult[X] = mkResult[X, Complete](pass)
 }

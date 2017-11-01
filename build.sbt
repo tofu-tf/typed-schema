@@ -4,7 +4,7 @@ moduleName := "typed-schema"
 
 libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
-libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akka
+libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akkaHttp
 
 libraryDependencies += "com.chuusai" %% "shapeless" % Version.shapeless
 

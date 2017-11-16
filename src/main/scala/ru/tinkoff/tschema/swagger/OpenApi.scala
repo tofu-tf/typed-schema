@@ -59,7 +59,7 @@ object OpenApiInfo
 
 @Lenses
 @JsonCodec(encodeOnly = true)
-final case class OpenApiComponents(schemas: TreeMap[String, SwaggerType] = TreeMap.empty)
+final case class OpenApiComponents(schemas: TreeMap[String, DescribedType] = TreeMap.empty)
 object OpenApiComponents
 
 

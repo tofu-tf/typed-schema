@@ -17,7 +17,12 @@ import ru.tinkoff.testApi.VersionApp.route
 case class Filters(foo: Option[String], bar: Option[Int])
 
 object Filters {
-  implicit def swagger: SwaggerTypeable[Filters] = SwaggerTypeable.deriveNamedTypeable[Filters]
+  implicit def swagger: SwaggerTypeable[Filters] =
+    SwaggerTypeable
+    .deriveNamedTypeable[Filters]
+      .describe("filter options")
+      .describeFields("foo" -> "filter for foo",
+                      "bar" -> "fitler for bar")
 }
 
 final class extractFilters[name] extends DSLAtom

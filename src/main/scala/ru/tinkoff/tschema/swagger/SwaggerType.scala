@@ -10,13 +10,14 @@ import cats.syntax.apply._
 import cats.syntax.traverse._
 import enumeratum.{Enum, EnumEntry}
 import io.circe.syntax._
-import io.circe.{Json, JsonObject, ObjectEncoder}
+import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
 import shapeless.labelled.FieldType
 import shapeless.{Lazy, _}
 
 import scala.annotation.tailrec
 import scala.language.higherKinds
 import SwaggerTypeable.Config
+
 import scala.reflect.runtime.universe.TypeTag
 
 
@@ -26,6 +27,16 @@ sealed trait SwaggerType {
   def or(that: SwaggerType): SwaggerType = SwaggerOneOf(Vector(None -> Eval.now(this), None -> Eval.now(that)))
 
   def deref: Eval[SwaggerType] = Eval.now(this)
+
+  /**
+    * set or change fields description if this is ObjectType
+    */
+  def describeFields(descrs: (String, String)*): SwaggerType = this
+
+  /**
+    * set ot change type description if this is named type
+    */
+  def describe(descr: String) = this
 }
 
 class SwaggerPrimitive[Typ <: SwaggerValue](val typ: Typ, val format: Option[SwaggerFormat[Typ]] = None) extends SwaggerType {
@@ -64,30 +75,57 @@ final case class SwaggerArray(items: Eval[SwaggerType]) extends SwaggerType {
     case SwaggerArray(items2) => SwaggerArray(items.map2(items2)(_ or _))
   }
 }
-final case class SwaggerObject(properties: Vector[(String, Eval[SwaggerType])] = Vector.empty, required: Vector[String] = Vector.empty) extends SwaggerType {
+
+final case class SwaggerProperty(name: String, description: Option[String], typ: Eval[SwaggerType])
+
+final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empty, required: Vector[String] = Vector.empty) extends SwaggerType {
   override def merge = {
     case SwaggerObject(p2, req2) =>
-      val thisMap = properties.toMap
-      val thatMap = p2.toMap
-      val unionProps = (thisMap -- thatMap.keySet).toVector ++ thatMap.map {
-        case (name, prop) => name -> thisMap.get(name).map(_.map2(prop)(_ or _)).getOrElse(prop)
+      val thisMap = properties.map(prop => prop.name -> prop).toMap
+      val thatMap = p2.map(prop => prop.name -> prop).toMap
+      val unionProps = (thisMap -- thatMap.keySet).values.toVector ++ thatMap.values.map {
+        case SwaggerProperty(name, descr, prop) => SwaggerProperty(name, descr, thisMap.get(name).map(_.typ.map2(prop)(_ or _)).getOrElse(prop))
       }
       val reqs = required.toSet.intersect(req2.toSet).toVector
       SwaggerObject(unionProps, reqs)
   }
+  override def describeFields(descrs: (String, String)*) = {
+    val descrMap = descrs.toMap
+    copy(properties = properties.map { prop =>
+      prop.copy(description = descrMap.get(prop.name).orElse(prop.description))
+    })
+  }
 }
 
-final case class SwaggerRef(name: String, typ: Eval[SwaggerType]) extends SwaggerType {
+object SwaggerObject{
+  def withProps(props: (String, SwaggerType)*) = SwaggerObject(properties = props.map{case (name, typ) => SwaggerProperty(name, None, Eval.now(typ))}.toVector)
+}
+
+final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[SwaggerType]) extends SwaggerType {
   override def merge = {
-    case SwaggerRef(`name`, t2) => SwaggerRef(name, typ.map2(typ)(_ or _))
+    case SwaggerRef(`name`, descr2, t2) => SwaggerRef(name, descr.orElse(descr2), typ.map2(typ)(_ or _))
   }
   override def deref = typ.flatMap(_.deref)
+
+  override def describe(description: String) = copy(descr = Some(description))
+
+  override def describeFields(descrs: (String, String)*) = copy(typ = typ.map(_.describeFields(descrs:_*)))
 }
+
 final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])], discriminator: Option[String] = None) extends SwaggerType {
   override def or(that: SwaggerType) = SwaggerOneOf(alts :+ (None -> Eval.now(that)), discriminator)
 }
 
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
+
+final case class DescribedType(typ: SwaggerType, description: Option[String] = None)
+
+object DescribedType {
+  implicit val encoder: ObjectEncoder[DescribedType] = ObjectEncoder.instance {
+    case DescribedType(typ, None)        => typ.asJsonObject
+    case DescribedType(typ, Some(descr)) => typ.asJsonObject.add("description", descr.asJson)
+  }
+}
 
 
 class SwaggerMapKey[T]
@@ -98,9 +136,9 @@ object SwaggerMapKey {
 
 object SwaggerType {
 
-  implicit def refTo(name: String) = s"#/components/schemas/$name"
+  private def refTo(name: String) = s"#/components/schemas/$name"
 
-  implicit object encodeSwaggerType extends ObjectEncoder[SwaggerType] {
+  implicit val encodeSwaggerType: ObjectEncoder[SwaggerType] = new ObjectEncoder[SwaggerType] {
     def encode(a: SwaggerType): Eval[JsonObject] = a match {
       case pt: SwaggerPrimitive[_] =>
         val typeJson = (pt.typ: SwaggerValue).asJsonObject
@@ -115,7 +153,7 @@ object SwaggerType {
         "enum" -> Json.arr(alts.map(Json.fromString): _*)
       )).pure[Eval]
 
-      case SwaggerRef(name, _) => JsonObject.singleton(
+      case SwaggerRef(name, _, _) => JsonObject.singleton(
         "$ref", Json.fromString(refTo(name))
       ).pure[Eval]
 
@@ -124,25 +162,34 @@ object SwaggerType {
         "items" -> enc.asJson
       ))
 
-      case SwaggerObject(properties, required) => properties
-                                                  .traverse[Eval, (String, Json)] { case (name, prop) => prop.flatMap(encode).map(name -> _.asJson) }
-                                                  .map(enc => JsonObject(
-                                                    "type" -> Json.fromString("object"),
-                                                    "required" -> Json.arr(required.map(Json.fromString): _*),
-                                                    "properties" -> Json.obj(enc: _*)))
+      case SwaggerObject(properties, required) =>
+        properties
+        .traverse[Eval, (String, Option[String], JsonObject)] {
+          case SwaggerProperty(name, descr, prop) => prop.flatMap(encode).map(typ => (name, descr, typ.asJsonObject))
+        }
+        .map { enc =>
+          val fields = enc.map {
+            case (name, None, obj)        => name -> obj.asJson
+            case (name, Some(descr), obj) => name -> obj.add("description", Json.fromString(descr)).asJson
+          }
+          JsonObject(
+            "type" -> Json.fromString("object"),
+            "required" -> Json.arr(required.map(Json.fromString): _*),
+            "properties" -> Json.obj(fields: _*))
+        }
 
       case SwaggerOneOf(alts, discriminator) =>
         alts.traverse[Eval, Json] {
           case (nameOpt, etyp) =>
             nameOpt.filter(_ => discriminator.isEmpty).fold(etyp) {
-              name => Eval.now(SwaggerObject(Vector(name -> etyp), Vector(name)))
+              name => Eval.now(SwaggerObject(Vector(SwaggerProperty(name, None, etyp)), Vector(name)))
             }.flatMap(encode)
             .map(Json.fromJsonObject)
         }
         .map2(alts.flatTraverse {
           case (Some(name), typ) => typ.map {
-            case SwaggerRef(ref, _) => Vector(name -> refTo(ref))
-            case _                  => Vector.empty
+            case SwaggerRef(ref, _, _) => Vector(name -> refTo(ref))
+            case _                     => Vector.empty
           }
           case _                 => Eval.now(Vector.empty)
         }) { (alts, mapping) =>
@@ -167,35 +214,42 @@ object SwaggerType {
 
     import scala.::
 
-    @tailrec private def collectTypesImpl(stack: List[SwaggerType], acc: Map[String, SwaggerType]): Map[String, SwaggerType] =
+    @tailrec private def collectTypesImpl(stack: List[SwaggerType], acc: Map[String, DescribedType]): Map[String, DescribedType] =
       stack match {
         case Nil         => acc
         case cur :: rest => cur match {
-          case SwaggerRef(name, _) if acc contains name => collectTypesImpl(rest, acc)
-          case SwaggerRef(name, t)                      => collectTypesImpl(t.value :: rest, acc + (name -> t.value))
-          case SwaggerArray(items)                      => collectTypesImpl(items.value :: rest, acc)
-          case SwaggerObject(props, _)                  => collectTypesImpl(props.map(_._2.value) ++: rest, acc)
-          case SwaggerOneOf(alts, _)                    => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
-          case SwaggerMap(value)                        => collectTypesImpl(value.value :: rest, acc)
-          case _                                        => collectTypesImpl(rest, acc)
+          case SwaggerRef(name, _, _) if acc contains name => collectTypesImpl(rest, acc)
+          case SwaggerRef(name, descr, t)                  => collectTypesImpl(t.value :: rest, acc + (name -> DescribedType(t.value, descr)))
+          case SwaggerArray(items)                         => collectTypesImpl(items.value :: rest, acc)
+          case SwaggerObject(props, _)                     => collectTypesImpl(props.map(_.typ.value) ++: rest, acc)
+          case SwaggerOneOf(alts, _)                       => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
+          case SwaggerMap(value)                           => collectTypesImpl(value.value :: rest, acc)
+          case _                                           => collectTypesImpl(rest, acc)
         }
       }
 
-    def collectTypes: Map[String, SwaggerType] = collectTypesImpl(typ :: Nil, Map.empty)
+    def collectTypes: Map[String, DescribedType] = collectTypesImpl(typ :: Nil, Map.empty)
   }
 }
 
 trait SwaggerTypeable[T] {
+  self =>
   def typ: SwaggerType
   def as[U]: SwaggerTypeable[U] = this.asInstanceOf[SwaggerTypeable[U]]
+  def describe(description: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
+    def typ = self.typ.describe(description)
+  }
+  def describeFields(descriptions: (String, String)*): SwaggerTypeable[T] = new SwaggerTypeable[T] {
+    def typ = self.typ.describeFields(descriptions: _*)
+  }
 }
 
-trait LowLevelSwaggerTypeable{
+trait LowLevelSwaggerTypeable {
   @inline final def make[T](t: SwaggerType) = new SwaggerTypeable[T] {
     val typ = t
   }
   @inline final def makeNamed[T](t: SwaggerType, name: String) = new SwaggerTypeable[T] {
-    val typ = SwaggerRef(name, Eval.later(t))
+    val typ = SwaggerRef(name, None, Eval.later(t))
   }
   @inline final def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]) = make[X[T]](SwaggerArray(items.later))
 
@@ -260,7 +314,7 @@ object SwaggerTypeable extends LowLevelSwaggerTypeable with CirceSwaggerInstance
   implicit def swaggerEitherTypeable[A: SwaggerTypeable, B: SwaggerTypeable] = typeSum[Either, A, B]
 
   def genTypeable[T](implicit gen: Lazy[GenericSwaggerTypeable[T]]) = make[T](gen.value.typ)
-  def genNamedTypeable[T](name: String)(implicit gen: Lazy[GenericSwaggerTypeable[T]]) = make[T](SwaggerRef(name, gen.later))
+  def genNamedTypeable[T](name: String)(implicit gen: Lazy[GenericSwaggerTypeable[T]]) = make[T](SwaggerRef(name, None, gen.later))
   def deriveNamedTypeable[T](implicit gen: Lazy[GenericSwaggerTypeable[T]], typeTag: TypeTag[T], config: Config = defaultConfig): SwaggerTypeable[T] =
     genNamedTypeable[T](config.namePrefix + typeTag.tpe.typeSymbol.name.toString)
   def genWrappedTypeable[T](implicit gen: Lazy[WrappedSwaggerTypeable[T]]) = gen.value
@@ -303,7 +357,9 @@ object GenericSwaggerTypeable {
   implicit def genericProductTypeable[T, L <: HList]
   (implicit lgen: LabelledGeneric.Aux[T, L], list: HListProps[L]): GenericSwaggerTypeable[T] = {
     def required = list.props.filter(_._3).map(_._1).toVector
-    def props = list.props.map { case (name, t, _) => name -> t }.toVector
+
+    def props = list.props.map { case (name, t, _) => SwaggerProperty(name, None, t) }.toVector
+
     def typ = SwaggerObject(props, required)
 
     make[T](typ)
@@ -337,7 +393,7 @@ object WrappedSwaggerTypeable {
     HListWrap[X :: HNil](inner.typ)
 }
 
-sealed trait CirceSwaggerInstances{
+sealed trait CirceSwaggerInstances {
   implicit def jsonObjectSwagger = SwaggerTypeable.make(SwaggerObject()).as[JsonObject]
 }
 

@@ -83,9 +83,9 @@ object MkSwagger {
 
   type PathSeq = Vector[PathSpec]
 
-  type TypePool = TreeMap[String, SwaggerType]
+  type TypePool = TreeMap[String, DescribedType]
 
-  def single[T](op: OpenApiOp, method: OpenApi.Method, typeList: TreeMap[String, SwaggerType]) = new MkSwagger[T] {
+  def single[T](op: OpenApiOp, method: OpenApi.Method, typeList: TreeMap[String, DescribedType]) = new MkSwagger[T] {
     val paths = Vector(PathSpec(Vector.empty, method, op))
     val types = typeList
   }
@@ -120,7 +120,7 @@ object MkSwagger {
   implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 }
 
-final case class AsOpenApiParam[T](typ: SwaggerType, required: Boolean = true){
+final case class AsOpenApiParam[T](typ: SwaggerType, required: Boolean = true) {
   def types = typ.collectTypes
 }
 
@@ -166,7 +166,7 @@ object AsSwaggerParam {
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
   self =>
   def mapSpec(spec: PathSpec): PathSpec
-  def types: Map[String, SwaggerType]
+  def types: Map[String, DescribedType]
 
   def apply[A](mkSwagger: MkSwagger[A]): MkSwagger[A] = new MkSwagger[A] {
     def paths: PathSeq = mkSwagger.paths.map(mapSpec)
@@ -180,12 +180,12 @@ trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
 
   def map(f: PathSpec => PathSpec) = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = f(self.mapSpec(spec))
-    def types: Map[String, SwaggerType] = self.types
+    def types: Map[String, DescribedType] = self.types
   }
 
   def ++(that: TraversableOnce[(String, SwaggerType)]) = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = self.mapSpec(spec)
-    def types: Map[String, SwaggerType] = self.types ++ that
+    def types: Map[String, DescribedType] = self.types ++ that.map { case (name, typ) => name -> DescribedType(typ) }
   }
 
   def as[U] = self.asInstanceOf[SwaggerMapper[U]]
@@ -196,11 +196,11 @@ object SwaggerMapper {
 
   def empty[T] = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec = spec
-    def types: Map[String, SwaggerType] = TreeMap.empty
+    def types: Map[String, DescribedType] = TreeMap.empty
   }
 
   abstract class FromFunc[T] extends SwaggerMapper[T] {
-    def types: Map[String, SwaggerType] = TreeMap.empty
+    def types: Map[String, DescribedType] = TreeMap.empty
   }
 
   abstract class FromTypes[T] extends SwaggerMapper[T] {
@@ -214,7 +214,7 @@ object SwaggerMapper {
   }
 
   def fromTypes[T](tps: Map[String, SwaggerType]) = new FromTypes[T] {
-    def types: Map[String, SwaggerType] = tps
+    def types: Map[String, DescribedType] = tps.mapValues(DescribedType(_))
   }
 
   private def derivedParam[name, T, param[_, _]]
@@ -258,7 +258,7 @@ object SwaggerMapper {
   implicit def deriveReqBody[T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[T]] =
     new SwaggerMapper[ReqBody[T]] {
       def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.addBody(typeable.typ))
-      val types: Map[String, SwaggerType] = typeable.typ.collectTypes
+      val types: Map[String, DescribedType] = typeable.typ.collectTypes
     }
 
   implicit def deriveCons[start, end]

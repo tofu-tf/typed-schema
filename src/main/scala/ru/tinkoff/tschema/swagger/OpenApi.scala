@@ -55,10 +55,12 @@ final case class OpenApiInfo(title: String = "",
                              contact: Option[OpenApiContact] = None,
                              license: Option[OpeApiLicense] = None,
                              version: String = "")
+object OpenApiInfo
 
 @Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiComponents(schemas: TreeMap[String, SwaggerType] = TreeMap.empty)
+object OpenApiComponents
 
 
 @JsonCodec
@@ -69,11 +71,13 @@ final case class OpenApiSchema()
 final case class OpenApiContact(name: Option[String] = None,
                                 url: Option[String] = None,
                                 email: Option[String] = None)
+object OpenApiContact
 
 @Lenses
 @JsonCodec
 final case class OpeApiLicense(name: String,
                                url: Option[String] = None)
+object OpeApiLicense
 
 @Lenses
 @JsonCodec(encodeOnly = true)
@@ -100,12 +104,14 @@ object OpenApiParam {
 final case class OpenApiServer(url: String,
                                description: Option[String] = None,
                                variables: Map[String, OpenApiServerVariable] = Map.empty)
+object OpenApiServer
 
 @Lenses
 @JsonCodec
 final case class OpenApiServerVariable(enum: Vector[String],
                                        default: String,
                                        description: Option[String])
+object OpenApiServerVariable
 
 
 sealed trait SwaggerValue {
@@ -136,6 +142,7 @@ final case class SwaggerNumberValue(format: Option[SwaggerFormat[SwaggerNumberVa
                                     exclusiveMinimum: Boolean = false) extends SwaggerValue {
   def typeName = "number"
 }
+object OpenApiNumberValue
 
 @Lenses
 final case class SwaggerIntValue(format: Option[SwaggerFormat[SwaggerIntValue]] = None,
@@ -146,11 +153,13 @@ final case class SwaggerIntValue(format: Option[SwaggerFormat[SwaggerIntValue]] 
                                  exclusiveMinimum: Boolean = false) extends SwaggerValue {
   override def typeName = "integer"
 }
+object SwaggerIntValue
 
 @Lenses
 final case class SwaggerBooleanValue(default: Option[Boolean] = None) extends SwaggerValue {
   override def typeName = "boolean"
 }
+object SwaggerBooleanValue
 
 case object SwaggerFileValue extends SwaggerValue {
   override def typeName = "file"
@@ -164,6 +173,7 @@ final case class SwaggerArrayValue(items: SwaggerValue,
                                    maxItems: Option[Int] = None) extends SwaggerValue {
   override def typeName = "array"
 }
+object SwaggerArrayValue
 
 object SwaggerValue {
   val string = GenPrism[SwaggerValue, SwaggerStringValue]
@@ -231,10 +241,15 @@ final case class OpenApiTag(name: String,
                             description: Option[SwaggerDescription] = None,
                             externalDocs: Option[OpenApiExternalDocs] = None)
 
+object OpenApiTag
+
 @Lenses
 @JsonCodec
 final case class OpenApiExternalDocs(description: Option[SwaggerDescription] = None,
                                      url: String)
+
+object OpenApiExternalDocs
+
 @Lenses
 final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            summary: Option[String] = None,
@@ -291,6 +306,9 @@ object OpenApiResponse {
 @JsonCodec(encodeOnly = true)
 final case class OpenApiMediaType(schema: Option[SwaggerType] = None,
                                   example: Option[Json] = None)
+object OpenApiMediaType
+
+
 
 
 

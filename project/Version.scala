@@ -9,6 +9,7 @@ object Version {
   val cats = "1.0.0-MF"
   val catsMtl = "0.0.2"
   val enumeratum = "1.5.12"
+  val monocle = "1.5.0-cats-M2"
 
   val scalaTest = "3.0.1"
   val scalaCheck = "1.13.4"

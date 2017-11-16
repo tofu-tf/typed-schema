@@ -2,7 +2,7 @@ name := "Typed Schema"
 
 moduleName := "typed-schema"
 
-libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
+libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akkaHttp
 
@@ -24,6 +24,9 @@ libraryDependencies += "eu.timepit" %% "refined" % Version.refined
 
 libraryDependencies ++= Seq("actor", "stream")
                         .map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
+
+libraryDependencies ++= Seq("core", "macro")
+                        .map(module => "com.github.julien-truffaut" %% s"monocle-$module" % Version.monocle)
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 

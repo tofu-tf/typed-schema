@@ -194,6 +194,9 @@ trait LowLevelSwaggerTypeable{
   @inline final def make[T](t: SwaggerType) = new SwaggerTypeable[T] {
     val typ = t
   }
+  @inline final def makeNamed[T](t: SwaggerType, name: String) = new SwaggerTypeable[T] {
+    val typ = SwaggerRef(name, Eval.later(t))
+  }
   @inline final def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]) = make[X[T]](SwaggerArray(items.later))
 
   final implicit def seqTypeable[T: SwaggerTypeable] = seq[Seq, T]

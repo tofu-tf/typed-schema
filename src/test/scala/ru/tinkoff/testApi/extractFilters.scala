@@ -2,6 +2,9 @@ package ru.tinkoff.testApi
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.stream.ActorMaterializer
 import io.circe.generic.JsonCodec
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
@@ -11,6 +14,7 @@ import shapeless.{HList, Witness}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import io.circe.{Json, Printer}
 import ru.tinkoff.testApi.VersionApp.route
 
 @JsonCodec
@@ -41,6 +45,8 @@ object extractFilters {
 }
 
 object FiltersApp extends App {
+ implicit val printer = io.circe.Printer.noSpaces.copy(dropNullValues = true)
+
   def api = keyPrefix('echo) |> extractFilters('filt) |> get[Filters]
   object handler {
     def echo(filt: Filters) = filt

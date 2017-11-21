@@ -97,8 +97,8 @@ final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empt
   }
 }
 
-object SwaggerObject{
-  def withProps(props: (String, SwaggerType)*) = SwaggerObject(properties = props.map{case (name, typ) => SwaggerProperty(name, None, Eval.now(typ))}.toVector)
+object SwaggerObject {
+  def withProps(props: (String, SwaggerType)*) = SwaggerObject(properties = props.map { case (name, typ) => SwaggerProperty(name, None, Eval.now(typ)) }.toVector)
 }
 
 final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[SwaggerType]) extends SwaggerType {
@@ -109,7 +109,7 @@ final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[Swagg
 
   override def describe(description: String) = copy(descr = Some(description))
 
-  override def describeFields(descrs: (String, String)*) = copy(typ = typ.map(_.describeFields(descrs:_*)))
+  override def describeFields(descrs: (String, String)*) = copy(typ = typ.map(_.describeFields(descrs: _*)))
 }
 
 final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])], discriminator: Option[String] = None) extends SwaggerType {
@@ -242,6 +242,10 @@ trait SwaggerTypeable[T] {
   def describeFields(descriptions: (String, String)*): SwaggerTypeable[T] = new SwaggerTypeable[T] {
     def typ = self.typ.describeFields(descriptions: _*)
   }
+  def descr[S <: Symbol, L <: HList]
+  (fld: FieldType[S, String])
+  (implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
+    describeFields(witness.value.name -> fld)
 }
 
 trait LowLevelSwaggerTypeable {

@@ -148,9 +148,9 @@ object OpenApiNumberValue
 final case class SwaggerIntValue(format: Option[SwaggerFormat[SwaggerIntValue]] = None,
                                  default: Option[Int] = None,
                                  maximum: Option[Int] = None,
-                                 exclusiveMaximum: Boolean = false,
+                                 exclusiveMaximum: Option[Boolean] = None,
                                  minimum: Option[Int] = None,
-                                 exclusiveMinimum: Boolean = false) extends SwaggerValue {
+                                 exclusiveMinimum: Option[Boolean] = None) extends SwaggerValue {
   override def typeName = "integer"
 }
 object SwaggerIntValue

@@ -14,7 +14,7 @@ publishTo in ThisBuild := {
 
 //val pubVersion = "0.8.1.4"
 
-credentials in ThisBuild += Credentials(Path.userHome / ".sbt" / ".credentials")
+credentials in ThisBuild += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
 version in ThisBuild := {
   val branch = git.gitCurrentBranch.value

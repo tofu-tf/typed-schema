@@ -12,17 +12,16 @@ publishTo in ThisBuild := {
     Some("releases" at nexus + "content/repositories/tcs")
 }
 
-//val pubVersion = "0.8.1.4"
+val libVersion = "0.8.1.5"
 
 credentials in ThisBuild += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
 version in ThisBuild := {
   val branch = git.gitCurrentBranch.value
-  val pubVersion = git.gitCurrentTags.value.lastOption.getOrElse("UNKNOWN")
+  val pubVersion = git.gitCurrentTags.value.lastOption.getOrElse(libVersion)
   if (branch == "master") pubVersion
   else s"$pubVersion-$branch-SNAPSHOT"
 }
-
 
 updateOptions in ThisBuild := updateOptions.value.withGigahorse(false)
 

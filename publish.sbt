@@ -1,6 +1,9 @@
 organization in ThisBuild := "ru.tinkoff"
 description in ThisBuild := "Typelevel DSL for defining webservices, covertible to akka-http and swagger definitions"
-publishMavenStyle in ThisBuild:= true
+publishMavenStyle in ThisBuild := true
+
+import com.typesafe.sbt.SbtGit.git
+
 publishTo in ThisBuild := {
   val nexus = "http://nexus.tcsbank.ru/"
   if (isSnapshot.value)
@@ -8,8 +11,17 @@ publishTo in ThisBuild := {
   else
     Some("releases" at nexus + "content/repositories/tcs")
 }
-credentials in ThisBuild += Credentials(Path.userHome / ".sbt" / ".credentials")
-version in ThisBuild := "0.8.1.4"
+
+val pubVersion = "0.8.1.5"
+
+credentials in ThisBuild += Credentials(Path.userHome / ".ivy2" / ".credentials")
+
+version in ThisBuild := {
+  val branch = git.gitCurrentBranch.value
+  if (branch == "master") pubVersion
+  else s"$pubVersion-$branch-SNAPSHOT"
+}
+
 updateOptions in ThisBuild := updateOptions.value.withGigahorse(false)
 
 

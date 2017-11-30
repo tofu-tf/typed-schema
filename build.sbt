@@ -28,6 +28,9 @@ libraryDependencies ++= Seq("actor", "stream")
 libraryDependencies ++= Seq("core", "macro")
                         .map(module => "com.github.julien-truffaut" %% s"monocle-$module" % Version.monocle)
 
+libraryDependencies ++= Seq("core")
+                        .map(module => "org.typelevel" %% s"cats-$module" % Version.cats)
+
 addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)

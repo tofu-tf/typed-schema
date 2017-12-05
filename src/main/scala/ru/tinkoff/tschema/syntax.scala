@@ -72,6 +72,7 @@ object syntax {
     def <>[y](y: => y): x <|> y = new <|>(x, y)
     def :>[y](y: => y): x :> y = new :>
     def |>[y](y: => y): x :> y = new :>
+    def &[y](y: => y): x :> y = new :>
     def apply[y](y: => y): x :> y = new :>
   }
 

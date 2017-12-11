@@ -39,6 +39,7 @@ object OpenApi {
     case object delete extends Method
     case object head extends Method
     case object options extends Method
+    case object patch extends Method
   }
 
   type Path = Map[Method, OpenApiOp]

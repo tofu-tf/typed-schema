@@ -26,43 +26,43 @@ object typeDSL {
     * indicates result of element of type `x`
     * via POST HTTP method
     */
-  final class Post[x] extends DSLRes
+  final class Post extends DSLAtom
 
   /**
     * indicates result of element of type `x`
     * via GET HTTP method
     */
-  final class Get[x] extends DSLRes
+  final class Get extends DSLAtom
 
   /**
     * indicates result of element of type `x`
     * via PUT HTTP method
     */
-  final class Put[x] extends DSLRes
+  final class Put extends DSLAtom
 
   /**
     * indicates result of element of type `x`
     * via DELETE HTTP method
     */
-  final class Delete[x] extends DSLRes
+  final class Delete extends DSLAtom
 
   /**
     * indicates result of element of type `x`
     * via HEAD HTTP method
     */
-  final class Head[x] extends DSLRes
+  final class Head extends DSLAtom
 
   /**
     * indicates result of element of type `x`
     * via OPTIONS HTTP method
     */
-  final class Options[x] extends DSLRes
+  final class Options extends DSLAtom
 
   /**
     * indicates result of element of type `x`
     * via PATCH HTTP method
     */
-  final class Patch[x] extends DSLRes
+  final class Patch extends DSLAtom
 
   /**
     * Indicated single path prefix

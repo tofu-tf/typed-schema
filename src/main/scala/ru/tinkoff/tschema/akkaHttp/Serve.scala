@@ -1,5 +1,6 @@
 package ru.tinkoff.tschema.akkaHttp
 
+import akka.http.scaladsl.model.{HttpMethod, HttpMethods}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
@@ -57,24 +58,24 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   }
 
   def serveMap[T, In <: HList, nameA, nameB, A, B]
-  (f: A => B)
-  (implicit select: Selector[In, FieldType[nameA, A]]): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
+    (f: A => B)
+      (implicit select: Selector[In, FieldType[nameA, A]]): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
     type Out = FieldType[nameB, B] :: In
     def directive(in: In): Directive1[Out] = provide(field[nameB](f(select(in))) :: in)
   }
 
   def serveMap2[T, In <: HList, nameA, nameB, nameC, A, B, C]
-  (f: (A, B) => C)
-  (implicit selectA: Selector[In, FieldType[nameA, A]],
-   selectB: Selector[In, FieldType[nameB, B]]): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
+    (f: (A, B) => C)
+      (implicit selectA: Selector[In, FieldType[nameA, A]],
+        selectB: Selector[In, FieldType[nameB, B]]): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
     type Out = FieldType[nameC, C] :: In
     def directive(in: In): Directive1[Out] = provide(field[nameC](f(selectA(in), selectB(in))) :: in)
   }
 
   def serveFMap[T, In <: HList, nameA, nameB, A, B]
-  (f: A => Future[B])
-  (implicit select: Selector[In, FieldType[nameA, A]],
-   ec: ExecutionContext): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
+    (f: A => Future[B])
+      (implicit select: Selector[In, FieldType[nameA, A]],
+        ec: ExecutionContext): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
     type Out = FieldType[nameB, B] :: In
     def directive(in: In): Directive1[Out] = Directive { handle =>
       ctx =>
@@ -87,8 +88,8 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   }
 
   def serveFilter[T, In <: HList, name, A]
-  (f: A => Option[Rejection])
-  (implicit select: Selector[In, FieldType[name, A]]): Aux[T, In, In] = new Serve[T, In] {
+    (f: A => Option[Rejection])
+      (implicit select: Selector[In, FieldType[name, A]]): Aux[T, In, In] = new Serve[T, In] {
     type Out = In
     def directive(in: In): Directive1[In] = Directive { handle =>
       f(select(in)) match {
@@ -101,6 +102,8 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
 
 private[akkaHttp] trait ServeInstances extends ServeFunctions {
   implicit def prefixServe[pref <: Symbol, In <: HList](implicit w: Witness.Aux[pref]) = serveCheck[Prefix[pref], In](pathPrefix(w.value.name))
+
+  implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) = serveCheck[method, In](method(check.method))
 
   implicit def queryParamServe[name <: Symbol : Witness.Aux, x: FromQueryParam, In <: HList] = serveAdd[QueryParam[name, x], In, x, name](
     parameter(name[name]).flatMap(param => tryParse[x, FromQueryParam, name](param))
@@ -130,6 +133,7 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
     headerValueByName(name[name]).flatMap(str => tryParse[x, FromHeader, name](str))
   }
 
+
   implicit def headerOptionServe[name <: Symbol : Witness.Aux, x: FromHeader, In <: HList] = serveAdd[Header[name, Option[x]], In, Option[x], name] {
     optionalHeaderValueByName(name[name]).flatMap {
       case Some(str) => tryParseOpt[x, FromHeader, name](str)
@@ -156,11 +160,10 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
     formFieldMap.flatMap { m =>
       m.get(name[name]) match {
         case Some(str) => tryParseOpt[x, FromFormField, name](str)
-        case None => provide(Option.empty[x])
+        case None      => provide(Option.empty[x])
       }
     }
   }
-
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
 
@@ -169,5 +172,18 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
     def directive(in: In): Directive1[key[name] :: In] = provide(in).map(new key[name] :: _)
   }
 }
+
+final case class MethodCheck[T](method: HttpMethod)
+object MethodCheck {
+  implicit val checkGet: MethodCheck[Get] = MethodCheck(HttpMethods.GET)
+  implicit val checkPost: MethodCheck[Post] = MethodCheck(HttpMethods.POST)
+  implicit val checkDelete: MethodCheck[Delete] = MethodCheck(HttpMethods.DELETE)
+  implicit val checkPut: MethodCheck[Put] = MethodCheck(HttpMethods.PUT)
+  implicit val checkOptions: MethodCheck[Options] = MethodCheck(HttpMethods.OPTIONS)
+  implicit val checkHead: MethodCheck[Head] = MethodCheck(HttpMethods.HEAD)
+  implicit val checkPatch: MethodCheck[Patch] = MethodCheck(HttpMethods.PATCH)
+}
+
+
 
 

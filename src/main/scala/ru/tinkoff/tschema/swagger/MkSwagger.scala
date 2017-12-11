@@ -10,6 +10,7 @@ import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 import cats.{Monoid, MonoidK}
 import io.circe.Encoder
+import monocle.macros.Lenses
 import ru.tinkoff.tschema.common.Name
 
 import scala.collection.immutable.TreeMap
@@ -39,7 +40,7 @@ sealed trait MkSwagger[T] {
       paths.groupBy(_.path)
       .map {
         case (parts, specs) => parts.mkString("/", "/", "") ->
-                               specs.map { case PathSpec(_, method, op) => method -> op }.toMap
+                               specs.collect { case PathSpec(_, Some(method), op) => method -> op }.toMap
       }
     OpenApi(
       info = info,
@@ -52,22 +53,18 @@ sealed trait MkSwagger[T] {
 
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
-      val paths: PathSeq = self.paths.map(_.modOp { op =>
-        val codes = op.responses.codes
-        op.copy(responses = op.responses.copy(codes = codes ++ Map(
+      val paths: PathSeq = self.paths.map(
+        (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes).modify(_ + (
           code -> OpenApiResponse.json(description = description,
-                                       swaggerType = typeable.typ)
-        )))
-      })
+                                       swaggerType = typeable.typ)))
+      )
+
       val types: TypePool = self.types ++ typeable.typ.collectTypes
     }
 }
 
 object MkSwagger {
-
-  object macroInterface {
-  }
-
+  object macroInterface {}
 
   def empty[T]: MkSwagger[T] = new MkSwagger[T] {
     override def paths = Vector.empty
@@ -76,23 +73,22 @@ object MkSwagger {
 
   def apply[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
 
-  case class PathSpec(path: Vector[String], method: OpenApi.Method, op: OpenApiOp) {
-    def modPath(f: Vector[String] => Vector[String]) = copy(path = f(path))
-    def modOp(f: OpenApiOp => OpenApiOp) = copy(op = f(op))
+  @Lenses
+  case class PathSpec(path: Vector[String], method: Option[OpenApi.Method], op: OpenApiOp) {
+    def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.modify(f)(this)
   }
 
   type PathSeq = Vector[PathSpec]
 
   type TypePool = TreeMap[String, DescribedType]
 
-  def single[T](op: OpenApiOp, method: OpenApi.Method, typeList: TreeMap[String, DescribedType]) = new MkSwagger[T] {
-    val paths = Vector(PathSpec(Vector.empty, method, op))
+  def single[T](op: OpenApiOp, typeList: TreeMap[String, DescribedType]) = new MkSwagger[T] {
+    val paths = Vector(PathSpec(Vector.empty, None, op))
     val types = typeList
   }
 
-  private def derivedMethod[T, meth[_]](method: OpenApi.Method)(implicit typ: SwaggerTypeable[T]) =
-    single[meth[T]](
-      method = method,
+  implicit def derivedComplete[T](implicit typ: SwaggerTypeable[T]) =
+    single[Complete[T]](
       op = OpenApiOp(
         responses = OpenApiResponses(codes = Map(
           StatusCodes.OK -> OpenApiResponse.json(
@@ -100,18 +96,11 @@ object MkSwagger {
           )))),
       typeList = TreeMap(typ.typ.collectTypes.toSeq: _*))
 
-  implicit def deriveGet[T: SwaggerTypeable] = derivedMethod[T, Get](OpenApi.Method.get)
-  implicit def derivePost[T: SwaggerTypeable] = derivedMethod[T, Post](OpenApi.Method.post)
-  implicit def deriveHead[T: SwaggerTypeable] = derivedMethod[T, Head](OpenApi.Method.head)
-  implicit def derivePut[T: SwaggerTypeable] = derivedMethod[T, Put](OpenApi.Method.put)
-  implicit def deriveDelete[T: SwaggerTypeable] = derivedMethod[T, Delete](OpenApi.Method.delete)
-  implicit def deriveOptions[T: SwaggerTypeable] = derivedMethod[T, Options](OpenApi.Method.options)
-
   implicit def deriveJoin[left, right]
-  (implicit left: MkSwagger[left], right: MkSwagger[right]) = (left ++ right).as[left <|> right]
+    (implicit left: MkSwagger[left], right: MkSwagger[right]) = (left ++ right).as[left <|> right]
 
   implicit def deriveCons[start, end]
-  (implicit start: SwaggerMapper[start], end: MkSwagger[end]): MkSwagger[start :> end] = start(end).as[start :> end]
+    (implicit start: SwaggerMapper[start], end: MkSwagger[end]): MkSwagger[start :> end] = start(end).as[start :> end]
 
   implicit val monoidKInstance = new MonoidK[MkSwagger] {
     def empty[A]: MkSwagger[A] = MkSwagger.empty[A]
@@ -213,20 +202,21 @@ object SwaggerMapper {
     def mapSpec(spec: PathSpec): PathSpec = f(spec)
   }
 
-  def fromTypes[T](tps: Map[String, SwaggerType]) = new FromTypes[T] {
-    def types: Map[String, DescribedType] = tps.mapValues(DescribedType(_))
+  def fromTypes[T](tps: Map[String, DescribedType]) = new FromTypes[T] {
+    def types: Map[String, DescribedType] = tps
   }
 
   private def derivedParam[name, T, param[_, _]]
-  (in: In)
-  (implicit name: Name[name], param: AsOpenApiParam[T]) = new SwaggerMapper[param[name, T]] {
-    def mapSpec(spec: PathSpec) = spec.modOp(_.addParam(OpenApiParam(
-      name = name.string,
-      in = in,
-      required = param.required,
-      schema = Some(param.typ))))
-    def types = param.types
-  }
+    (in: In)
+      (implicit name: Name[name], param: AsOpenApiParam[T]): SwaggerMapper[param[name, T]] =
+    new SwaggerMapper[param[name, T]] {
+      def mapSpec(spec: PathSpec) = PathSpec.op.modify(_.addParam(OpenApiParam(
+        name = name.string,
+        in = in,
+        required = param.required,
+        schema = Some(param.typ))))(spec)
+      def types = param.types
+    }
 
   implicit def derivePath[path](implicit name: Name[path]) =
     fromFunc[path](_.modPath(name.string +: _))
@@ -256,18 +246,20 @@ object SwaggerMapper {
     derivedParam[name, T, Capture](In.path) map (_.modPath(s"{$name}" +: _))
 
   implicit def deriveReqBody[T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[T]] =
-    new SwaggerMapper[ReqBody[T]] {
-      def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.addBody(typeable.typ))
-      val types: Map[String, DescribedType] = typeable.typ.collectTypes
-    }
+    fromFunc(PathSpec.op.modify(_.addBody(typeable.typ))) andThen fromTypes[ReqBody[T]](typeable.typ.collectTypes)
+
+
+  implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
+    fromFunc[method](PathSpec.method.modify {
+      case None         => Some(methodDeclare.method)
+      case meth@Some(_) => meth
+    })
 
   implicit def deriveCons[start, end]
-  (implicit start: SwaggerMapper[start], end: SwaggerMapper[end]): SwaggerMapper[start :> end] = (start andThen end).as[start :> end]
+    (implicit start: SwaggerMapper[start], end: SwaggerMapper[end]): SwaggerMapper[start :> end] = (start andThen end).as[start :> end]
 
   private def deriveDesr[T](descr: SwaggerDescription): SwaggerMapper[T] =
-    new FromFunc[T] {
-      def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.copy(description = Some(descr)))
-    }
+    fromFunc((PathSpec.op ^|-> OpenApiOp.description).set(Some(descr)))
 
   implicit def deriveStaticDescr[name](implicit name: Name[name]) =
     deriveDesr[Description.Static[name]](StaticDescription(name.string))
@@ -276,13 +268,11 @@ object SwaggerMapper {
     deriveDesr[Description.Resource[name]](ResourceDescription(name.string))
 
   implicit def deriveI18nDescr[name]
-  (implicit name: Name[name], bundle: ResourceBundle) =
+    (implicit name: Name[name], bundle: ResourceBundle) =
     deriveDesr[Description.I18n[name]](I18nDescription(name.string))
 
   implicit def deriveTag[name](implicit name: Name[name]): SwaggerMapper[Tag[name]] =
-    new FromFunc[Tag[name]] {
-      def mapSpec(spec: PathSpec): PathSpec = spec.modOp(_.addTag(name.string))
-    }
+    fromFunc((PathSpec.op ^|-> OpenApiOp.tags).modify(_ :+ name.string))
 
   implicit def deriveKey[name] = empty[Key[name]]
 
@@ -293,6 +283,18 @@ object SwaggerMapper {
 
   implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 }
+
+final case class MethodDeclare[method](method: OpenApi.Method)
+object MethodDeclare {
+  implicit val checkGet: MethodDeclare[Get] = MethodDeclare(OpenApi.Method.put)
+  implicit val checkPost: MethodDeclare[Post] = MethodDeclare(OpenApi.Method.post)
+  implicit val checkDelete: MethodDeclare[Delete] = MethodDeclare(OpenApi.Method.delete)
+  implicit val checkPut: MethodDeclare[Put] = MethodDeclare(OpenApi.Method.put)
+  implicit val checkOptions: MethodDeclare[Options] = MethodDeclare(OpenApi.Method.options)
+  implicit val checkHead: MethodDeclare[Head] = MethodDeclare(OpenApi.Method.head)
+  implicit val checkPatch: MethodDeclare[Patch] = MethodDeclare(OpenApi.Method.patch)
+}
+
 
 
 

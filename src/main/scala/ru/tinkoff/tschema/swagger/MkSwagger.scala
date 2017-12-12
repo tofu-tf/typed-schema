@@ -12,6 +12,7 @@ import cats.{Monoid, MonoidK}
 import io.circe.Encoder
 import monocle.macros.Lenses
 import ru.tinkoff.tschema.common.Name
+import cats.syntax.option._
 
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
@@ -124,20 +125,20 @@ case class AsSwaggerParam[T](value: SwaggerValue, required: Boolean = true)
 object AsSwaggerParam {
   implicit lazy val booleanParam = AsSwaggerParam[Boolean](SwaggerBooleanValue())
 
-  implicit lazy val intParam = AsSwaggerParam[Int](SwaggerIntValue(format = Some(SwaggerFormat.int32)))
-  implicit lazy val longParam = AsSwaggerParam[Long](SwaggerIntValue(format = Some(SwaggerFormat.int64)))
+  implicit lazy val intParam = AsSwaggerParam[Int](SwaggerIntValue(format = OpenApiFormat.int32.some))
+  implicit lazy val longParam = AsSwaggerParam[Long](SwaggerIntValue(format = OpenApiFormat.int64.some))
   implicit lazy val bigIntParam = AsSwaggerParam[BigInt](SwaggerIntValue())
 
-  implicit lazy val floatParam = AsSwaggerParam[Float](SwaggerNumberValue(format = Some(SwaggerFormat.float)))
-  implicit lazy val doubleParam = AsSwaggerParam[Double](SwaggerNumberValue(format = Some(SwaggerFormat.double)))
+  implicit lazy val floatParam = AsSwaggerParam[Float](SwaggerNumberValue(format = OpenApiFormat.float.some))
+  implicit lazy val doubleParam = AsSwaggerParam[Double](SwaggerNumberValue(format = OpenApiFormat.double.some))
   implicit lazy val bigDecimalParam = AsSwaggerParam[BigDecimal](SwaggerNumberValue())
 
   implicit lazy val stringParam = AsSwaggerParam[String](SwaggerStringValue())
-  implicit lazy val byteParam = AsSwaggerParam[Byte](SwaggerStringValue(format = Some(SwaggerFormat.byte)))
+  implicit lazy val byteParam = AsSwaggerParam[Byte](SwaggerStringValue(format = OpenApiFormat.byte.some))
 
-  implicit lazy val byteStringParam = AsSwaggerParam[ByteString](SwaggerStringValue(format = Some(SwaggerFormat.binary)))
-  implicit lazy val byteArrayParam = AsSwaggerParam[Array[Byte]](SwaggerStringValue(format = Some(SwaggerFormat.binary)))
-  implicit lazy val utilDateParam = AsSwaggerParam[Date](SwaggerStringValue(format = Some(SwaggerFormat.dateTime)))
+  implicit lazy val byteStringParam = AsSwaggerParam[ByteString](SwaggerStringValue(format = OpenApiFormat.binary.some))
+  implicit lazy val byteArrayParam = AsSwaggerParam[Array[Byte]](SwaggerStringValue(format = OpenApiFormat.binary.some))
+  implicit lazy val utilDateParam = AsSwaggerParam[Date](SwaggerStringValue(format = OpenApiFormat.dateTime.some))
   implicit lazy val uuidParam = AsSwaggerParam[UUID](SwaggerStringValue.uuid)
 
   implicit def optionParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Option[T]](param.value, required = false)
@@ -148,7 +149,7 @@ object AsSwaggerParam {
   trait Enum[E <: enumeratum.EnumEntry] {
     self: enumeratum.Enum[E] =>
     implicit lazy val asSwaggerParam: AsSwaggerParam[E] =
-      AsSwaggerParam[E](SwaggerStringValue(enum = Some(self.values.map(_.entryName).toVector)))
+      AsSwaggerParam[E](SwaggerStringValue(enum = self.values.map(_.entryName).toVector.some))
   }
 }
 
@@ -209,14 +210,13 @@ object SwaggerMapper {
   private def derivedParam[name, T, param[_, _]]
     (in: In)
       (implicit name: Name[name], param: AsOpenApiParam[T]): SwaggerMapper[param[name, T]] =
-    new SwaggerMapper[param[name, T]] {
-      def mapSpec(spec: PathSpec) = PathSpec.op.modify(_.addParam(OpenApiParam(
-        name = name.string,
-        in = in,
-        required = param.required,
-        schema = Some(param.typ))))(spec)
-      def types = param.types
-    }
+    fromFunc((PathSpec.op ^|-> OpenApiOp.parameters).modify(_ :+ OpenApiParam(
+      name = name.string,
+      in = in,
+      required = param.required,
+      schema = param.typ.some))) andThen
+    fromTypes[param[name, T]](param.types)
+
 
   implicit def derivePath[path](implicit name: Name[path]) =
     fromFunc[path](_.modPath(name.string +: _))
@@ -243,15 +243,15 @@ object SwaggerMapper {
     derivedParam[name, T, Cookie](In.cookie)
 
   implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
-    derivedParam[name, T, Capture](In.path) map (_.modPath(s"{$name}" +: _))
+    derivedParam[name, T, Capture](In.path).map(PathSpec.path.modify(s"{$name}" +: _))
 
   implicit def deriveReqBody[T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[T]] =
-    fromFunc(PathSpec.op.modify(_.addBody(typeable.typ))) andThen fromTypes[ReqBody[T]](typeable.typ.collectTypes)
+    fromFunc((PathSpec.op ^|-> OpenApiOp.requestBody).set(OpenApiRequestBody.fromType(typeable.typ).some)) andThen fromTypes[ReqBody[T]](typeable.typ.collectTypes)
 
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
     fromFunc[method](PathSpec.method.modify {
-      case None         => Some(methodDeclare.method)
+      case None         => methodDeclare.method.some
       case meth@Some(_) => meth
     })
 
@@ -259,7 +259,7 @@ object SwaggerMapper {
     (implicit start: SwaggerMapper[start], end: SwaggerMapper[end]): SwaggerMapper[start :> end] = (start andThen end).as[start :> end]
 
   private def deriveDesr[T](descr: SwaggerDescription): SwaggerMapper[T] =
-    fromFunc((PathSpec.op ^|-> OpenApiOp.description).set(Some(descr)))
+    fromFunc((PathSpec.op ^|-> OpenApiOp.description).set(descr.some))
 
   implicit def deriveStaticDescr[name](implicit name: Name[name]) =
     deriveDesr[Description.Static[name]](StaticDescription(name.string))

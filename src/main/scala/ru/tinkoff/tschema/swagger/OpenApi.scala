@@ -38,6 +38,7 @@ object OpenApi {
     case object put extends Method
     case object delete extends Method
     case object head extends Method
+    case object patch extends Method
     case object options extends Method
   }
 
@@ -119,7 +120,7 @@ sealed trait SwaggerValue {
 }
 
 @Lenses
-final case class SwaggerStringValue(format: Option[SwaggerFormat[SwaggerStringValue]] = None,
+final case class SwaggerStringValue(format: Option[OpenApiFormat[SwaggerStringValue]] = None,
                                     default: Option[String] = None,
                                     maxLength: Option[Int] = None,
                                     minLength: Option[Int] = None,
@@ -134,7 +135,7 @@ object SwaggerStringValue {
 }
 
 @Lenses
-final case class SwaggerNumberValue(format: Option[SwaggerFormat[SwaggerNumberValue]] = None,
+final case class SwaggerNumberValue(format: Option[OpenApiFormat[SwaggerNumberValue]] = None,
                                     default: Option[BigDecimal] = None,
                                     maximum: Option[BigDecimal] = None,
                                     exclusiveMaximum: Boolean = false,
@@ -145,7 +146,7 @@ final case class SwaggerNumberValue(format: Option[SwaggerFormat[SwaggerNumberVa
 object OpenApiNumberValue
 
 @Lenses
-final case class SwaggerIntValue(format: Option[SwaggerFormat[SwaggerIntValue]] = None,
+final case class SwaggerIntValue(format: Option[OpenApiFormat[SwaggerIntValue]] = None,
                                  default: Option[Int] = None,
                                  maximum: Option[Int] = None,
                                  exclusiveMaximum: Option[Boolean] = None,
@@ -204,21 +205,21 @@ object SwaggerValue {
   }
 }
 
-sealed trait SwaggerFormat[T <: SwaggerValue]
+sealed trait OpenApiFormat[T <: SwaggerValue]
 
-object SwaggerFormat {
-  case object int32 extends SwaggerFormat[SwaggerIntValue]
-  case object int64 extends SwaggerFormat[SwaggerIntValue]
-  case object float extends SwaggerFormat[SwaggerNumberValue]
-  case object double extends SwaggerFormat[SwaggerNumberValue]
-  case object byte extends SwaggerFormat[SwaggerStringValue]
-  case object binary extends SwaggerFormat[SwaggerStringValue]
-  case object date extends SwaggerFormat[SwaggerStringValue]
-  case object dateTime extends SwaggerFormat[SwaggerStringValue]
-  case object password extends SwaggerFormat[SwaggerStringValue]
+object OpenApiFormat {
+  case object int32 extends OpenApiFormat[SwaggerIntValue]
+  case object int64 extends OpenApiFormat[SwaggerIntValue]
+  case object float extends OpenApiFormat[SwaggerNumberValue]
+  case object double extends OpenApiFormat[SwaggerNumberValue]
+  case object byte extends OpenApiFormat[SwaggerStringValue]
+  case object binary extends OpenApiFormat[SwaggerStringValue]
+  case object date extends OpenApiFormat[SwaggerStringValue]
+  case object dateTime extends OpenApiFormat[SwaggerStringValue]
+  case object password extends OpenApiFormat[SwaggerStringValue]
 
-  implicit def formatDecoder[T <: SwaggerValue]: Encoder[SwaggerFormat[T]] =
-    Encoder.encodeString.contramap[SwaggerFormat[T]](_.toString)
+  implicit def formatDecoder[T <: SwaggerValue]: Encoder[OpenApiFormat[T]] =
+    Encoder.encodeString.contramap[OpenApiFormat[T]](_.toString)
 }
 
 @Lenses
@@ -230,7 +231,7 @@ final case class OpenApiRequestBody(
                                    )
 
 object OpenApiRequestBody {
-  def apply(description: Option[String], swaggerType: SwaggerType): OpenApiRequestBody =
+  def fromType(swaggerType: SwaggerType, description: Option[String] = None): OpenApiRequestBody =
     OpenApiRequestBody(description = description, content = Map("application/json" -> OpenApiMediaType(Some(swaggerType))))
 
 }
@@ -261,12 +262,7 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            servers: Vector[OpenApiServer] = Vector.empty,
                            parameters: Vector[OpenApiParam] = Vector.empty,
                            requestBody: Option[OpenApiRequestBody] = None,
-                           responses: OpenApiResponses) {
-  def addParam(param: OpenApiParam) = copy(parameters = parameters :+ param)
-  def addBody(typ: SwaggerType, description: Option[String] = None) =
-    copy(requestBody = Some(OpenApiRequestBody(description, typ)))
-  def addTag(tag: String) = copy(tags = tags :+ tag)
-}
+                           responses: OpenApiResponses)
 
 object OpenApiOp {
   implicit lazy val swaggerOpDecoder: ObjectEncoder[OpenApiOp] = deriveEncoder

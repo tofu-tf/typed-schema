@@ -39,7 +39,7 @@ sealed trait SwaggerType {
   def describe(descr: String) = this
 }
 
-class SwaggerPrimitive[Typ <: SwaggerValue](val typ: Typ, val format: Option[SwaggerFormat[Typ]] = None) extends SwaggerType {
+class SwaggerPrimitive[Typ <: SwaggerValue](val typ: Typ, val format: Option[OpenApiFormat[Typ]] = None) extends SwaggerType {
   override def merge = {
     case prim: SwaggerPrimitive[_] if typ == prim.typ =>
       if (format == prim.format) this else new SwaggerPrimitive(typ)
@@ -53,16 +53,16 @@ object SwaggerPrimitive {
   case object number extends SwaggerPrimitive(SwaggerNumberValue())
   case object boolean extends SwaggerPrimitive(SwaggerBooleanValue())
   //  case object `null` extends SwaggerPrimitive(SwaggerN)
-  case object integer extends SwaggerPrimitive(SwaggerIntValue(), Some(SwaggerFormat.int32))
-  case object long extends SwaggerPrimitive(SwaggerIntValue(), Some(SwaggerFormat.int64))
-  case object float extends SwaggerPrimitive(SwaggerNumberValue(), Some(SwaggerFormat.float))
-  case object double extends SwaggerPrimitive(SwaggerNumberValue(), Some(SwaggerFormat.double))
+  case object integer extends SwaggerPrimitive(SwaggerIntValue(), Some(OpenApiFormat.int32))
+  case object long extends SwaggerPrimitive(SwaggerIntValue(), Some(OpenApiFormat.int64))
+  case object float extends SwaggerPrimitive(SwaggerNumberValue(), Some(OpenApiFormat.float))
+  case object double extends SwaggerPrimitive(SwaggerNumberValue(), Some(OpenApiFormat.double))
 
-  case object byte extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.byte))
-  case object binary extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.binary))
-  case object date extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.date))
-  case object dateTime extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.dateTime))
-  case object password extends SwaggerPrimitive(SwaggerStringValue(), Some(SwaggerFormat.password))
+  case object byte extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.byte))
+  case object binary extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.binary))
+  case object date extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.date))
+  case object dateTime extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.dateTime))
+  case object password extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.password))
 }
 
 final case class SwaggerEnumeration(alts: Vector[String]) extends SwaggerType {

@@ -81,8 +81,9 @@ object syntax {
   object headers extends ParamMaker[Header]
   object form extends ParamMaker[FormField]
 
-  sealed class ResultMaker[F[_]](x: => F[Nothing]){
-    def apply[x]: F[x] = x.asInstanceOf[F[x]]
+  sealed class ResultMaker[A <: DSLAtom](x: => A) {
+    def apply[x]: A :> Complete[x] = x :> new Complete
+    def ! : A = x
   }
 
   object get extends ResultMaker(new Get)
@@ -92,5 +93,6 @@ object syntax {
   object head extends ResultMaker(new Head)
   object options extends ResultMaker(new Options)
   object patch extends ResultMaker(new Patch)
-  object complete extends ResultMaker(new Complete)
+
+  def complete[x]: Complete[x] = new Complete[x]
 }

@@ -2,17 +2,17 @@ package ru.tinkoff.tschema.swagger
 
 import java.util.{Date, ResourceBundle, UUID}
 
-import MkSwagger._
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.util.ByteString
+import cats.MonoidK
 import cats.arrow.FunctionK
-import ru.tinkoff.tschema.typeDSL._
-import shapeless.Witness
-import cats.{Monoid, MonoidK}
+import cats.syntax.option._
 import io.circe.Encoder
 import monocle.macros.Lenses
 import ru.tinkoff.tschema.common.Name
-import cats.syntax.option._
+import ru.tinkoff.tschema.swagger.MkSwagger._
+import ru.tinkoff.tschema.typeDSL._
+import shapeless.Witness
 
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
@@ -50,12 +50,10 @@ sealed trait MkSwagger[T] {
     )
   }
 
-  implicitly[Encoder[TypePool]]
-
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
       val paths: PathSeq = self.paths.map(
-        (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes).modify(_ + (
+        (   PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes).modify(_ + (
           code -> OpenApiResponse.json(description = description,
                                        swaggerType = typeable.typ)))
       )
@@ -286,7 +284,7 @@ object SwaggerMapper {
 
 final case class MethodDeclare[method](method: OpenApi.Method)
 object MethodDeclare {
-  implicit val checkGet: MethodDeclare[Get] = MethodDeclare(OpenApi.Method.put)
+  implicit val checkGet: MethodDeclare[Get] = MethodDeclare(OpenApi.Method.get)
   implicit val checkPost: MethodDeclare[Post] = MethodDeclare(OpenApi.Method.post)
   implicit val checkDelete: MethodDeclare[Delete] = MethodDeclare(OpenApi.Method.delete)
   implicit val checkPut: MethodDeclare[Put] = MethodDeclare(OpenApi.Method.put)

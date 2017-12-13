@@ -1,5 +1,6 @@
 object Version {
   val circe = "0.9.0-M2"
+  val circeDerivation = "0.8.0-M2"
   val akka = "2.5.7"
   val akkaHttp = "10.0.10"
   val refined = "0.7.0"

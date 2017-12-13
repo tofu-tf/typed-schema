@@ -10,13 +10,17 @@ import cats.syntax.apply._
 import cats.syntax.traverse._
 import enumeratum.{Enum, EnumEntry}
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
+import io.circe._
 import shapeless.labelled.FieldType
 import shapeless.{Lazy, _}
 
 import scala.annotation.tailrec
 import scala.language.higherKinds
 import SwaggerTypeable.Config
+import io.circe.generic.JsonCodec
+import monocle.macros.Lenses
+import ru.tinkoff.tschema.utils.json.Skippable
+import shapeless.tag.@@
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -118,6 +122,8 @@ final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])],
 
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 
+final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType
+
 final case class DescribedType(typ: SwaggerType, description: Option[String] = None)
 
 object DescribedType {
@@ -161,6 +167,8 @@ object SwaggerType {
         "type" -> Json.fromString("array"),
         "items" -> enc.asJson
       ))
+
+      case SwaggerXML(typ, options) => encode(typ).map(o1 => JsonObject.fromIterable(o1.toIterable ++ options.asJsonObject.toIterable))
 
       case SwaggerObject(properties, required) =>
         properties
@@ -224,12 +232,26 @@ object SwaggerType {
           case SwaggerObject(props, _)                     => collectTypesImpl(props.map(_.typ.value) ++: rest, acc)
           case SwaggerOneOf(alts, _)                       => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
           case SwaggerMap(value)                           => collectTypesImpl(value.value :: rest, acc)
+          case SwaggerXML(wrapped, _)                      => collectTypesImpl(wrapped :: rest, acc)
           case _                                           => collectTypesImpl(rest, acc)
         }
       }
 
     def collectTypes: Map[String, DescribedType] = collectTypesImpl(typ :: Nil, Map.empty)
   }
+}
+
+case class SwaggerXMLOptions(
+  name: Option[String] = None,
+  attribute: Boolean @@ Skippable = false,
+  prefix: Option[String] = None,
+  namespace: Option[String] = None,
+  wrapped: Boolean @@ Skippable = false,
+)
+
+object SwaggerXMLOptions {
+  implicit val encoder: ObjectEncoder[SwaggerXMLOptions] = io.circe.derivation.deriveEncoder
+  implicit val decoder: Decoder[SwaggerXMLOptions] = io.circe.derivation.deriveDecoder
 }
 
 trait SwaggerTypeable[T] {
@@ -243,9 +265,23 @@ trait SwaggerTypeable[T] {
     def typ = self.typ.describeFields(descriptions: _*)
   }
   def descr[S <: Symbol, L <: HList]
-  (fld: FieldType[S, String])
-  (implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
+    (fld: FieldType[S, String])
+      (implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
     describeFields(witness.value.name -> fld)
+
+  def xml(
+    name: Option[String] = None,
+    attribute: Boolean = false,
+    prefix: Option[String] = None,
+    namespace: Option[String] = None,
+    wrapped: Boolean = false): SwaggerTypeable[T] = SwaggerTypeable.make(
+    SwaggerXML(typ, SwaggerXMLOptions(
+      name = name,
+      attribute = attribute,
+      prefix = prefix,
+      namespace = namespace,
+      wrapped = wrapped,
+      )))
 }
 
 trait LowLevelSwaggerTypeable {
@@ -264,10 +300,10 @@ object SwaggerTypeable extends LowLevelSwaggerTypeable with CirceSwaggerInstance
   def apply[T](implicit typeable: SwaggerTypeable[T]): SwaggerTypeable[T] = typeable
 
   case class Config(propMod: String => String = identity,
-                    altMod: String => String = identity,
-                    plainCoproducts: Boolean = false,
-                    discriminator: Option[String] = None,
-                    namePrefix: String = "") {
+    altMod: String => String = identity,
+    plainCoproducts: Boolean = false,
+    discriminator: Option[String] = None,
+    namePrefix: String = "") {
     def withCamelCase = copy(
       propMod = _.replaceAll(
         "([A-Z]+)([A-Z][a-z])",
@@ -351,15 +387,15 @@ object GenericSwaggerTypeable {
   implicit val hNilProps = HListProps[HNil](Nil)
 
   implicit def hConsReqProps[Name <: Symbol, Value, Tail <: HList]
-  (implicit headProp: Lazy[SwaggerTypeable[Value]], tail: HListProps[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) =
+    (implicit headProp: Lazy[SwaggerTypeable[Value]], tail: HListProps[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) =
     HListProps[FieldType[Name, Value] :: Tail]((cfg.propMod(name.value.name), headProp.later, true) :: tail.props)
 
   implicit def hConsOptProps[Name <: Symbol, Value, Tail <: HList]
-  (implicit headProp: Lazy[SwaggerTypeable[Value]], tail: HListProps[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) =
+    (implicit headProp: Lazy[SwaggerTypeable[Value]], tail: HListProps[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) =
     HListProps[FieldType[Name, Option[Value]] :: Tail]((cfg.propMod(name.value.name), headProp.later, false) :: tail.props)
 
   implicit def genericProductTypeable[T, L <: HList]
-  (implicit lgen: LabelledGeneric.Aux[T, L], list: HListProps[L]): GenericSwaggerTypeable[T] = {
+    (implicit lgen: LabelledGeneric.Aux[T, L], list: HListProps[L]): GenericSwaggerTypeable[T] = {
     def required = list.props.filter(_._3).map(_._1).toVector
 
     def props = list.props.map { case (name, t, _) => SwaggerProperty(name, None, t) }.toVector
@@ -372,14 +408,14 @@ object GenericSwaggerTypeable {
   implicit val cNilAlts = CoproductAlts[CNil](Nil)
 
   implicit def cConsAlts[Name <: Symbol, Value, Tail <: Coproduct]
-  (implicit headAlt: Lazy[SwaggerTypeable[Value]], tail: CoproductAlts[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) = {
+    (implicit headAlt: Lazy[SwaggerTypeable[Value]], tail: CoproductAlts[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) = {
     val keepName = cfg.discriminator.isDefined || !cfg.plainCoproducts
     val altName = Some(name.value.name).filter(_ => keepName) map cfg.altMod
     CoproductAlts[FieldType[Name, Value] :+: Tail]((altName -> headAlt.later) :: tail.alts)
   }
 
   implicit def genericSumTypeable[T, C <: Coproduct]
-  (implicit gen: LabelledGeneric.Aux[T, C], sum: CoproductAlts[C], cfg: Config = SwaggerTypeable.defaultConfig): GenericSwaggerTypeable[T] =
+    (implicit gen: LabelledGeneric.Aux[T, C], sum: CoproductAlts[C], cfg: Config = SwaggerTypeable.defaultConfig): GenericSwaggerTypeable[T] =
     make[T](SwaggerOneOf(sum.alts.toVector, cfg.discriminator))
 }
 
@@ -389,11 +425,11 @@ object WrappedSwaggerTypeable {
   case class HListWrap[L <: HList](typ: SwaggerType) extends AnyVal
 
   implicit def genericTypeable[T, L <: HList]
-  (implicit lgen: Generic.Aux[T, L], wrap: HListWrap[L]) =
+    (implicit lgen: Generic.Aux[T, L], wrap: HListWrap[L]) =
     WrappedSwaggerTypeable[T](wrap.typ)
 
   implicit def hListWrap[X]
-  (implicit inner: SwaggerTypeable[X]) =
+    (implicit inner: SwaggerTypeable[X]) =
     HListWrap[X :: HNil](inner.typ)
 }
 

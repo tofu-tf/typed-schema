@@ -2,11 +2,12 @@ package ru.tinkoff.tschema
 
 import ru.tinkoff.tschema.common.HasReq
 import ru.tinkoff.tschema.macros.ParamMaker
-import ru.tinkoff.tschema.swagger.{Description, Tag}
+import ru.tinkoff.tschema.swagger.{Description, Tag, XML}
 import shapeless._
 import typeDSL._
 
 import scala.language.higherKinds
+import scala.xml.XML
 
 object syntax {
   def prefix[s <: Symbol](witness: Witness.Lt[s]) = new Prefix[s]
@@ -93,6 +94,16 @@ object syntax {
   object head extends ResultMaker(new Head)
   object options extends ResultMaker(new Options)
   object patch extends ResultMaker(new Patch)
+
+  object xml {
+    def ! : XML = new XML
+    def apply[x]: XML :> Complete[x] = xml.! :> complete[x]
+
+    def get[x]: Get :> XML :> Complete[x] = new :>
+    def put[x]: Put :> XML :> Complete[x] = new :>
+    def delete[x]: Delete :> XML :> Complete[x] = new :>
+    def post[x]: Post :> XML :> Complete[x] = new :>
+  }
 
   def complete[x]: Complete[x] = new Complete[x]
 }

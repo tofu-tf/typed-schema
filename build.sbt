@@ -14,6 +14,8 @@ libraryDependencies ++= Seq("enumeratum", "enumeratum-circe")
 libraryDependencies ++= Seq("core", "parser", "generic", "generic-extras")
                         .map(module => "io.circe" %% s"circe-$module" % Version.circe)
 
+libraryDependencies += "io.circe" %% "circe-derivation" % Version.circeDerivation
+
 libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTest % "test"

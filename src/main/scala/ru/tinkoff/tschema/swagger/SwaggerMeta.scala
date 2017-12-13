@@ -15,5 +15,7 @@ object Description {
   */
 class Tag[tag] extends SwaggerMeta
 
+class XML extends SwaggerMeta
+
 
 

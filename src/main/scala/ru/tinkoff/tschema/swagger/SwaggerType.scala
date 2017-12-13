@@ -246,7 +246,7 @@ case class SwaggerXMLOptions(
   attribute: Boolean @@ Skippable = false,
   prefix: Option[String] = None,
   namespace: Option[String] = None,
-  wrapped: Boolean @@ Skippable = false,
+  wrapped: Boolean @@ Skippable = false
 )
 
 object SwaggerXMLOptions {
@@ -280,8 +280,7 @@ trait SwaggerTypeable[T] {
       attribute = attribute,
       prefix = prefix,
       namespace = namespace,
-      wrapped = wrapped,
-      )))
+      wrapped = wrapped)))
 }
 
 trait LowLevelSwaggerTypeable {

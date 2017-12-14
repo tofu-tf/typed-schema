@@ -8,6 +8,7 @@ import cats.instances.vector._
 import cats.syntax.applicative._
 import cats.syntax.apply._
 import cats.syntax.traverse._
+import cats.syntax.option._
 import enumeratum.{Enum, EnumEntry}
 import io.circe.syntax._
 import io.circe._
@@ -18,8 +19,10 @@ import scala.annotation.tailrec
 import scala.language.higherKinds
 import SwaggerTypeable.Config
 import io.circe.generic.JsonCodec
-import monocle.macros.Lenses
+import monocle.{Optional, PSetter, Prism, Setter}
+import monocle.macros.{GenLens, GenPrism, Lenses}
 import ru.tinkoff.tschema.utils.json.Skippable
+import ru.tinkoff.tschema.utils.setters
 import shapeless.tag.@@
 
 import scala.reflect.runtime.universe.TypeTag
@@ -31,11 +34,6 @@ sealed trait SwaggerType {
   def or(that: SwaggerType): SwaggerType = SwaggerOneOf(Vector(None -> Eval.now(this), None -> Eval.now(that)))
 
   def deref: Eval[SwaggerType] = Eval.now(this)
-
-  /**
-    * set or change fields description if this is ObjectType
-    */
-  def describeFields(descrs: (String, String)*): SwaggerType = this
 
   /**
     * set ot change type description if this is named type
@@ -80,8 +78,10 @@ final case class SwaggerArray(items: Eval[SwaggerType]) extends SwaggerType {
   }
 }
 
+@Lenses
 final case class SwaggerProperty(name: String, description: Option[String], typ: Eval[SwaggerType])
 
+@Lenses
 final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empty, required: Vector[String] = Vector.empty) extends SwaggerType {
   override def merge = {
     case SwaggerObject(p2, req2) =>
@@ -93,18 +93,34 @@ final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empt
       val reqs = required.toSet.intersect(req2.toSet).toVector
       SwaggerObject(unionProps, reqs)
   }
-  override def describeFields(descrs: (String, String)*) = {
-    val descrMap = descrs.toMap
-    copy(properties = properties.map { prop =>
-      prop.copy(description = descrMap.get(prop.name).orElse(prop.description))
-    })
+
+  private def updateProps[T](updates: Seq[(String, T)])(update: T => SwaggerProperty => SwaggerProperty) = {
+    val updateMap = updates.toMap
+    copy(properties = properties.map { prop => updateMap.get(prop.name).fold(prop)(update(_)(prop)) })
   }
+
+  /**
+    * set or change fields description if this is ObjectType
+    */
+  def describeFields(descrs: (String, String)*) =
+    updateProps(descrs)(descr => SwaggerProperty.description.set(descr.some))
+
+
+  /**
+    * set or change XML options if fields
+    *
+    * @param opts
+    */
+  def xmlFields(opts: (String, SwaggerXMLOptions)*) =
+    updateProps(opts)(opt => (SwaggerProperty.typ composeSetter setters.eval).modify(SwaggerXML.wrap(opt)))
 }
 
 object SwaggerObject {
+
   def withProps(props: (String, SwaggerType)*) = SwaggerObject(properties = props.map { case (name, typ) => SwaggerProperty(name, None, Eval.now(typ)) }.toVector)
 }
 
+@Lenses
 final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[SwaggerType]) extends SwaggerType {
   override def merge = {
     case SwaggerRef(`name`, descr2, t2) => SwaggerRef(name, descr.orElse(descr2), typ.map2(typ)(_ or _))
@@ -112,8 +128,6 @@ final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[Swagg
   override def deref = typ.flatMap(_.deref)
 
   override def describe(description: String) = copy(descr = Some(description))
-
-  override def describeFields(descrs: (String, String)*) = copy(typ = typ.map(_.describeFields(descrs: _*)))
 }
 
 final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])], discriminator: Option[String] = None) extends SwaggerType {
@@ -122,7 +136,16 @@ final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])],
 
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 
+@Lenses
 final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType
+
+object SwaggerXML {
+  def wrap(opts: SwaggerXMLOptions)(typ: SwaggerType): SwaggerType = typ match {
+    case xml: SwaggerXML => wrap(opts)(xml.typ)
+    case ref: SwaggerRef => (SwaggerRef.typ composeSetter setters.eval).modify(wrap(opts))(ref)
+    case _               => SwaggerXML(typ, opts)
+  }
+}
 
 final case class DescribedType(typ: SwaggerType, description: Option[String] = None)
 
@@ -143,6 +166,13 @@ object SwaggerMapKey {
 object SwaggerType {
 
   private def refTo(name: String) = s"#/components/schemas/$name"
+
+  val setObj: Setter[SwaggerType, SwaggerObject] = Setter(f => {
+    case obj: SwaggerObject => f(obj)
+    case ref: SwaggerRef    => ref.copy(typ = ref.typ.map(setObj.modify(f)))
+    case xml: SwaggerXML    => (SwaggerXML.typ composeSetter setObj).modify(f)(xml)
+    case other              => other
+  })
 
   implicit val encodeSwaggerType: ObjectEncoder[SwaggerType] = new ObjectEncoder[SwaggerType] {
     def encode(a: SwaggerType): Eval[JsonObject] = a match {
@@ -168,7 +198,7 @@ object SwaggerType {
         "items" -> enc.asJson
       ))
 
-      case SwaggerXML(typ, options) => encode(typ).map(o1 => JsonObject.fromIterable(o1.toIterable ++ options.asJsonObject.toIterable))
+      case SwaggerXML(typ, options) => encode(typ).map(o1 => o1.add("xml", options.asJson))
 
       case SwaggerObject(properties, required) =>
         properties
@@ -258,29 +288,40 @@ trait SwaggerTypeable[T] {
   self =>
   def typ: SwaggerType
   def as[U]: SwaggerTypeable[U] = this.asInstanceOf[SwaggerTypeable[U]]
-  def describe(description: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
-    def typ = self.typ.describe(description)
-  }
-  def describeFields(descriptions: (String, String)*): SwaggerTypeable[T] = new SwaggerTypeable[T] {
-    def typ = self.typ.describeFields(descriptions: _*)
-  }
-  def descr[S <: Symbol, L <: HList]
-    (fld: FieldType[S, String])
-      (implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
-    describeFields(witness.value.name -> fld)
+
+  private def updateTyp(f: SwaggerType => SwaggerType): SwaggerTypeable[T] =
+    SwaggerTypeable.make[T](f(self.typ))
+
+  def describe(description: String): SwaggerTypeable[T] = updateTyp(_.describe(description))
+
+  def describeFields(descriptions: (String, String)*): SwaggerTypeable[T] =
+    updateTyp(SwaggerType.setObj.modify(_.describeFields(descriptions: _*)))
 
   def xml(
     name: Option[String] = None,
     attribute: Boolean = false,
     prefix: Option[String] = None,
     namespace: Option[String] = None,
-    wrapped: Boolean = false): SwaggerTypeable[T] = SwaggerTypeable.make(
-    SwaggerXML(typ, SwaggerXMLOptions(
+    wrapped: Boolean = false): SwaggerTypeable[T] =
+    updateTyp(SwaggerXML.wrap(SwaggerXMLOptions(
       name = name,
       attribute = attribute,
       prefix = prefix,
       namespace = namespace,
       wrapped = wrapped)))
+
+  def xmlFields(fieldOpts: (String, SwaggerXMLOptions)*) =
+    updateTyp(SwaggerType.setObj.modify(_.xmlFields(fieldOpts: _*)))
+
+  //Safe versions
+  def descr[S <: Symbol, L <: HList]
+    (fld: FieldType[S, String])
+      (implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
+    describeFields(witness.value.name -> fld)
+
+  def xmlFld[S <: Symbol, L <: HList](fld: FieldType[S, SwaggerXMLOptions])
+    (implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
+    xmlFields(witness.value.name -> fld)
 }
 
 trait LowLevelSwaggerTypeable {

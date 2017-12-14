@@ -12,6 +12,7 @@ import shapeless.labelled.{FieldType, field}
 import catsInstances._
 import cats.syntax.traverse._
 import cats.instances.list._
+import ru.tinkoff.tschema.common.Name
 import shapeless.ops.hlist.Selector
 
 import scala.annotation.implicitNotFound
@@ -101,7 +102,7 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
 }
 
 private[akkaHttp] trait ServeInstances extends ServeFunctions {
-  implicit def prefixServe[pref <: Symbol, In <: HList](implicit w: Witness.Aux[pref]) = serveCheck[Prefix[pref], In](pathPrefix(w.value.name))
+  implicit def prefixServe[pref, In <: HList](implicit n: Name[pref]) = serveCheck[Prefix[pref], In](pathPrefix(n.string))
 
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) = serveCheck[method, In](method(check.method))
 

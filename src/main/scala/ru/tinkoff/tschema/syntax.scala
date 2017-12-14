@@ -10,7 +10,7 @@ import scala.language.higherKinds
 import scala.xml.XML
 
 object syntax {
-  def prefix[s <: Symbol](witness: Witness.Lt[s]) = new Prefix[s]
+  def prefix[s](witness: Witness.Lt[s]) = new Prefix[s]
   def queryFlag[s <: Symbol](witness: Witness.Lt[s]) = new QueryFlag[s]
   def tag[s <: Symbol](witness: Witness.Lt[s]) = new Tag[s]
   def key[s <: Symbol](witness: Witness.Lt[s]) = new Key[s]

@@ -14,7 +14,7 @@ final abstract class Skippable
 object Skippable {
   implicit def skippableEncoder[T: Encoder : Default]: Encoder[T @@ Skippable] = Encoder.instance {
     case x if Default[T].value == x => Json.Null
-    case x                          => x.asJson
+    case x                          => Encoder[T].apply(x)
   }
   implicit def skippableDecoder[T: Decoder : Default]: Decoder[T @@ Skippable] = Decoder.instance {
     h => if (h.value.isNull) Right(tag[Skippable](Default[T].value)) else h.as[T].asInstanceOf[Decoder.Result[T @@ Skippable]]

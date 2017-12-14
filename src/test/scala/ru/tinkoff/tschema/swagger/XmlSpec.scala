@@ -42,7 +42,7 @@ object XmlSpec {
       .xmlFld('id ->> xmlOpts(attribute = true))
       .xmlFields("tags" -> xmlOpts(name = "tag".some, wrapped = true))
 
-  def api = prefix("xml") :> xml.get[Book]
+  def api = prefix("xml") :> get[Book]
 
   val swagger = api.mkSwagger
 

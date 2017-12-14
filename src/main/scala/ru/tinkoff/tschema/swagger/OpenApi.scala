@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
-import OpenApi.jsonMimeType
+import OpenApi.defaultMediaTypeVec
 import akka.http.scaladsl.model.{MediaType, MediaTypes, StatusCode}
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe._
@@ -12,6 +12,7 @@ import ru.tinkoff.tschema.utils.json.CirceKeyEnum
 import ru.tinkoff.tschema.utils.json.circeSyntax._
 import ru.tinkoff.tschema.utils.json.circeCodecs._
 import cats.syntax.option._
+import specialCodecs._
 
 import scala.collection.immutable.TreeMap
 
@@ -46,7 +47,7 @@ object OpenApi {
   type Path = Map[Method, OpenApiOp]
   type PathMap = TreeMap[String, Path]
 
-  private[tschema] val jsonMimeType = Vector("application/json")
+  private[tschema] val defaultMediaTypeVec = Vector(none[MediaType])
 }
 
 @Lenses
@@ -227,13 +228,13 @@ object OpenApiFormat {
 @JsonCodec(encodeOnly = true)
 final case class OpenApiRequestBody(
   description: Option[String] = None,
-  content: Map[String, OpenApiMediaType] = Map.empty,
+  content: Map[MediaType, OpenApiMediaType] = Map.empty,
   required: Boolean = true
 )
 
 object OpenApiRequestBody {
   def fromType(swaggerType: SwaggerType, description: Option[String] = None): OpenApiRequestBody =
-    OpenApiRequestBody(description = description, content = Map("application/json" -> OpenApiMediaType(Some(swaggerType))))
+    OpenApiRequestBody(description = description, content = Map(swaggerType.mediaType -> OpenApiMediaType(Some(swaggerType))))
 
 }
 
@@ -258,8 +259,6 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
   description: Option[SwaggerDescription] = None,
   externalDocs: Option[OpenApiExternalDocs] = None,
   operationId: Option[String] = None,
-  consumes: Vector[String] = jsonMimeType,
-  produces: Vector[String] = jsonMimeType,
   servers: Vector[OpenApiServer] = Vector.empty,
   parameters: Vector[OpenApiParam] = Vector.empty,
   requestBody: Option[OpenApiRequestBody] = None,
@@ -291,15 +290,14 @@ object OpenApiResponses {
 @Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiResponse(description: Option[SwaggerDescription] = None,
-  content: Map[Option[MediaType], OpenApiMediaType],
+  content: Map[MediaType, OpenApiMediaType],
   headers: Map[String, SwaggerValue] = TreeMap.empty)
 
 object OpenApiResponse {
-  private implicit val mediaTypeEncoder: KeyEncoder[Option[MediaType]] =
-    KeyEncoder[String].contramap(_.getOrElse(MediaTypes.`application/json`).toString)
 
-  def json(description: Option[SwaggerDescription] = None, swaggerType: SwaggerType): OpenApiResponse =
-    OpenApiResponse(description = description, content = Map(none -> OpenApiMediaType(swaggerType.some)))
+
+  def make(description: Option[SwaggerDescription] = None, swaggerType: SwaggerType): OpenApiResponse =
+    OpenApiResponse(description = description, content = Map(swaggerType.mediaType -> OpenApiMediaType(swaggerType.some)))
 }
 
 @Lenses
@@ -307,6 +305,15 @@ object OpenApiResponse {
 final case class OpenApiMediaType(schema: Option[SwaggerType] = None,
   example: Option[Json] = None)
 object OpenApiMediaType
+
+private object specialCodecs {
+  implicit val mediaTypeKeyEncoder: KeyEncoder[MediaType] = KeyEncoder[String].contramap(_.toString)
+}
+
+
+
+
+
 
 
 

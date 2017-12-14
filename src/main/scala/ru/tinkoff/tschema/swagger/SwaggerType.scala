@@ -18,6 +18,7 @@ import shapeless.{Lazy, _}
 import scala.annotation.tailrec
 import scala.language.higherKinds
 import SwaggerTypeable.Config
+import akka.http.scaladsl.model.{MediaType, MediaTypes}
 import io.circe.generic.JsonCodec
 import monocle.{Optional, PSetter, Prism, Setter}
 import monocle.macros.{GenLens, GenPrism, Lenses}
@@ -34,6 +35,8 @@ sealed trait SwaggerType {
   def or(that: SwaggerType): SwaggerType = SwaggerOneOf(Vector(None -> Eval.now(this), None -> Eval.now(that)))
 
   def deref: Eval[SwaggerType] = Eval.now(this)
+
+  def mediaType: MediaType = MediaTypes.`application/json`
 
   /**
     * set ot change type description if this is named type
@@ -128,6 +131,7 @@ final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[Swagg
   override def deref = typ.flatMap(_.deref)
 
   override def describe(description: String) = copy(descr = Some(description))
+  override def mediaType: MediaType = typ.value.mediaType
 }
 
 final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])], discriminator: Option[String] = None) extends SwaggerType {
@@ -137,7 +141,9 @@ final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])],
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 
 @Lenses
-final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType
+final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType{
+  override def mediaType: MediaType = MediaTypes.`application/xml`
+}
 
 object SwaggerXML {
   def wrap(opts: SwaggerXMLOptions)(typ: SwaggerType): SwaggerType = typ match {

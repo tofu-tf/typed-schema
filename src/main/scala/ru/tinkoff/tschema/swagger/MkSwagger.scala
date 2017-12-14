@@ -54,7 +54,7 @@ sealed trait MkSwagger[T] {
     new MkSwagger[U] {
       val paths: PathSeq = self.paths.map(
         (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes).modify(_ + (
-          code -> OpenApiResponse.json(description = description,
+          code -> OpenApiResponse.make(description = description,
                                        swaggerType = typeable.typ)))
       )
 
@@ -90,7 +90,7 @@ object MkSwagger {
     single[Complete[T]](
       op = OpenApiOp(
         responses = OpenApiResponses(codes = Map(
-          StatusCodes.OK -> OpenApiResponse.json(
+          StatusCodes.OK -> OpenApiResponse.make(
             swaggerType = typ.typ
           )))),
       typeList = TreeMap(typ.typ.collectTypes.toSeq: _*))
@@ -245,10 +245,10 @@ object SwaggerMapper {
 
   implicit def deriveReqBody[T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[T]] =
     fromFunc((PathSpec.op ^|-> OpenApiOp.requestBody).set(OpenApiRequestBody.fromType(typeable.typ).some)) andThen fromTypes[ReqBody[T]](typeable.typ.collectTypes)
-
-  implicit val deriveXML: SwaggerMapper[XML] = fromFunc[XML](
-    (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes composeSetter setters.map ^|-> OpenApiResponse.content).modify(
-      m => m.get(None).fold(m)(mt => m - None + (Some(MediaTypes.`application/xml`) -> mt))))
+//
+//  implicit val deriveXML: SwaggerMapper[XML] = fromFunc[XML](
+//    (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes composeSetter setters.map ^|-> OpenApiResponse.content).modify(
+//      m => m.get(None).fold(m)(mt => m - None + (Some(MediaTypes.`application/xml`) -> mt))))
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
     fromFunc[method](PathSpec.method.modify {

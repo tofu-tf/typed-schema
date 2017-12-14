@@ -9,7 +9,7 @@ import simulacrum.typeclass
 /**
   * tag for types that should be omitted with default value in json
   */
-final abstract class Skippable
+  final abstract class Skippable
 
 object Skippable {
   implicit def skippableEncoder[T: Encoder : Default]: Encoder[T @@ Skippable] = Encoder.instance {

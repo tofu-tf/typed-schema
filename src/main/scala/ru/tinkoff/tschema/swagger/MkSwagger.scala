@@ -2,17 +2,17 @@ package ru.tinkoff.tschema.swagger
 
 import java.util.{Date, ResourceBundle, UUID}
 
-import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import akka.http.scaladsl.model.{MediaTypes, StatusCode, StatusCodes}
 import akka.util.ByteString
 import cats.MonoidK
 import cats.arrow.FunctionK
 import cats.syntax.option._
-import io.circe.Encoder
 import monocle.macros.Lenses
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
+import ru.tinkoff.tschema.utils.setters
 
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
@@ -53,8 +53,8 @@ sealed trait MkSwagger[T] {
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
       val paths: PathSeq = self.paths.map(
-        (   PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes).modify(_ + (
-          code -> OpenApiResponse.json(description = description,
+        (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes).modify(_ + (
+          code -> OpenApiResponse.make(description = description,
                                        swaggerType = typeable.typ)))
       )
 
@@ -90,7 +90,7 @@ object MkSwagger {
     single[Complete[T]](
       op = OpenApiOp(
         responses = OpenApiResponses(codes = Map(
-          StatusCodes.OK -> OpenApiResponse.json(
+          StatusCodes.OK -> OpenApiResponse.make(
             swaggerType = typ.typ
           )))),
       typeList = TreeMap(typ.typ.collectTypes.toSeq: _*))
@@ -245,7 +245,10 @@ object SwaggerMapper {
 
   implicit def deriveReqBody[T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[T]] =
     fromFunc((PathSpec.op ^|-> OpenApiOp.requestBody).set(OpenApiRequestBody.fromType(typeable.typ).some)) andThen fromTypes[ReqBody[T]](typeable.typ.collectTypes)
-
+//
+//  implicit val deriveXML: SwaggerMapper[XML] = fromFunc[XML](
+//    (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes composeSetter setters.map ^|-> OpenApiResponse.content).modify(
+//      m => m.get(None).fold(m)(mt => m - None + (Some(MediaTypes.`application/xml`) -> mt))))
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
     fromFunc[method](PathSpec.method.modify {

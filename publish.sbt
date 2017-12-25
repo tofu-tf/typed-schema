@@ -12,7 +12,7 @@ publishTo in ThisBuild := {
     Some("releases" at nexus + "content/repositories/tcs")
 }
 
-val pubVersion = "0.8.3"
+val pubVersion = "0.8.4"
 
 credentials in ThisBuild += Credentials(Path.userHome / ".ivy2" / ".credentials")
 

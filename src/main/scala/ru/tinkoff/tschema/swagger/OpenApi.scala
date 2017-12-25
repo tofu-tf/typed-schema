@@ -259,7 +259,7 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
   description: Option[SwaggerDescription] = None,
   externalDocs: Option[OpenApiExternalDocs] = None,
   operationId: Option[String] = None,
-  servers: Vector[OpenApiServer] = Vector.empty,
+  servers: Option[Vector[OpenApiServer]] = None,
   parameters: Vector[OpenApiParam] = Vector.empty,
   requestBody: Option[OpenApiRequestBody] = None,
   responses: OpenApiResponses)

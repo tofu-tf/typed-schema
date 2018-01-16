@@ -19,13 +19,13 @@ import scala.collection.immutable.TreeMap
 @Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApi(
-  openapi: String = "3.0.0",
-  info: OpenApiInfo = OpenApiInfo(),
-  servers: Vector[OpenApiServer] = Vector.empty,
-  components: OpenApiComponents = OpenApiComponents(),
-  paths: OpenApi.PathMap = TreeMap.empty,
-  tags: Vector[OpenApiTag] = Vector.empty,
-  externalDocs: Option[OpenApiExternalDocs] = None) {
+                          openapi: String = "3.0.0",
+                          info: OpenApiInfo = OpenApiInfo(),
+                          servers: Vector[OpenApiServer] = Vector.empty,
+                          components: OpenApiComponents = OpenApiComponents(),
+                          paths: OpenApi.PathMap = TreeMap.empty,
+                          tags: Vector[OpenApiTag] = Vector.empty,
+                          externalDocs: Option[OpenApiExternalDocs] = None) {
   def addServer(url: String, description: Option[String] = None, variables: Map[String, OpenApiServerVariable] = Map.empty) =
     copy(servers = servers :+ OpenApiServer(url = url, description = description, variables = variables))
 }
@@ -53,11 +53,11 @@ object OpenApi {
 @Lenses
 @JsonCodec
 final case class OpenApiInfo(title: String = "",
-  description: Option[SwaggerDescription] = None,
-  termsOfService: Option[String] = None,
-  contact: Option[OpenApiContact] = None,
-  license: Option[OpeApiLicense] = None,
-  version: String = "")
+                             description: Option[SwaggerDescription] = None,
+                             termsOfService: Option[String] = None,
+                             contact: Option[OpenApiContact] = None,
+                             license: Option[OpeApiLicense] = None,
+                             version: String = "")
 object OpenApiInfo
 
 @Lenses
@@ -72,23 +72,23 @@ final case class OpenApiSchema()
 @Lenses
 @JsonCodec
 final case class OpenApiContact(name: Option[String] = None,
-  url: Option[String] = None,
-  email: Option[String] = None)
+                                url: Option[String] = None,
+                                email: Option[String] = None)
 object OpenApiContact
 
 @Lenses
 @JsonCodec
 final case class OpeApiLicense(name: String,
-  url: Option[String] = None)
+                               url: Option[String] = None)
 object OpeApiLicense
 
 @Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiParam(name: String,
-  in: OpenApiParam.In,
-  description: Option[String] = None,
-  required: Boolean = true,
-  schema: Option[SwaggerType] = None)
+                              in: OpenApiParam.In,
+                              description: Option[SwaggerDescription] = None,
+                              required: Boolean = true,
+                              schema: Option[SwaggerType] = None)
 
 object OpenApiParam {
   sealed trait In extends EnumEntry
@@ -105,15 +105,15 @@ object OpenApiParam {
 @Lenses
 @JsonCodec
 final case class OpenApiServer(url: String,
-  description: Option[String] = None,
-  variables: Map[String, OpenApiServerVariable] = Map.empty)
+                               description: Option[String] = None,
+                               variables: Map[String, OpenApiServerVariable] = Map.empty)
 object OpenApiServer
 
 @Lenses
 @JsonCodec
 final case class OpenApiServerVariable(enum: Vector[String],
-  default: String,
-  description: Option[String])
+                                       default: String,
+                                       description: Option[String])
 object OpenApiServerVariable
 
 
@@ -123,11 +123,11 @@ sealed trait SwaggerValue {
 
 @Lenses
 final case class SwaggerStringValue(format: Option[OpenApiFormat[SwaggerStringValue]] = None,
-  default: Option[String] = None,
-  maxLength: Option[Int] = None,
-  minLength: Option[Int] = None,
-  pattern: Option[String] = None,
-  enum: Option[Vector[String]] = None) extends SwaggerValue {
+                                    default: Option[String] = None,
+                                    maxLength: Option[Int] = None,
+                                    minLength: Option[Int] = None,
+                                    pattern: Option[String] = None,
+                                    enum: Option[Vector[String]] = None) extends SwaggerValue {
   def typeName = "string"
 }
 
@@ -138,22 +138,22 @@ object SwaggerStringValue {
 
 @Lenses
 final case class SwaggerNumberValue(format: Option[OpenApiFormat[SwaggerNumberValue]] = None,
-  default: Option[BigDecimal] = None,
-  maximum: Option[BigDecimal] = None,
-  exclusiveMaximum: Boolean = false,
-  minimum: Option[BigDecimal] = None,
-  exclusiveMinimum: Boolean = false) extends SwaggerValue {
+                                    default: Option[BigDecimal] = None,
+                                    maximum: Option[BigDecimal] = None,
+                                    exclusiveMaximum: Boolean = false,
+                                    minimum: Option[BigDecimal] = None,
+                                    exclusiveMinimum: Boolean = false) extends SwaggerValue {
   def typeName = "number"
 }
 object OpenApiNumberValue
 
 @Lenses
 final case class SwaggerIntValue(format: Option[OpenApiFormat[SwaggerIntValue]] = None,
-  default: Option[Int] = None,
-  maximum: Option[Int] = None,
-  exclusiveMaximum: Option[Boolean] = None,
-  minimum: Option[Int] = None,
-  exclusiveMinimum: Option[Boolean] = None) extends SwaggerValue {
+                                 default: Option[Int] = None,
+                                 maximum: Option[Int] = None,
+                                 exclusiveMaximum: Option[Boolean] = None,
+                                 minimum: Option[Int] = None,
+                                 exclusiveMinimum: Option[Boolean] = None) extends SwaggerValue {
   override def typeName = "integer"
 }
 object SwaggerIntValue
@@ -170,10 +170,10 @@ case object SwaggerFileValue extends SwaggerValue {
 
 @Lenses
 final case class SwaggerArrayValue(items: SwaggerValue,
-  default: Option[Vector[Json]] = None,
-  collFormat: Option[SwaggerValue.CollectionFormat] = None,
-  minItems: Option[Int] = None,
-  maxItems: Option[Int] = None) extends SwaggerValue {
+                                   default: Option[Vector[Json]] = None,
+                                   collFormat: Option[SwaggerValue.CollectionFormat] = None,
+                                   minItems: Option[Int] = None,
+                                   maxItems: Option[Int] = None) extends SwaggerValue {
   override def typeName = "array"
 }
 object SwaggerArrayValue
@@ -227,10 +227,10 @@ object OpenApiFormat {
 @Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiRequestBody(
-  description: Option[String] = None,
-  content: Map[MediaType, OpenApiMediaType] = Map.empty,
-  required: Boolean = true
-)
+                                     description: Option[String] = None,
+                                     content: Map[MediaType, OpenApiMediaType] = Map.empty,
+                                     required: Boolean = true
+                                   )
 
 object OpenApiRequestBody {
   def fromType(swaggerType: SwaggerType, description: Option[String] = None): OpenApiRequestBody =
@@ -241,28 +241,28 @@ object OpenApiRequestBody {
 @Lenses
 @JsonCodec
 final case class OpenApiTag(name: String,
-  description: Option[SwaggerDescription] = None,
-  externalDocs: Option[OpenApiExternalDocs] = None)
+                            description: Option[SwaggerDescription] = None,
+                            externalDocs: Option[OpenApiExternalDocs] = None)
 
 object OpenApiTag
 
 @Lenses
 @JsonCodec
 final case class OpenApiExternalDocs(description: Option[SwaggerDescription] = None,
-  url: String)
+                                     url: String)
 
 object OpenApiExternalDocs
 
 @Lenses
 final case class OpenApiOp(tags: Vector[String] = Vector.empty,
-  summary: Option[String] = None,
-  description: Option[SwaggerDescription] = None,
-  externalDocs: Option[OpenApiExternalDocs] = None,
-  operationId: Option[String] = None,
-  servers: Option[Vector[OpenApiServer]] = None,
-  parameters: Vector[OpenApiParam] = Vector.empty,
-  requestBody: Option[OpenApiRequestBody] = None,
-  responses: OpenApiResponses)
+                           summary: Option[String] = None,
+                           description: Option[SwaggerDescription] = None,
+                           externalDocs: Option[OpenApiExternalDocs] = None,
+                           operationId: Option[String] = None,
+                           servers: Option[Vector[OpenApiServer]] = None,
+                           parameters: Vector[OpenApiParam] = Vector.empty,
+                           requestBody: Option[OpenApiRequestBody] = None,
+                           responses: OpenApiResponses)
 
 object OpenApiOp {
   implicit lazy val swaggerOpDecoder: ObjectEncoder[OpenApiOp] = deriveEncoder
@@ -270,7 +270,7 @@ object OpenApiOp {
 
 @Lenses
 final case class OpenApiResponses(default: Option[OpenApiResponse] = None,
-  codes: Map[StatusCode, OpenApiResponse] = Map.empty)
+                                  codes: Map[StatusCode, OpenApiResponse] = Map.empty)
 
 object OpenApiResponses {
   implicit lazy val statusCodeEncoder = KeyEncoder.encodeKeyInt.contramap[StatusCode](_.intValue)
@@ -281,7 +281,7 @@ object OpenApiResponses {
     resps =>
       val codesObj = mapEnc.encodeObject(resps.codes)
       resps.default match {
-        case None          => codesObj
+        case None => codesObj
         case Some(default) => codesObj.add("default", default.asJson)
       }
   }
@@ -290,12 +290,10 @@ object OpenApiResponses {
 @Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiResponse(description: Option[SwaggerDescription] = None,
-  content: Map[MediaType, OpenApiMediaType],
-  headers: Map[String, SwaggerValue] = TreeMap.empty)
+                                 content: Map[MediaType, OpenApiMediaType],
+                                 headers: Map[String, SwaggerValue] = TreeMap.empty)
 
 object OpenApiResponse {
-
-
   def make(description: Option[SwaggerDescription] = None, swaggerType: SwaggerType): OpenApiResponse =
     OpenApiResponse(description = description, content = Map(swaggerType.mediaType -> OpenApiMediaType(swaggerType.some)))
 }
@@ -303,7 +301,7 @@ object OpenApiResponse {
 @Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiMediaType(schema: Option[SwaggerType] = None,
-  example: Option[Json] = None)
+                                  example: Option[Json] = None)
 object OpenApiMediaType
 
 private object specialCodecs {

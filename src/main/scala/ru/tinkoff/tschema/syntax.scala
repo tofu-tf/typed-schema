@@ -2,7 +2,7 @@ package ru.tinkoff.tschema
 
 import ru.tinkoff.tschema.common.HasReq
 import ru.tinkoff.tschema.macros.ParamMaker
-import ru.tinkoff.tschema.swagger.{Description, Tag}
+import ru.tinkoff.tschema.swagger.Tag
 import shapeless._
 import typeDSL._
 

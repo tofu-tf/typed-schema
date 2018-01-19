@@ -14,6 +14,7 @@ import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 
 import monocle.function.Each.each
+import monocle.std.option.some
 
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
@@ -69,7 +70,8 @@ sealed trait MkSwagger[T] {
         descriptions(key).fold(spec) { case PathDescription(description, params) =>
           PathSpec.op.modify(
             OpenApiOp.description.modify(description orElse _) andThen
-              OpenApiOp.parameters.composeTraversal(each).modify(param => OpenApiParam.description.modify(params(param.name) orElse _)(param))
+              OpenApiOp.parameters.composeTraversal(each).modify(param => OpenApiParam.description.modify(params(param.name) orElse _)(param)) andThen
+            OpenApiOp.requestBody.composePrism(some).composeLens(OpenApiRequestBody.description).modify(params("body") orElse _)
           )(spec)
         }
       case spec                              => spec

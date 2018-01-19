@@ -15,16 +15,9 @@ object syntax {
   def key[s <: Symbol](witness: Witness.Lt[s]) = new Key[s]
   def tagPrefix[s <: Symbol](witness: Witness.Lt[s]) = prefix[s](witness) |> tag[s](witness)
   def keyPrefix[s <: Symbol](witness: Witness.Lt[s]) = prefix[s](witness) |> key[s](witness)
-  def operation[s <: Symbol](witness: Witness.Lt[s]) = keyPrefix[s](witness) |> descr.i18n[s](witness)
-  def keyi18n[s <: Symbol](witness: Witness.Lt[s]) = key[s](witness) |> descr.i18n[s](witness)
+  def operation[s <: Symbol](witness: Witness.Lt[s]) = keyPrefix[s](witness)
 
   def reqBody[x] = new ReqBody[x]
-
-  object descr {
-    def static[s](witness: Witness.Lt[s]) = new Description.Static[s]
-    def resource[s](witness: Witness.Lt[s]) = new Description.Resource[s]
-    def i18n[s](witness: Witness.Lt[s]) = new Description.I18n[s]
-  }
 
   def capture[x] = new MkComplex(new Maker[x, Capture] {
     override def make[s <: Symbol]: Capture[s, x] = new Capture

@@ -88,8 +88,6 @@ object TestModule {
   implicit lazy val clientFromParam = FromQueryParam.intParam.map(Client)
   implicit val clientSwagger: SwaggerTypeable[Client] = SwaggerTypeable.swaggerTypeableInteger.as[Client]
 
-  implicit lazy val bundle = ResourceBundle.getBundle("swagger")
-
   import scala.concurrent.ExecutionContext.Implicits.global
 
   trait Mutate{

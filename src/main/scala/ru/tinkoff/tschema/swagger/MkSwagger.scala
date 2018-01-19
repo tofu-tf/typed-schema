@@ -64,16 +64,16 @@ sealed trait MkSwagger[T] {
       val types: TypePool = self.types ++ typeable.typ.collectTypes
     }
 
-  def describe(descriptions: String => Option[PathDescription]): MkSwagger[T] =
+  def describe(descriptions: PathDescription.DescriptionMap): MkSwagger[T] =
     map {
       case spec@PathSpec(_, _, _, Some(key)) =>
-        descriptions(key).fold(spec) { case PathDescription(description, params) =>
-          PathSpec.op.modify(
-            OpenApiOp.description.modify(description orElse _) andThen
-              OpenApiOp.parameters.composeTraversal(each).modify(param => OpenApiParam.description.modify(params(param.name) orElse _)(param)) andThen
-            OpenApiOp.requestBody.composePrism(some).composeLens(OpenApiRequestBody.description).modify(params("body") orElse _)
-          )(spec)
-        }
+        import PathDescription.Target
+        val descr = descriptions(key)
+        PathSpec.op.modify(
+          OpenApiOp.description.modify(descr(Target.Path) orElse _) andThen
+            OpenApiOp.parameters.composeTraversal(each).modify(param => OpenApiParam.description.modify(descr(Target.Param(param.name)) orElse _)(param)) andThen
+            OpenApiOp.requestBody.composePrism(some).composeLens(OpenApiRequestBody.description).modify(descr(Target.Body) orElse _)
+        )(spec)
       case spec                              => spec
     }
 }

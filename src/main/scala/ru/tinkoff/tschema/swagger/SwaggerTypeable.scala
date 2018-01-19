@@ -121,7 +121,7 @@ object SwaggerTypeable extends LowLevelSwaggerTypeable with CirceSwaggerInstance
   implicit def swaggerEitherTypeable[A: SwaggerTypeable, B: SwaggerTypeable] = typeSum[Either, A, B]
 
   def genTypeable[T](implicit gen: Lazy[GenericSwaggerTypeable[T]]) = make[T](gen.value.typ)
-  def genNamedTypeable[T](name: String)(implicit gen: Lazy[GenericSwaggerTypeable[T]]) = make[T](SwaggerRef(name, None, gen.later))
+  def genNamedTypeable[T](name: String)(implicit gen: Lazy[GenericSwaggerTypeable[T]]) = make[T](SwaggerRef(name, gen.value.description, gen.later))
   def deriveNamedTypeable[T](implicit gen: Lazy[GenericSwaggerTypeable[T]], typeTag: TypeTag[T], config: Config = defaultConfig): SwaggerTypeable[T] =
     genNamedTypeable[T](config.namePrefix + typeTag.tpe.typeSymbol.name.toString)
 
@@ -140,6 +140,7 @@ object SwaggerTypeable extends LowLevelSwaggerTypeable with CirceSwaggerInstance
 
 trait GenericSwaggerTypeable[T] extends SwaggerTypeable[T] {
   def typ: SwaggerType
+  def description: Option[String] = None
 }
 
 object GenericSwaggerTypeable {
@@ -152,8 +153,9 @@ object GenericSwaggerTypeable {
 
   def apply[T](implicit typ: GenericSwaggerTypeable[T]): GenericSwaggerTypeable[T] = typ
 
-  def make[T](t: SwaggerType) = new GenericSwaggerTypeable[T] {
+  def make[T](t: SwaggerType, descript: Option[String] = None) = new GenericSwaggerTypeable[T] {
     val typ = t
+    override val description = descript
   }
 
   implicit val hNilProps = HListProps[HNil](Nil)
@@ -174,7 +176,7 @@ object GenericSwaggerTypeable {
 
     def props = list.props.map { case (name, t, _) => SwaggerProperty(name, descr.element(name), t) }.toVector
 
-    make[T](SwaggerObject(props, required).describeWith(descr.whole))
+    make[T](SwaggerObject(props, required), descr.whole)
   }
 
   implicit val cNilAlts = CoproductAlts[CNil](Nil)
@@ -191,11 +193,10 @@ object GenericSwaggerTypeable {
     sum: CoproductAlts[C],
     cfg: Config = SwaggerTypeable.defaultConfig,
     descr: DescribeTypeable[T] = DescribeTypeable.empty[T]): GenericSwaggerTypeable[T] =
-    make[T](
-      SwaggerOneOf(
+    make[T](SwaggerOneOf(
         sum.alts.map { case (name, typ) => name -> typ.map(_.describeWith(name.flatMap(descr.element))) }.toVector,
         cfg.discriminator
-      ).describeWith(descr.whole))
+      ), descr.whole)
 }
 
 sealed trait CirceSwaggerInstances {
@@ -215,9 +216,9 @@ object DescribeTypeable {
     def element(name: String) = None
   }
 
-  def make[T](wholeDescr: Option[String], elements: (String, String)*): DescribeTypeable[T] = new DescribeTypeable[T] {
+  def make[T](wholeDescr: String, elements: (String, String)*): DescribeTypeable[T] = new DescribeTypeable[T] {
     private[this] val map = elements.toMap
     override def element(name: String) = map.get(name)
-    override val whole = wholeDescr
+    override val whole = Some(wholeDescr)
   }
 }

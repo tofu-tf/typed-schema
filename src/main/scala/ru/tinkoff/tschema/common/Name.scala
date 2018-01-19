@@ -19,6 +19,6 @@ trait SymbolName[name <: Symbol] extends Name[name] {
 }
 
 object Name {
-  implicit def stringName[name <: String](implicit witness: Witness.Aux[name]) = new StringName[name] {def string = witness.value}
-  implicit def symbolName[name <: Symbol](implicit witness: Witness.Aux[name]) = new SymbolName[name] {def symbol = witness.value}
+  implicit def stringName[name <: String](implicit witness: Witness.Aux[name]): Name[name] = new StringName[name] {def string = witness.value}
+  implicit def symbolName[name <: Symbol](implicit witness: Witness.Aux[name]): Name[name] = new SymbolName[name] {def symbol = witness.value}
 }

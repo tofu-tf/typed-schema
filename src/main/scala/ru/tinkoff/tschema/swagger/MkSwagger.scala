@@ -279,7 +279,7 @@ object SwaggerMapper {
   implicit def deriveTag[name](implicit name: Name[name]): SwaggerMapper[Tag[name]] =
     fromFunc((PathSpec.op ^|-> OpenApiOp.tags).modify(_ :+ name.string))
 
-  implicit def deriveKey[name] = empty[Key[name]]
+  implicit def deriveKey[name](implicit name: Name[name]): SwaggerMapper[Key[name]] = fromFunc(PathSpec.key.set(name.string.some))
 
   implicit val monoidKInstance = new MonoidK[SwaggerMapper] {
     def empty[A]: SwaggerMapper[A] = SwaggerMapper.empty

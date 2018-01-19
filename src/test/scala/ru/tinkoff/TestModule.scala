@@ -1,6 +1,6 @@
 package ru.tinkoff
 
-import java.util.ResourceBundle
+import java.util.{Locale, ResourceBundle}
 
 import io.circe.generic.JsonCodec
 import ru.tinkoff.tschema.FromQueryParam
@@ -113,7 +113,8 @@ object TestModule {
 
   implicit val limitHandler = LimitHandler.trieMap(_ => LimitRate(1, 1 second))
 
-  val swagger = api.mkSwagger
+  val xxxxx_xxx = key('combine).swaggerMapper
+  val swagger = api.mkSwagger.describe(PathDescription.i18n(ResourceBundle.getBundle("swagger", Locale.forLanguageTag("ru"))))
   val swagger2 = api2.mkSwagger
 
 

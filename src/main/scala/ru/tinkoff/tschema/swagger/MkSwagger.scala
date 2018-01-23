@@ -12,32 +12,20 @@ import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
-
 import monocle.function.Each.each
 import monocle.std.option.some
+import ru.tinkoff.tschema.swagger
 
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
 
 
-sealed trait MkSwagger[T] {
-  self =>
-
+sealed trait SwaggerBuilder {
   def paths: PathSeq
 
   def types: TypePool
 
-  def as[U]: MkSwagger[U] = self.asInstanceOf[MkSwagger[U]]
-
-  def map(f: PathSpec => PathSpec) = new MkSwagger[T] {
-    val paths = self.paths.map(f)
-    val types = self.types
-  }
-
-  def ++(other: MkSwagger[_]) = new MkSwagger[T] {
-    val paths = self.paths ++ other.paths
-    val types = self.types ++ other.types
-  }
+  def ++(other: SwaggerBuilder): SwaggerBuilder = new SwaggerBuilder.Concat(this, other)
 
   def make(info: OpenApiInfo) = {
     val openApiPaths =
@@ -52,6 +40,26 @@ sealed trait MkSwagger[T] {
       components = OpenApiComponents(schemas = types)
     )
   }
+}
+
+object SwaggerBuilder{
+  class Concat(left: SwaggerBuilder, right: SwaggerBuilder) extends SwaggerBuilder{
+    val paths = left.paths ++ right.paths
+    val types = left.types ++ right.types
+  }
+}
+
+sealed trait MkSwagger[T] extends SwaggerBuilder {
+  self =>
+  def as[U]: MkSwagger[U] = self.asInstanceOf[MkSwagger[U]]
+
+  def map(f: PathSpec => PathSpec) = new MkSwagger[T] {
+    val paths = self.paths.map(f)
+    val types = self.types
+  }
+
+  override def ++(other: SwaggerBuilder): MkSwagger[T] = new SwaggerBuilder.Concat(this, other) with MkSwagger[T]
+
 
   def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
     new MkSwagger[U] {
@@ -79,6 +87,8 @@ sealed trait MkSwagger[T] {
 }
 
 object MkSwagger {
+
+
   object macroInterface {}
 
   def empty[T]: MkSwagger[T] = new MkSwagger[T] {

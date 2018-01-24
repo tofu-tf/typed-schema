@@ -1,21 +1,15 @@
-package ru.tinkoff.testApi
+package ru.tinkoff.tschema.examples
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.stream.ActorMaterializer
 import io.circe.generic.JsonCodec
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
-import ru.tinkoff.tschema.swagger.SwaggerTypeable
+import ru.tinkoff.tschema.swagger.{SwaggerTypeable, _}
+import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL.DSLAtom
 import shapeless.{HList, Witness}
-import ru.tinkoff.tschema.swagger._
-import ru.tinkoff.tschema.syntax._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import io.circe.{Json, Printer}
-import ru.tinkoff.testApi.VersionApp.route
 
 @JsonCodec
 case class Filters(foo: Option[String], bar: Option[Int])
@@ -44,26 +38,15 @@ object extractFilters {
     }
 }
 
-object FiltersApp extends App {
+object FiltersModule extends ExampleModule {
  implicit val printer = io.circe.Printer.noSpaces.copy(dropNullValues = true)
 
-  def api = keyPrefix('echo) |> extractFilters('filt) |> get[Filters]
+  def api = tagPrefix('filters) |> keyPrefix('echo) |> extractFilters('filt) |> get[Filters]
   object handler {
     def echo(filt: Filters) = filt
   }
 
 
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-
-  import akka.http.scaladsl.server.Directives._
-  import system.dispatcher
-
-  val route = pathPrefix("api") { MkRoute(api)(handler) } ~
-              pathPrefix("swagger")(get(
-                complete(api.mkSwagger.make(OpenApiInfo()))
-              ))
-
-  for (_ <- Http().bindAndHandle(route, "localhost", 8081))
-    println("server started at http://localhost:8081")
+  val route = MkRoute(api)(handler)
+  val swagger = api.mkSwagger
 }

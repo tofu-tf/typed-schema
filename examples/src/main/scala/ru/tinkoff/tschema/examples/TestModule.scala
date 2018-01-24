@@ -1,28 +1,24 @@
-package ru.tinkoff
+package ru.tinkoff.tschema.examples
 
-import java.util.ResourceBundle
+import java.util.{Locale, ResourceBundle}
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import io.circe.Printer
 import io.circe.generic.JsonCodec
+import io.circe.syntax._
 import ru.tinkoff.tschema.FromQueryParam
-import ru.tinkoff.tschema.akkaHttp.{MkRoute, Routable, Serve}
-import ru.tinkoff.tschema.limits
-import limits._
+import ru.tinkoff.tschema.akkaHttp.MkRoute
+import ru.tinkoff.tschema.limits.LimitHandler.LimitRate
+import ru.tinkoff.tschema.limits._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
-import ru.tinkoff.tschema.typeDSL._
-import shapeless.{HNil, Witness => W}
-import shapeless.record.Record
-import ru.tinkoff.tschema.swagger._
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import io.circe.Printer
-import ru.tinkoff.tschema.limits.LimitHandler.LimitRate
-import shapeless.labelled.FieldType
-import io.circe.syntax._
+import akka.http.scaladsl.server.Directives._enhanceRouteWithConcatenation
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object definitions {
@@ -46,7 +42,7 @@ object definitions {
 
   def api = tagPrefix('test) |> (concat <> intops <> stats)
 
-  def api2 = tagPrefix('test) {
+  def api2 = tagPrefix('test2) {
     operation('concat) {
       queryParam[String]('left) {
         queryParam[String]('right) {
@@ -76,7 +72,9 @@ object definitions {
   }
 }
 
-object TestModule {
+object TestModule extends ExampleModule {
+  implicit val system  = ActorSystem("swagger-test")
+  implicit val mat = ActorMaterializer()
 
   import definitions._
 
@@ -87,8 +85,6 @@ object TestModule {
 
   implicit lazy val clientFromParam = FromQueryParam.intParam.map(Client)
   implicit val clientSwagger: SwaggerTypeable[Client] = SwaggerTypeable.swaggerTypeableInteger.as[Client]
-
-  implicit lazy val bundle = ResourceBundle.getBundle("swagger")
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -115,20 +111,14 @@ object TestModule {
 
   implicit val limitHandler = LimitHandler.trieMap(_ => LimitRate(1, 1 second))
 
-  val swagger = api.mkSwagger
-  val swagger2 = api2.mkSwagger
+  val descriptions = PathDescription.i18n(ResourceBundle.getBundle("swagger", Locale.forLanguageTag("ru")))
+  val swagger1 = api.mkSwagger.describe(descriptions)
+  val swagger2 = api2.mkSwagger.describe(descriptions)
 
-
-  val route = MkRoute(api)(handler)
+  val route1 = MkRoute(api)(handler)
   val route2 = MkRoute(api2)(handler)
-  val printer = Printer.spaces2.copy(dropNullValues = true)
-  def main(args: Array[String]): Unit = {
-    swagger
-    .make(OpenApiInfo(title = "test"))
-    .paths.foreach { case (name, map) =>
-      val (meth, op) = map.head
-      println(s"$name : $meth \n------------  ${op.asJson.pretty(printer) }\n------------")
-    }
-  }
+
+  val swagger = swagger1 ++ swagger2
+  val route = route1 ~ route2
 }
 

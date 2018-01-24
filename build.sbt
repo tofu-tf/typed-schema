@@ -54,3 +54,5 @@ lazy val typedschema =
 lazy val macros = project.dependsOn(typedsl)
 
 lazy val typedsl = project
+
+lazy val examples = project.dependsOn(typedschema)

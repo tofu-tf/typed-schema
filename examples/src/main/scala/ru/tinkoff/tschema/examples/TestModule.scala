@@ -22,10 +22,17 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object definitions {
-  @JsonCodec case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
-  @JsonCodec case class Combine(source: CombSource, res: CombRes)
-  @JsonCodec case class CombSource(x: Int, y: Int)
-  @JsonCodec case class CombRes(mul: Int, sum: Int)
+  @swaggerTyping(circe = true)
+  case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
+
+  @swaggerTyping(circe = true)
+  case class Combine(source: CombSource, res: CombRes)
+
+  @swaggerTyping(circe = true)
+  case class CombSource(x: Int, y: Int)
+
+  @swaggerTyping(circe = true)
+  case class CombRes(mul: Int, sum: Int)
 
   case class Client(value: Int)
 
@@ -77,11 +84,6 @@ object TestModule extends ExampleModule {
   implicit val mat = ActorMaterializer()
 
   import definitions._
-
-  implicit lazy val statResTypeable = genNamedTypeable[StatsRes]("Stats")
-  implicit lazy val combSourceTypeable = genNamedTypeable[CombSource]("CombSource")
-  implicit lazy val combResTypeable = genNamedTypeable[CombRes]("CombRes")
-  implicit lazy val combineTypeable = genNamedTypeable[Combine]("Combine")
 
   implicit lazy val clientFromParam = FromQueryParam.intParam.map(Client)
   implicit val clientSwagger: SwaggerTypeable[Client] = SwaggerTypeable.swaggerTypeableInteger.as[Client]

@@ -47,7 +47,7 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
       rejection shouldBe MethodRejection(HttpMethods.GET)
     })
 
-    "reject prefix" in (Post("/test1") ~> helloRoute ~> check {
+    "reject prefix" in (Get("/test1") ~> helloRoute ~> check {
       handled shouldBe false
 
       rejections shouldBe Nil

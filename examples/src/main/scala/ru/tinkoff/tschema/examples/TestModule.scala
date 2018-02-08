@@ -22,7 +22,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object definitions {
-  @swaggerTyping(circe = true)
+  @swaggerTyping(circe = true, name = Some("PEKA"))
   case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
   @swaggerTyping(circe = true)
@@ -35,7 +35,6 @@ object definitions {
   case class CombRes(mul: Int, sum: Int)
 
   case class Client(value: Int)
-
 
   def concat = operation('concat) |> queryParam[String]('left) |> queryParam[String]('right) |> get[String]
 

@@ -9,7 +9,10 @@ class swaggerTyping(circe: Boolean = false, named: Boolean = true, name: Option[
   inline def apply(defn: Any): Any = meta {
     val circe = this match {
       case q"new $_(${Lit.Boolean(b)}, ..$_)" => b
-      case q"new $_(circe = ${Lit.Boolean(b)}, ..$_)" => b
+      case q"new $_(..$args)" =>
+        args.collectFirst {
+          case Term.Arg.Named(Term.Name("circe"), Lit.Boolean(b)) => b
+        }.getOrElse(false)
       case _ => false
     }
 

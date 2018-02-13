@@ -37,7 +37,7 @@ libraryDependencies += "org.scalameta" %% "scalameta" % "1.8.0"
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
-addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.patch)
+addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.patch)
 
 //addCompilerPlugin("io.tryp" % "splain" % "0.2.7" cross CrossVersion.patch)
 
@@ -55,4 +55,6 @@ lazy val macros = project.dependsOn(typedsl)
 
 lazy val typedsl = project
 
-lazy val examples = project.dependsOn(typedschema)
+lazy val examples = project
+  .dependsOn(typedschema)
+  .aggregate(typedschema)

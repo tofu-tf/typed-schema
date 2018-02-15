@@ -1,38 +1,18 @@
 package ru.tinkoff.tschema.swagger
 
-import ru.tinkoff.tschema.swagger.SwaggerTyping.ClassOrTrait
+import ru.tinkoff.tschema.swagger.SwaggerTyping.{ClassOrTrait, ArgList, Matcher}
 
 import scala.annotation.StaticAnnotation
 import scala.meta._
+import scala.reflect.ClassTag
 
-class swaggerTyping(circe: Boolean = false, named: Boolean = true, name: Option[String] = None) extends StaticAnnotation {
-  inline def apply(defn: Any): Any = meta {
-    val circe = this match {
-      case q"new $_(${Lit.Boolean(b)}, ..$_)" => b
-      case q"new $_(..$args)" =>
-        args.collectFirst {
-          case Term.Arg.Named(Term.Name("circe"), Lit.Boolean(b)) => b
-        }.getOrElse(false)
-      case _ => false
-    }
+class swaggerTyping(circe: Boolean, named: Boolean, name: String) extends StaticAnnotation {
+  inline def apply(defn: Any): Any= meta {
+    val args = ArgList(this)
 
-    val named = this match {
-      case q"new $_(_, ${Lit.Boolean(b)}, ..$_)" => b
-      case q"new $_(..$args)" =>
-        args.collectFirst {
-          case Term.Arg.Named(Term.Name("named"), Lit.Boolean(b)) => b
-        }.getOrElse(true)
-      case _ => true
-    }
-
-    val name = this match {
-      case q"new $_(..$_, Some(${Lit.String(n)}))" => Some(n)
-      case q"new $_(..$args)" =>
-        args.collectFirst {
-          case Term.Arg.Named(Term.Name("name"), q"Some(${Lit.String(s)})") => Some(s)
-        }.flatten
-      case _ => None
-    }
+    val circe = args.find(Lit.Boolean.unapply _, "circe", 0).getOrElse(false)
+    val named = args.find(Lit.Boolean.unapply _, "named", 1).getOrElse(true)
+    val name = args.find(Lit.String.unapply _, "name", 2)
 
     defn match {
       case Term.Block(Seq(cls@(ClassOrTrait(typeName, isCls)), companion: Defn.Object)) =>
@@ -52,6 +32,31 @@ class swaggerTyping(circe: Boolean = false, named: Boolean = true, name: Option[
 }
 
 object SwaggerTyping {
+  implicit class Matcher[A, L <: Lit: ClassTag](f: L => Option[A]){
+    def unapply(x: Term.Arg): Option[A] = x match {
+      case x: L => f(x)
+      case _ => None
+    }
+  }
+  case class ArgList(pos: Vector[Term.Arg], named: Map[String, Term.Arg]) {
+    def find[A, L <: Lit : ClassTag](Match: Matcher[A, L], name: String, at: Int): Option[A] =
+      (named.get(name) orElse pos.lift(at)).collect { case Match(x) => x }
+  }
+
+  object ArgList {
+    val empty = new ArgList(Vector.empty, Map.empty)
+    def apply(tree: Tree): ArgList =
+      tree match {
+        case q"new $_(..$lst)" => lst.foldLeft(empty) {
+          case (args, Term.Arg.Named(Term.Name(name), v)) => new ArgList(args.pos, args.named + (name -> v))
+          case (args, v) => new ArgList(args.pos :+ v, args.named)
+        }
+        case _ => empty
+      }
+
+  }
+
+
   object ClassOrTrait {
     def unapply(arg: Defn): Option[(Type.Name, Boolean)] = arg match {
       case cls: Defn.Class => Some((cls.name, true))
@@ -67,7 +72,7 @@ object SwaggerTyping {
       case (false, _) => mkTypeable(typeName)
     }
 
-    if(circe) List(typeable, mkCirceEncoder(typeName, derivation), mkCirceDecoder(typeName, derivation))
+    if (circe) List(typeable, mkCirceEncoder(typeName, derivation), mkCirceDecoder(typeName, derivation))
     else List(typeable)
   }
 

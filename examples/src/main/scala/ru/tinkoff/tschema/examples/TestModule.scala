@@ -13,21 +13,28 @@ import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 import akka.http.scaladsl.server.Directives._enhanceRouteWithConcatenation
+import io.circe.generic.JsonCodec
+import ru.tinkoff.tschema.utils.json.circeCodec
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object definitions {
-  @swaggerTyping(circe = true, name = "PEKA")
-  case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
-  @swaggerTyping(circe = true, named = false)
+  @swaggerTyping(name = "PEKA")
+  @circeCodec(derivation = true, snake = true)
+  case class StatsRes(theMean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
+
+  @swaggerTyping(named = false)
+  @JsonCodec
   case class Combine(source: CombSource, res: CombRes)
 
-  @swaggerTyping(circe = true)
+  @swaggerTyping
+  @JsonCodec
   case class CombSource(x: Int, y: Int)
 
-  @swaggerTyping(circe = true)
+  @swaggerTyping
+  @JsonCodec
   case class CombRes(mul: Int, sum: Int)
 
   case class Client(value: Int)

@@ -1,13 +1,14 @@
 package ru.tinkoff.tschema.swagger
 
-import ru.tinkoff.tschema.swagger.SwaggerTyping.{ClassOrTrait, ArgList, Matcher}
+import ru.tinkoff.tschema.utils.MacroUtils._
 
 import scala.annotation.StaticAnnotation
 import scala.meta._
 import scala.reflect.ClassTag
 
 class swaggerTyping(named: Boolean = true, name: String = "") extends StaticAnnotation {
-  inline def apply(defn: Any): Any = meta {
+  inline def apply(defn: Any): Any
+  = meta {
     val args = ArgList(this)
 
     val named = args.find(Lit.Boolean.unapply _, "named", 1).getOrElse(true)
@@ -15,7 +16,7 @@ class swaggerTyping(named: Boolean = true, name: String = "") extends StaticAnno
 
     defn match {
       case Term.Block(Seq(cls@(ClassOrTrait(typeName, isCls)), companion: Defn.Object)) =>
-        val newStats = SwaggerTyping.mkAll(typeName,  isCls, named, name) ++ companion.templ.stats.toList.flatten
+        val newStats = SwaggerTyping.mkAll(typeName, isCls, named, name) ++ companion.templ.stats.toList.flatten
         val newComp = companion.copy(templ = companion.templ.copy(stats = Some(newStats)))
         Term.Block(List(cls, newComp))
       case cls@(ClassOrTrait(typeName, isCls)) =>
@@ -31,38 +32,6 @@ class swaggerTyping(named: Boolean = true, name: String = "") extends StaticAnno
 }
 
 object SwaggerTyping {
-  implicit class Matcher[A, L <: Lit: ClassTag](f: L => Option[A]){
-    def unapply(x: Term.Arg): Option[A] = x match {
-      case x: L => f(x)
-      case _ => None
-    }
-  }
-  case class ArgList(pos: Vector[Term.Arg], named: Map[String, Term.Arg]) {
-    def find[A, L <: Lit : ClassTag](Match: Matcher[A, L], name: String, at: Int): Option[A] =
-      (named.get(name) orElse pos.lift(at)).collect { case Match(x) => x }
-  }
-
-  object ArgList {
-    val empty = new ArgList(Vector.empty, Map.empty)
-    def apply(tree: Tree): ArgList =
-      tree match {
-        case q"new $_(..$lst)" => lst.foldLeft(empty) {
-          case (args, Term.Arg.Named(Term.Name(name), v)) => new ArgList(args.pos, args.named + (name -> v))
-          case (args, v) => new ArgList(args.pos :+ v, args.named)
-        }
-        case _ => empty
-      }
-
-  }
-
-  object ClassOrTrait {
-    def unapply(arg: Defn): Option[(Type.Name, Boolean)] = arg match {
-      case cls: Defn.Class => Some((cls.name, true))
-      case trt: Defn.Trait => Some((trt.name, false))
-      case _ => None
-    }
-  }
-
   def mkAll(typeName: Type.Name, derivation: Boolean, named: Boolean, name: Option[String]): List[Stat] = {
     val typeable = (named, name) match {
       case (true, None) => deriveTypeable(typeName)

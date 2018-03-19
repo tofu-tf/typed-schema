@@ -5,9 +5,6 @@ import java.util.{Locale, ResourceBundle}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import io.circe.Printer
-import io.circe.generic.JsonCodec
-import io.circe.syntax._
 import ru.tinkoff.tschema.FromQueryParam
 import ru.tinkoff.tschema.akkaHttp.MkRoute
 import ru.tinkoff.tschema.limits.LimitHandler.LimitRate
@@ -15,17 +12,16 @@ import ru.tinkoff.tschema.limits._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import akka.http.scaladsl.server.Directives._enhanceRouteWithConcatenation
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object definitions {
-  @swaggerTyping(circe = true, name = Some("PEKA"))
+  @swaggerTyping(circe = true, name = "PEKA")
   case class StatsRes(mean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
-  @swaggerTyping(circe = true)
+  @swaggerTyping(circe = true, named = false)
   case class Combine(source: CombSource, res: CombRes)
 
   @swaggerTyping(circe = true)

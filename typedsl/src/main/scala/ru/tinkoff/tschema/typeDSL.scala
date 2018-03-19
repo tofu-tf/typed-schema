@@ -131,6 +131,11 @@ object typeDSL {
   final class Cookie[name, x] extends DSLAtom
 
   /**
+    * transforms directive to rename provided parameter with given name
+    */
+  final class As[directive, name] extends DSLAtom
+
+  /**
     * captures multiple fields from place
     *
     * @tparam place Header, FormField, Cookie or QueryParam

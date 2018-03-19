@@ -11,7 +11,7 @@ import monocle.macros.Lenses
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.typeDSL._
-import shapeless.Witness
+import shapeless.{Lazy, Witness}
 import monocle.function.Each.each
 import monocle.std.option.some
 import ru.tinkoff.tschema.swagger
@@ -290,6 +290,9 @@ object SwaggerMapper {
 
   implicit def deriveTag[name](implicit name: Name[name]): SwaggerMapper[Tag[name]] =
     fromFunc((PathSpec.op ^|-> OpenApiOp.tags).modify(_ :+ name.string))
+
+  implicit def deriveAs[x, name](implicit internal: Lazy[SwaggerMapper[x]]): SwaggerMapper[As[x, name]] =
+    internal.value.as[As[x, name]]
 
   implicit def deriveKey[name](implicit name: Name[name]): SwaggerMapper[Key[name]] = fromFunc(PathSpec.key.set(name.string.some))
 

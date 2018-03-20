@@ -37,13 +37,13 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   protected def tryParse[T, F[x] <: FromParam[x], name <: Symbol](value: String)(implicit parse: F[T], w: Witness.Aux[name]): Directive1[T] =
     Directive[Tuple1[T]](f => parse(value) match {
       case Right(result) => f(Tuple1(result))
-      case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
+      case Left(err) => reject(ParamFormatRejection(w.value.name, err))
     })
 
   protected def tryParseOpt[T, F[x] <: FromParam[x], name <: Symbol](value: String)(implicit parse: F[T], w: Witness.Aux[name]): Directive1[Option[T]] =
     Directive[Tuple1[Option[T]]](f => parse(value) match {
       case Right(result) => f(Tuple1(Some(result)))
-      case Left(err)     => f(Tuple1(None))
+      case Left(err) => f(Tuple1(None))
     })
 
   protected def name[name <: Symbol](implicit w: Witness.Aux[name]): String = w.value.name
@@ -60,23 +60,23 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
 
   def serveMap[T, In <: HList, nameA, nameB, A, B]
     (f: A => B)
-      (implicit select: Selector[In, FieldType[nameA, A]]): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
+    (implicit select: Selector[In, FieldType[nameA, A]]): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
     type Out = FieldType[nameB, B] :: In
     def directive(in: In): Directive1[Out] = provide(field[nameB](f(select(in))) :: in)
   }
 
   def serveMap2[T, In <: HList, nameA, nameB, nameC, A, B, C]
     (f: (A, B) => C)
-      (implicit selectA: Selector[In, FieldType[nameA, A]],
-        selectB: Selector[In, FieldType[nameB, B]]): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
+    (implicit selectA: Selector[In, FieldType[nameA, A]],
+     selectB     : Selector[In, FieldType[nameB, B]]): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
     type Out = FieldType[nameC, C] :: In
     def directive(in: In): Directive1[Out] = provide(field[nameC](f(selectA(in), selectB(in))) :: in)
   }
 
   def serveFMap[T, In <: HList, nameA, nameB, A, B]
     (f: A => Future[B])
-      (implicit select: Selector[In, FieldType[nameA, A]],
-        ec: ExecutionContext): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
+    (implicit select: Selector[In, FieldType[nameA, A]],
+     ec         : ExecutionContext): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
     type Out = FieldType[nameB, B] :: In
     def directive(in: In): Directive1[Out] = Directive { handle =>
       ctx =>
@@ -90,12 +90,12 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
 
   def serveFilter[T, In <: HList, name, A]
     (f: A => Option[Rejection])
-      (implicit select: Selector[In, FieldType[name, A]]): Aux[T, In, In] = new Serve[T, In] {
+    (implicit select: Selector[In, FieldType[name, A]]): Aux[T, In, In] = new Serve[T, In] {
     type Out = In
     def directive(in: In): Directive1[In] = Directive { handle =>
       f(select(in)) match {
         case Some(rej) => reject(rej)
-        case None      => handle(Tuple1(in))
+        case None => handle(Tuple1(in))
       }
     }
   }
@@ -138,7 +138,7 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
   implicit def headerOptionServe[name <: Symbol : Witness.Aux, x: FromHeader, In <: HList] = serveAdd[Header[name, Option[x]], In, Option[x], name] {
     optionalHeaderValueByName(name[name]).flatMap {
       case Some(str) => tryParseOpt[x, FromHeader, name](str)
-      case None      => provide(Option.empty[x])
+      case None => provide(Option.empty[x])
     }
   }
 
@@ -149,7 +149,7 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
   implicit def cookieOptionServe[name <: Symbol : Witness.Aux, x: FromCookie, In <: HList] = serveAdd[Cookie[name, Option[x]], In, Option[x], name] {
     optionalCookie(name[name]).flatMap {
       case Some(cook) => tryParseOpt[x, FromCookie, name](cook.value)
-      case None       => provide(Option.empty[x])
+      case None => provide(Option.empty[x])
     }
   }
 
@@ -161,10 +161,14 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
     formFieldMap.flatMap { m =>
       m.get(name[name]) match {
         case Some(str) => tryParseOpt[x, FromFormField, name](str)
-        case None      => provide(Option.empty[x])
+        case None => provide(Option.empty[x])
       }
     }
   }
+
+  implicit def asServe[x, name, In <: HList, Head, old, Rest <: HList](implicit serveInner: Lazy[Serve.Aux[x, In, FieldType[old, Head] :: Rest]]):
+  Serve.Aux[As[x, name], In, FieldType[name, Head] :: Rest] =
+    serveInner.value.asInstanceOf[Serve.Aux[As[x, name], In, FieldType[name, Head] :: Rest]]
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
 

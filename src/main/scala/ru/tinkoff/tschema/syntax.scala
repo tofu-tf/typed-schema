@@ -67,6 +67,7 @@ object syntax {
     def |>[y](y: => y): x :> y = new :>
     def &[y](y: => y): x :> y = new :>
     def apply[y](y: => y): x :> y = new :>
+    def as[name <: Symbol](name: Witness.Lt[name]): As[x, name] = new As
   }
 
   object query extends ParamMaker[QueryParam]

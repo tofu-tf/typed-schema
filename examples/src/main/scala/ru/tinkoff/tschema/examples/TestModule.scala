@@ -39,7 +39,7 @@ object definitions {
 
   case class Client(value: Int)
 
-  def concat = operation('concat) |> queryParam[String]('left) |> queryParam[String]('right) |> get[String]
+  def concat = operation('concat) |> queryParam[String]('left).as('l) |> queryParam[String]('right).as('r) |> get[String]
 
   def combine = operation('combine) |> capture[Int]('y) |> (limit ! 'x) |> get[Combine]
 
@@ -53,8 +53,8 @@ object definitions {
 
   def api2 = tagPrefix('test2) {
     operation('concat) {
-      queryParam[String]('left) {
-        queryParam[String]('right) {
+      queryParam[String]('left).as('l) {
+        queryParam[String]('right).as('r) {
           get[String]
         }
       }
@@ -94,7 +94,7 @@ object TestModule extends ExampleModule {
 
   trait Mutate{
     def mutate(value: Long) = java.lang.Long.toBinaryString(value)
-    def concat(left: String, right: String) = left + right
+    def concat(l: String, r: String) = l + r
   }
 
   object handler extends Mutate {

@@ -199,7 +199,7 @@ object GenericSwaggerTypeable {
   (implicit lgen: LabelledGeneric.Aux[T, L],
    list: HListProps[L],
    descr: DescribeTypeable[T] = DescribeTypeable.empty[T]): GenericSwaggerTypeable[T] = {
-    def required = list.props.traverse { case (name, tt) => tt.map{ case (_, opt) => Some(name).filter(_ => opt) }}.map(_.flatten.toVector)
+    def required = Eval.later(list.props.collect { case (name, tt) if tt.value._2 => name }.toVector)
 
     def props = list.props.map { case (name, tt) => SwaggerProperty(name, descr.element(name), tt.map(_._1)) }.toVector
 
@@ -269,9 +269,8 @@ object MagnoliaSwagger {
                 typ = Eval.later(param.typeclass.typ)
               )
             }.toVector,
-            required = caseClass.parameters.toVector.traverse { prop =>
-              Eval.later(Some(prop.label).filter(_ => !prop.typeclass.optional))
-            }.map(_.flatten))))
+            required = Eval.later(caseClass.parameters.toVector
+              .collect { case prop if !prop.typeclass.optional => cfg.propMod(prop.label) }))))
     }
 
   def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(

@@ -42,7 +42,6 @@ object MagnoliaSpec {
     implicit lazy val weirdThingSwagger: SwaggerTypeable[WeirdThing] =
       SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
 
-
     implicit lazy val innerShitSwagger: SwaggerTypeable[InnerShit] = magnoliaDerive
     implicit lazy val outerShitSwagger: SwaggerTypeable[OuterShit] = magnoliaDerive
     lazy val topShitSwagger: SwaggerTypeable[TopShit] = magnoliaDerive

@@ -9,15 +9,14 @@ import cats.syntax.option._
 import cats.syntax.traverse._
 import io.circe._
 import io.circe.syntax._
-import monocle.Setter
-import monocle.macros.Lenses
+import monocle.{Optional, Prism, Setter}
+import monocle.macros.{GenPrism, GenPrismImpl, Lenses}
 import ru.tinkoff.tschema.utils.json.Skippable
 import ru.tinkoff.tschema.utils.setters
 import shapeless.tag.@@
 
 import scala.annotation.tailrec
 import scala.language.higherKinds
-
 
 sealed trait SwaggerType {
   def merge: PartialFunction[SwaggerType, SwaggerType] = PartialFunction.empty
@@ -27,6 +26,8 @@ sealed trait SwaggerType {
   def deref: Eval[SwaggerType] = Eval.now(this)
 
   def mediaType: MediaType = MediaTypes.`application/json`
+
+  def nameOpt: Option[String] = None
 
   /**
     * set ot change type description if this is named type
@@ -98,7 +99,6 @@ final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empt
   def describeFields(descrs: (String, String)*) =
     updateProps(descrs)(descr => SwaggerProperty.description.set(descr.some))
 
-
   /**
     * set or change XML options if fields
     *
@@ -119,6 +119,8 @@ final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[Swagg
     case SwaggerRef(`name`, descr2, t2) => SwaggerRef(name, descr.orElse(descr2), typ.map2(typ)(_ or _))
   }
   override def deref = typ.flatMap(_.deref)
+  override val nameOpt: Option[String] = Some(name)
+
 
   override def describe(description: String) = copy(descr = Some(description))
   override def mediaType: MediaType = typ.value.mediaType
@@ -131,7 +133,7 @@ final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])],
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 
 @Lenses
-final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType{
+final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType {
   override def mediaType: MediaType = MediaTypes.`application/xml`
 }
 
@@ -139,7 +141,7 @@ object SwaggerXML {
   def wrap(opts: SwaggerXMLOptions)(typ: SwaggerType): SwaggerType = typ match {
     case xml: SwaggerXML => wrap(opts)(xml.typ)
     case ref: SwaggerRef => (SwaggerRef.typ composeSetter setters.eval).modify(wrap(opts))(ref)
-    case _               => SwaggerXML(typ, opts)
+    case _ => SwaggerXML(typ, opts)
   }
 }
 
@@ -147,11 +149,10 @@ final case class DescribedType(typ: SwaggerType, description: Option[String] = N
 
 object DescribedType {
   implicit val encoder: ObjectEncoder[DescribedType] = ObjectEncoder.instance {
-    case DescribedType(typ, None)        => typ.asJsonObject
+    case DescribedType(typ, None) => typ.asJsonObject
     case DescribedType(typ, Some(descr)) => typ.asJsonObject.add("description", descr.asJson)
   }
 }
-
 
 class SwaggerMapKey[T]
 
@@ -163,19 +164,26 @@ object SwaggerType {
 
   private def refTo(name: String) = s"#/components/schemas/$name"
 
-  val setObj: Setter[SwaggerType, SwaggerObject] = Setter(f => {
-    case obj: SwaggerObject => f(obj)
-    case ref: SwaggerRef    => ref.copy(typ = ref.typ.map(setObj.modify(f)))
-    case xml: SwaggerXML    => (SwaggerXML.typ composeSetter setObj).modify(f)(xml)
-    case other              => other
+  val objOpt: Optional[SwaggerType, SwaggerObject] = Optional[SwaggerType, SwaggerObject] {
+    case obj: SwaggerObject => Some(obj)
+    case ref: SwaggerRef => objOpt.getOption(ref.typ.value)
+    case xml: SwaggerXML => objOpt.getOption(xml.typ)
+    case _ => None
+  }(obj => {
+    case _: SwaggerObject => obj
+    case ref: SwaggerRef => SwaggerRef.typ.set(Eval.now(obj))(ref)
+    case xml: SwaggerXML => (SwaggerXML.typ composeOptional objOpt).set(obj)(xml)
+    case other => other
   })
+
+  val setObj: Setter[SwaggerType, SwaggerObject] = objOpt.asSetter
 
   implicit val encodeSwaggerType: ObjectEncoder[SwaggerType] = new ObjectEncoder[SwaggerType] {
     def encode(a: SwaggerType): Eval[JsonObject] = a match {
       case pt: SwaggerPrimitive[_] =>
         val typeJson = (pt.typ: SwaggerValue).asJsonObject
         val result = pt.format match {
-          case None    => typeJson
+          case None => typeJson
           case Some(x) => typeJson.add("format", x.asJson)
         }
         result.pure[Eval]
@@ -198,19 +206,19 @@ object SwaggerType {
 
       case SwaggerObject(properties, required) =>
         properties
-        .traverse[Eval, (String, Option[String], JsonObject)] {
+          .traverse[Eval, (String, Option[String], JsonObject)] {
           case SwaggerProperty(name, descr, prop) => prop.flatMap(encode).map(typ => (name, descr, typ.asJsonObject))
         }
-        .map { enc =>
-          val fields = enc.map {
-            case (name, None, obj)        => name -> obj.asJson
-            case (name, Some(descr), obj) => name -> obj.add("description", Json.fromString(descr)).asJson
+          .map { enc =>
+            val fields = enc.map {
+              case (name, None, obj) => name -> obj.asJson
+              case (name, Some(descr), obj) => name -> obj.add("description", Json.fromString(descr)).asJson
+            }
+            JsonObject(
+              "type" -> Json.fromString("object"),
+              "required" -> Json.arr(required.map(Json.fromString): _*),
+              "properties" -> Json.obj(fields: _*))
           }
-          JsonObject(
-            "type" -> Json.fromString("object"),
-            "required" -> Json.arr(required.map(Json.fromString): _*),
-            "properties" -> Json.obj(fields: _*))
-        }
 
       case SwaggerOneOf(alts, discriminator) =>
         alts.traverse[Eval, Json] {
@@ -218,23 +226,23 @@ object SwaggerType {
             nameOpt.filter(_ => discriminator.isEmpty).fold(etyp) {
               name => Eval.now(SwaggerObject(Vector(SwaggerProperty(name, None, etyp)), Vector(name)))
             }.flatMap(encode)
-            .map(Json.fromJsonObject)
+              .map(Json.fromJsonObject)
         }
-        .map2(alts.flatTraverse {
-          case (Some(name), typ) => typ.map {
-            case SwaggerRef(ref, _, _) => Vector(name -> refTo(ref))
-            case _                     => Vector.empty
+          .map2(alts.flatTraverse {
+            case (Some(name), typ) => typ.map {
+              case SwaggerRef(ref, _, _) => Vector(name -> refTo(ref))
+              case _ => Vector.empty
+            }
+            case _ => Eval.now(Vector.empty)
+          }) { (alts, mapping) =>
+            val disObj = discriminator.map(name => JsonObject(
+              "propertyName" -> Json.fromString(name),
+              "mapping" -> mapping.toMap.asJson
+            )).asJson
+            JsonObject("type" -> "object".asJson,
+              "oneOf" -> Json.arr(alts: _*),
+              "discriminator" -> disObj)
           }
-          case _                 => Eval.now(Vector.empty)
-        }) { (alts, mapping) =>
-          val disObj = discriminator.map(name => JsonObject(
-            "propertyName" -> Json.fromString(name),
-            "mapping" -> mapping.toMap.asJson
-          )).asJson
-          JsonObject("type" -> "object".asJson,
-                     "oneOf" -> Json.arr(alts: _*),
-                     "discriminator" -> disObj)
-        }
 
       case SwaggerMap(values) => values.flatMap(encode).map(enc => JsonObject(
         "type" -> Json.fromString("object"),
@@ -251,16 +259,16 @@ object SwaggerType {
 
     @tailrec private def collectTypesImpl(stack: List[SwaggerType], acc: Map[String, DescribedType]): Map[String, DescribedType] =
       stack match {
-        case Nil         => acc
+        case Nil => acc
         case cur :: rest => cur match {
           case SwaggerRef(name, _, _) if acc contains name => collectTypesImpl(rest, acc)
-          case SwaggerRef(name, descr, t)                  => collectTypesImpl(t.value :: rest, acc + (name -> DescribedType(t.value, descr)))
-          case SwaggerArray(items)                         => collectTypesImpl(items.value :: rest, acc)
-          case SwaggerObject(props, _)                     => collectTypesImpl(props.map(_.typ.value) ++: rest, acc)
-          case SwaggerOneOf(alts, _)                       => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
-          case SwaggerMap(value)                           => collectTypesImpl(value.value :: rest, acc)
-          case SwaggerXML(wrapped, _)                      => collectTypesImpl(wrapped :: rest, acc)
-          case _                                           => collectTypesImpl(rest, acc)
+          case SwaggerRef(name, descr, t) => collectTypesImpl(t.value :: rest, acc + (name -> DescribedType(t.value, descr)))
+          case SwaggerArray(items) => collectTypesImpl(items.value :: rest, acc)
+          case SwaggerObject(props, _) => collectTypesImpl(props.map(_.typ.value) ++: rest, acc)
+          case SwaggerOneOf(alts, _) => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
+          case SwaggerMap(value) => collectTypesImpl(value.value :: rest, acc)
+          case SwaggerXML(wrapped, _) => collectTypesImpl(wrapped :: rest, acc)
+          case _ => collectTypesImpl(rest, acc)
         }
       }
 
@@ -269,12 +277,12 @@ object SwaggerType {
 }
 
 case class SwaggerXMLOptions(
-  name: Option[String] = None,
-  attribute: Boolean @@ Skippable = false,
-  prefix: Option[String] = None,
-  namespace: Option[String] = None,
-  wrapped: Boolean @@ Skippable = false
-)
+                              name: Option[String] = None,
+                              attribute: Boolean @@ Skippable = false,
+                              prefix: Option[String] = None,
+                              namespace: Option[String] = None,
+                              wrapped: Boolean @@ Skippable = false
+                            )
 
 object SwaggerXMLOptions {
   implicit val encoder: ObjectEncoder[SwaggerXMLOptions] = io.circe.derivation.deriveEncoder

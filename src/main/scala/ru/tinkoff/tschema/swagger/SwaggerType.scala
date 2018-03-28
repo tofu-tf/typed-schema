@@ -76,7 +76,8 @@ final case class SwaggerArray(items: Eval[SwaggerType]) extends SwaggerType {
 final case class SwaggerProperty(name: String, description: Option[String], typ: Eval[SwaggerType])
 
 @Lenses
-final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empty, required: Vector[String] = Vector.empty) extends SwaggerType {
+final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empty,
+                               required: Eval[Vector[String]] = Eval.now(Vector.empty)) extends SwaggerType {
   override def merge = {
     case SwaggerObject(p2, req2) =>
       val thisMap = properties.map(prop => prop.name -> prop).toMap
@@ -84,7 +85,7 @@ final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empt
       val unionProps = (thisMap -- thatMap.keySet).values.toVector ++ thatMap.values.map {
         case SwaggerProperty(name, descr, prop) => SwaggerProperty(name, descr, thisMap.get(name).map(_.typ.map2(prop)(_ or _)).getOrElse(prop))
       }
-      val reqs = required.toSet.intersect(req2.toSet).toVector
+      val reqs = required.map2(req2){ (r1, r2) => r1.toSet.intersect(r2.toSet).toVector }
       SwaggerObject(unionProps, reqs)
   }
 
@@ -164,6 +165,8 @@ object SwaggerType {
 
   private def refTo(name: String) = s"#/components/schemas/$name"
 
+  val refPrism: Prism[SwaggerType, SwaggerRef] = GenPrism[SwaggerType, SwaggerRef]
+
   val objOpt: Optional[SwaggerType, SwaggerObject] = Optional[SwaggerType, SwaggerObject] {
     case obj: SwaggerObject => Some(obj)
     case ref: SwaggerRef => objOpt.getOption(ref.typ.value)
@@ -216,7 +219,7 @@ object SwaggerType {
             }
             JsonObject(
               "type" -> Json.fromString("object"),
-              "required" -> Json.arr(required.map(Json.fromString): _*),
+              "required" -> Json.arr(required.value.map(Json.fromString): _*),
               "properties" -> Json.obj(fields: _*))
           }
 
@@ -224,7 +227,7 @@ object SwaggerType {
         alts.traverse[Eval, Json] {
           case (nameOpt, etyp) =>
             nameOpt.filter(_ => discriminator.isEmpty).fold(etyp) {
-              name => Eval.now(SwaggerObject(Vector(SwaggerProperty(name, None, etyp)), Vector(name)))
+              name => Eval.now(SwaggerObject(Vector(SwaggerProperty(name, None, etyp)), Eval.now(Vector(name))))
             }.flatMap(encode)
               .map(Json.fromJsonObject)
         }

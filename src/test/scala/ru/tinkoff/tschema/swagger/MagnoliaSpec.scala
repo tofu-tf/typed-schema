@@ -8,7 +8,7 @@ import ru.tinkoff.tschema.swagger.MagnoliaSpec._
 import shapeless.test.illTyped
 
 class MagnoliaSpec extends FlatSpec {
-  import MagnoliaSwagger.{derive => magnoliaDerive, derivedInstance}
+  import MagnoliaSwagger.{derive => magnoliaDerive}
 
   "magnolia" should "derive known types" in {
     implicit lazy val weirdThingSwaggerTypeable: SwaggerTypeable[WeirdThing] =
@@ -24,29 +24,29 @@ class MagnoliaSpec extends FlatSpec {
 object MagnoliaSpec {
   trait WeirdThing
 
-  final case class InnerShit(shouldFind: String, shouldNotFind: WeirdThing)
+  final case class InnerShit(shouldFind: String, shouldNotFind: WeirdThing, outer: Option[OuterShit])
 
   sealed trait LotOfVariants
 
   final case class OuterShit(foo: Int, inner: List[InnerShit]) extends LotOfVariants
   case object AnotherLol extends LotOfVariants
 
-  final case class TopShit(vars: LotOfVariants)
+  final case class TopShit(vars: LotOfVariants) extends LotOfVariants
 
   implicit val cfg: SwaggerTypeable.Config = SwaggerTypeable.defaultConfig.snakeCaseProps.snakeCaseAlts.withDiscriminator("type")
   implicit val printer = Printer.spaces4.copy(dropNullValues = true)
 
-
-
   def main(args: Array[String]): Unit = {
-    import MagnoliaSwagger.derivedInstance
-
+    import MagnoliaSwagger.{derive => magnoliaDerive}
 
     implicit lazy val weirdThingSwagger: SwaggerTypeable[WeirdThing] =
       SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
 
-    lazy val testSwagger: SwaggerTypeable[TopShit] = derivedInstance
 
-    println(testSwagger.typ.collectTypes.foreach{case (name, t) => println(s"$name: ${t.asJson.pretty(printer)}")})
+    implicit lazy val innerShitSwagger: SwaggerTypeable[InnerShit] = magnoliaDerive
+    implicit lazy val outerShitSwagger: SwaggerTypeable[OuterShit] = magnoliaDerive
+    lazy val topShitSwagger: SwaggerTypeable[TopShit] = magnoliaDerive
+
+    println(topShitSwagger.typ.collectTypes.foreach { case (name, t) => println(s"$name: ${t.asJson.pretty(printer)}") })
   }
 }

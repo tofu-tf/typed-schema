@@ -6,10 +6,14 @@ import akka.util.ByteString
 import cats.Eval
 import enumeratum.{Enum, EnumEntry}
 import io.circe.JsonObject
+import cats.syntax.option._
 import shapeless.labelled.FieldType
-import shapeless.{:+:, ::, CNil, Coproduct, Generic, HList, HNil, LabelledGeneric, Lazy, Witness, ops}
-import SwaggerTypeable.{Config, make, seq}
+import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, LabelledGeneric, Lazy, Witness, ops}
+import SwaggerTypeable.{Config, seq}
 import magnolia.{CaseClass, Magnolia, SealedTrait}
+import cats.syntax.traverse._
+import cats.instances.vector._
+import cats.instances.list._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -23,10 +27,13 @@ trait SwaggerTypeable[T] {
   def updateTyp(f: SwaggerType => SwaggerType): SwaggerTypeable[T] =
     SwaggerTypeable.make[T](f(self.typ))
 
-  def anon: SwaggerTypeable[T] =
-    new SwaggerTypeable[T] {
-      override def typ: SwaggerType = self.typ.deref.value
-    }
+  def anon: SwaggerTypeable[T] = new SwaggerTypeable[T] {
+    override def typ: SwaggerType = self.typ.deref.value
+  }
+
+  def named(name: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
+    override def typ: SwaggerType = self.typ.deref.value
+  }
 
   def describe(description: String): SwaggerTypeable[T] = updateTyp(_.describe(description))
 
@@ -60,50 +67,52 @@ trait SwaggerTypeable[T] {
     xmlFields(witness.value.name -> fld)
 }
 
-trait SwaggerTypeableA[T] extends SwaggerTypeable[T]
-
 trait LowLevelSwaggerTypeable {
-  @inline final def make[T](t: SwaggerType): SwaggerTypeableA[T] = new SwaggerTypeableA[T] {
+  @inline final def make[T](t: SwaggerType): SwaggerTypeable[T] = new SwaggerTypeable[T] {
     val typ = t
   }
-  @inline final def makeNamed[T](t: SwaggerType, name: String): SwaggerTypeableA[T] = new SwaggerTypeableA[T] {
+  @inline final def makeNamed[T](t: SwaggerType, name: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
     val typ = SwaggerRef(name, None, Eval.later(t))
   }
-  @inline final def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]): SwaggerTypeableA[X[T]] = make[X[T]](SwaggerArray(items.later))
+  @inline final def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]): SwaggerTypeable[X[T]] = make[X[T]](SwaggerArray(items.later))
 
   final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]] = seq[Seq, T]
 }
 
-
 trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances {
-  final implicit val swaggerTypeableInteger: SwaggerTypeableA[Int] = make[Int](SwaggerPrimitive.integer)
-  final implicit val swaggerTypeableLong: SwaggerTypeableA[Long] = make[Long](SwaggerPrimitive.long)
-  final implicit val swaggerTypeableFloat: SwaggerTypeableA[Float] = make[Float](SwaggerPrimitive.float)
-  final implicit val swaggerTypeableDouble: SwaggerTypeableA[Double] = make[Double](SwaggerPrimitive.double)
-  final implicit val swaggerTypeableString: SwaggerTypeableA[String] = make[String](SwaggerPrimitive.string)
-  final implicit val swaggerTypeableByte: SwaggerTypeableA[Byte] = make[Byte](SwaggerPrimitive.byte)
-  final implicit val swaggerTypeableBinary: SwaggerTypeableA[ByteString] = make[ByteString](SwaggerPrimitive.binary)
-  final implicit val swaggerTypeableDateTime: SwaggerTypeableA[Date] = make[Date](SwaggerPrimitive.dateTime)
-  final implicit val swaggerTypeableBoolean: SwaggerTypeableA[Boolean] = make[Boolean](SwaggerPrimitive.boolean)
-  final implicit val swaggerTypeableBigIng: SwaggerTypeableA[BigInt] = make[BigInt](SwaggerPrimitive.integer)
-  final implicit val swaggerTypeableBigDecimal: SwaggerTypeableA[BigDecimal] = make[BigDecimal](SwaggerPrimitive.double)
-  final implicit val swaggerTypeableUUID: SwaggerTypeableA[UUID] = make[UUID](new SwaggerPrimitive(SwaggerStringValue.uuid))
-  final implicit val swaggerTypeableUnit: SwaggerTypeableA[Unit] = make[Unit](SwaggerObject())
+  final implicit val swaggerTypeableInteger: SwaggerTypeable[Int] = make[Int](SwaggerPrimitive.integer)
+  final implicit val swaggerTypeableLong: SwaggerTypeable[Long] = make[Long](SwaggerPrimitive.long)
+  final implicit val swaggerTypeableFloat: SwaggerTypeable[Float] = make[Float](SwaggerPrimitive.float)
+  final implicit val swaggerTypeableDouble: SwaggerTypeable[Double] = make[Double](SwaggerPrimitive.double)
+  final implicit val swaggerTypeableString: SwaggerTypeable[String] = make[String](SwaggerPrimitive.string)
+  final implicit val swaggerTypeableByte: SwaggerTypeable[Byte] = make[Byte](SwaggerPrimitive.byte)
+  final implicit val swaggerTypeableBinary: SwaggerTypeable[ByteString] = make[ByteString](SwaggerPrimitive.binary)
+  final implicit val swaggerTypeableDateTime: SwaggerTypeable[Date] = make[Date](SwaggerPrimitive.dateTime)
+  final implicit val swaggerTypeableBoolean: SwaggerTypeable[Boolean] = make[Boolean](SwaggerPrimitive.boolean)
+  final implicit val swaggerTypeableBigIng: SwaggerTypeable[BigInt] = make[BigInt](SwaggerPrimitive.integer)
+  final implicit val swaggerTypeableBigDecimal: SwaggerTypeable[BigDecimal] = make[BigDecimal](SwaggerPrimitive.double)
+  final implicit val swaggerTypeableUUID: SwaggerTypeable[UUID] = make[UUID](new SwaggerPrimitive(SwaggerStringValue.uuid))
+  final implicit val swaggerTypeableUnit: SwaggerTypeable[Unit] = make[Unit](SwaggerObject())
 
-  final implicit val swaggerTypeableJsonObject: SwaggerTypeableA[JsonObject] = make[JsonObject](SwaggerObject())
+  final implicit val swaggerTypeableJsonObject: SwaggerTypeable[JsonObject] = make[JsonObject](SwaggerObject())
 
-  final implicit def swaggerVectorTypeable[T: SwaggerTypeable]: SwaggerTypeableA[Vector[T]] = seq[Vector, T]
-  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeableA[List[T]] = seq[List, T]
-  final implicit def swaggerSetTypeable[T: SwaggerTypeable]: SwaggerTypeableA[Set[T]] = seq[Set, T]
+  final implicit def swaggerVectorTypeable[T: SwaggerTypeable]: SwaggerTypeable[Vector[T]] = seq[Vector, T]
+  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeable[List[T]] = seq[List, T]
+  final implicit def swaggerSetTypeable[T: SwaggerTypeable]: SwaggerTypeable[Set[T]] = seq[Set, T]
 
-  final implicit def swaggerMapTypeable[K, T](implicit values: Lazy[SwaggerTypeable[T]], keys: SwaggerMapKey[K]): SwaggerTypeableA[Map[K, T]] =
+  implicit def optionTypeable[T](implicit inst: Lazy[SwaggerTypeable[T]]): SwaggerTypeable[Option[T]] =
+    new SwaggerTypeable[Option[T]] {
+      override def typ: SwaggerType = inst.value.typ
+      override def optional: Boolean = true
+    }
+
+  final implicit def swaggerMapTypeable[K, T](implicit values: Lazy[SwaggerTypeable[T]], keys: SwaggerMapKey[K]): SwaggerTypeable[Map[K, T]] =
     make[Map[K, T]](SwaggerMap(values.later))
 
-  private def typeSum[X[_, _], A, B](implicit left: Lazy[SwaggerTypeable[A]], right: Lazy[SwaggerTypeable[B]]): SwaggerTypeableA[X[A, B]] =
+  private def typeSum[X[_, _], A, B](implicit left: Lazy[SwaggerTypeable[A]], right: Lazy[SwaggerTypeable[B]]): SwaggerTypeable[X[A, B]] =
     make[X[A, B]](SwaggerOneOf(Vector(None -> left.later, None -> right.later)))
 
-  final implicit def swaggerEitherTypeable[A: SwaggerTypeable, B: SwaggerTypeable]: SwaggerTypeableA[Either[A, B]] = typeSum[Either, A, B]
-
+  final implicit def swaggerEitherTypeable[A: SwaggerTypeable, B: SwaggerTypeable]: SwaggerTypeable[Either[A, B]] = typeSum[Either, A, B]
 }
 
 object SwaggerTypeable extends SwaggerTypeableInstances {
@@ -166,7 +175,7 @@ trait GenericSwaggerTypeable[T] extends SwaggerTypeable[T] {
 }
 
 object GenericSwaggerTypeable {
-  final case class HListProps[L <: HList](props: List[(String, Eval[SwaggerType], Boolean)])
+  final case class HListProps[L <: HList](props: List[(String, Eval[(SwaggerType, Boolean)])])
   final case class CoproductAlts[C <: Coproduct](alts: List[(Option[String], Eval[SwaggerType])])
 
   private implicit class DescribeTypeOps(val typ: SwaggerType) extends AnyVal {
@@ -182,21 +191,17 @@ object GenericSwaggerTypeable {
 
   implicit val hNilProps = HListProps[HNil](Nil)
 
-  implicit def hConsReqProps[Name <: Symbol, Value, Tail <: HList]
+  implicit def hConProps[Name <: Symbol, Value, Tail <: HList]
   (implicit headProp: Lazy[SwaggerTypeable[Value]], tail: HListProps[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) =
-    HListProps[FieldType[Name, Value] :: Tail]((cfg.propMod(name.value.name), headProp.later, true) :: tail.props)
-
-  implicit def hConsOptProps[Name <: Symbol, Value, Tail <: HList]
-  (implicit headProp: Lazy[SwaggerTypeable[Value]], tail: HListProps[Tail], name: Witness.Aux[Name], cfg: Config = SwaggerTypeable.defaultConfig) =
-    HListProps[FieldType[Name, Option[Value]] :: Tail]((cfg.propMod(name.value.name), headProp.later, false) :: tail.props)
+    HListProps[FieldType[Name, Value] :: Tail]((cfg.propMod(name.value.name), Eval.later(headProp.value).map(t => t.typ -> t.optional)) :: tail.props)
 
   implicit def genericProductTypeable[T, L <: HList]
   (implicit lgen: LabelledGeneric.Aux[T, L],
    list: HListProps[L],
    descr: DescribeTypeable[T] = DescribeTypeable.empty[T]): GenericSwaggerTypeable[T] = {
-    def required = list.props.filter(_._3).map(_._1).toVector
+    def required = list.props.traverse { case (name, tt) => tt.map{ case (_, opt) => Some(name).filter(_ => opt) }}.map(_.flatten.toVector)
 
-    def props = list.props.map { case (name, t, _) => SwaggerProperty(name, descr.element(name), t) }.toVector
+    def props = list.props.map { case (name, tt) => SwaggerProperty(name, descr.element(name), tt.map(_._1)) }.toVector
 
     make[T](SwaggerObject(props, required), descr.whole)
   }
@@ -245,14 +250,8 @@ object DescribeTypeable {
   }
 }
 
-object MagnoliaSwagger{
+object MagnoliaSwagger {
   type Typeclass[T] = SwaggerTypeable[T]
-
-  implicit def optionInstance[T](implicit inst: Lazy[SwaggerTypeable[T]]): SwaggerTypeable[Option[T]] =
-    new SwaggerTypeable[Option[T]] {
-      override def typ: SwaggerType = inst.value.typ
-      override def optional: Boolean = true
-    }
 
   def combine[T](caseClass: CaseClass[Typeclass, T])(
     implicit cfg: Config = SwaggerTypeable.defaultConfig,
@@ -267,9 +266,12 @@ object MagnoliaSwagger{
               SwaggerProperty(
                 name = cfg.propMod(param.label),
                 description = desc.element(param.label),
-                typ = Eval.now(param.typeclass.typ)
+                typ = Eval.later(param.typeclass.typ)
               )
-            }.toVector)))
+            }.toVector,
+            required = caseClass.parameters.toVector.traverse { prop =>
+              Eval.later(Some(prop.label).filter(_ => !prop.typeclass.optional))
+            }.map(_.flatten))))
     }
 
   def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(
@@ -282,14 +284,13 @@ object MagnoliaSwagger{
           descr = desc.whole,
           typ = Eval.now(SwaggerOneOf(
             alts = sealedTrait.subtypes.map { sub =>
-              (sub.typeclass.typ.nameOpt.map(cfg.altMod),
-                Eval.now(sub.typeclass.typ))
+              cfg.altMod(sub.typeName.short).some -> Eval.later(sub.typeclass.typ)
             }.toVector,
             discriminator = cfg.discriminator
           )))
     }
 
-  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeableA[List[T]] = seq[List, T]
+  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeable[List[T]] = seq[List, T]
 
   implicit def derivedInstance[T]: Typeclass[T] = macro Magnolia.gen[T]
   def derive[T]: Typeclass[T] = macro Magnolia.gen[T]

@@ -47,5 +47,10 @@ object MagnoliaSpec {
     lazy val topShitSwagger: SwaggerTypeable[TopShit] = magnoliaDerive
 
     println(topShitSwagger.typ.collectTypes.foreach { case (name, t) => println(s"$name: ${t.asJson.pretty(printer)}") })
+
+    case class Lol(lol: Option[Lol])
+
+    implicit lazy val lolSwagger: SwaggerTypeable[Lol] = magnoliaDerive.named("lol")
+    println(lolSwagger.typ.collectTypes.asJson)
   }
 }

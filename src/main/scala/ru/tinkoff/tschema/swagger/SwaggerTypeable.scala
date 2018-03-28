@@ -32,7 +32,8 @@ trait SwaggerTypeable[T] {
   }
 
   def named(name: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
-    override def typ: SwaggerType = self.typ.deref.value
+    override def typ: SwaggerType =
+      (SwaggerType.refPrism composeLens SwaggerRef.name).set(name)(self.typ)
   }
 
   def describe(description: String): SwaggerTypeable[T] = updateTyp(_.describe(description))

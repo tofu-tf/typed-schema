@@ -19,19 +19,19 @@ import scala.concurrent.duration._
 
 object definitions {
 
-  @swaggerTyping(name = "PEKA")
+  @SwaggerTyping(name = "PEKA")
   @circeCodec(derivation = true, snake = true)
   case class StatsRes(theMean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
-  @swaggerTyping(named = false)
+  @SwaggerTyping(named = false)
   @JsonCodec
   case class Combine(source: CombSource, res: CombRes)
 
-  @swaggerTyping
+  @SwaggerTyping
   @JsonCodec
   case class CombSource(x: Int, y: Int)
 
-  @swaggerTyping
+  @SwaggerTyping
   @JsonCodec
   case class CombRes(mul: Int, sum: Int)
 

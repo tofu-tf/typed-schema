@@ -7,8 +7,6 @@ import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import ru.tinkoff.tschema.FromQueryParam
 import ru.tinkoff.tschema.akkaHttp.MkRoute
-import ru.tinkoff.tschema.limits.LimitHandler.LimitRate
-import ru.tinkoff.tschema.limits._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
@@ -41,7 +39,7 @@ object definitions {
 
   def concat = operation('concat) |> queryParam[String]('left).as('l) |> queryParam[String]('right).as('r) |> get[String]
 
-  def combine = operation('combine) |> capture[Int]('y) |> (limit ! 'x) |> get[Combine]
+  def combine = operation('combine) |> capture[Int]('y)  |> get[Combine]
 
   def sum = operation('sum) |> capture[Int]('y) |> get[Int]
 
@@ -62,9 +60,7 @@ object definitions {
     queryParam[Client]('x) {
       operation('combine) {
         capture[Int]('y) {
-          (limit ! 'x) {
             get[Combine]
-          }
         }
       } ~
       operation('sum) {
@@ -113,7 +109,6 @@ object TestModule extends ExampleModule {
     }
   }
 
-  implicit val limitHandler = LimitHandler.trieMap(_ => LimitRate(1, 1 second))
 
   val descriptions = PathDescription.i18n(ResourceBundle.getBundle("swagger", Locale.forLanguageTag("ru")))
   val swagger1 = api.mkSwagger.describe(descriptions)

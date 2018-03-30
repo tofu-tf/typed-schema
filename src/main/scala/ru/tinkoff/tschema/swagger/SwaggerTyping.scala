@@ -6,23 +6,24 @@ import scala.annotation.StaticAnnotation
 import scala.meta._
 import scala.reflect.ClassTag
 
-class swaggerTyping(named: Boolean = true, name: String = "") extends StaticAnnotation {
+class SwaggerTyping(named: Boolean = true, name: String = "", magnolia: Boolean = false) extends StaticAnnotation {
   inline def apply(defn: Any): Any
   = meta {
     val args = ArgList(this)
 
     val named = args.find(Lit.Boolean.unapply _, "named", 1).getOrElse(true)
     val name = args.find(Lit.String.unapply _, "name", 2)
+    val magnolia = args.find(Lit.Boolean.unapply _, "magnolia", 3).getOrElse(false)
 
     defn match {
       case Term.Block(Seq(cls@(ClassOrTrait(typeName, isCls)), companion: Defn.Object)) =>
-        val newStats = SwaggerTyping.mkAll(typeName, isCls, named, name) ++ companion.templ.stats.toList.flatten
+        val newStats = SwaggerTyping.mkAll(typeName, isCls, named, name, magnolia) ++ companion.templ.stats.toList.flatten
         val newComp = companion.copy(templ = companion.templ.copy(stats = Some(newStats)))
         Term.Block(List(cls, newComp))
       case cls@(ClassOrTrait(typeName, isCls)) =>
         val companion =
           q""" object ${Term.Name(typeName.value)}{
-             ..${SwaggerTyping.mkAll(typeName, isCls, named, name)}
+             ..${SwaggerTyping.mkAll(typeName, isCls, named, name, magnolia)}
            }
          """
         Term.Block(List(cls, companion))
@@ -32,31 +33,42 @@ class swaggerTyping(named: Boolean = true, name: String = "") extends StaticAnno
 }
 
 object SwaggerTyping {
-  def mkAll(typeName: Type.Name, derivation: Boolean, named: Boolean, name: Option[String]): List[Stat] = {
-    val typeable = (named, name) match {
-      case (true, None) => deriveTypeable(typeName)
-      case (true, Some(n)) => mkNamedTypeable(typeName, Lit.String(n))
-      case (false, _) => mkTypeable(typeName)
+  trait Strategy {
+    def default: Term
+    def renamed: Term
+    def anon: Term
+  }
+
+  def mkAll(typeName: Type.Name, derivation: Boolean, named: Boolean, name: Option[String], magnolia: Boolean): List[Stat] = {
+
+    def typ: Type = t"_root_.ru.tinkoff.tschema.swagger.SwaggerTypeable[$typeName]"
+
+    def newName = name.map(Lit.String(_)).getOrElse(abort("should not happend"))
+
+    def simpleStrat = new Strategy {
+      def module: Term = q"_root_.ru.tinkoff.tschema.swagger.SwaggerTypeable"
+      def default: Term = q"$module.deriveNamedTypeable[$typeName]"
+      def renamed: Term = q"$module.genNamedTypeable[$typeName]($newName)"
+      def anon: Term = q"$module.genTypeable[$typeName]"
     }
+
+    def magnoliaStrat = new Strategy {
+      def module: Term = q"_root_.ru.tinkoff.tschema.swagger.MagnoliaSwagger"
+      override def default: Term = q"$module.derive[$typeName]"
+      override def anon: Term = q"$module.derive[$typeName].anon"
+      override def renamed: Term = q"$module.derive[$typeName].named($newName)"
+    }
+
+    val strat = if (magnolia) magnoliaStrat else simpleStrat
+
+    val rhs = (named, name) match {
+      case (true, None) => strat.default
+      case (true, Some(n)) => strat.renamed
+      case (false, _) => strat.anon
+    }
+
+    val typeable = q"implicit lazy val swaggerTypeable: $typ = $rhs"
 
     List(typeable)
   }
-
-  def deriveTypeable(typeName: Type.Name): Stat =
-    q"""
-       implicit val swaggerTypeable: _root_.ru.tinkoff.tschema.swagger.SwaggerTypeable[$typeName] =
-          _root_.ru.tinkoff.tschema.swagger.SwaggerTypeable.deriveNamedTypeable
-     """
-
-  def mkNamedTypeable(typeName: Type.Name, name: Lit.String): Stat =
-    q"""
-      implicit val swaggerTypeable: _root_.ru.tinkoff.tschema.swagger.SwaggerTypeable[$typeName] =
-        _root_.ru.tinkoff.tschema.swagger.SwaggerTypeable.genNamedTypeable[$typeName]($name)
-    """
-
-  def mkTypeable(typeName: Type.Name): Stat =
-    q"""
-       implicit val swaggerTypeable: _root_.ru.tinkoff.tschema.swagger.SwaggerTypeable[$typeName] =
-          _root_.ru.tinkoff.tschema.swagger.SwaggerTypeable.genTypeable
-     """
 }

@@ -35,6 +35,8 @@ libraryDependencies ++= Seq("core")
 
 libraryDependencies += "org.scalameta" %% "scalameta" % "1.8.0"
 
+libraryDependencies += "com.propensive" %% "magnolia" % "0.7.1"
+
 addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
 

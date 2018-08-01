@@ -1,11 +1,15 @@
 # Typed Schema
 
-![maven central](https://img.shields.io/maven-central/v/ru.tinkoff/typed-schema_2.12.svg)
+[![maven central][maven badge]][maven search]
 
 Typed schema is an http service definition DSL,
 currently translating to [akka-http Routes]
 and [OpenApi 3.0 definition][open-api-3.0] inspired by the [haskell-servant] library.
 
+#### SBT
+```SBT
+libraryDependencies += "ru.tinkoff" %% "typed-schema" % "0.10.4"
+```
 
 ## Main IDEA
 
@@ -110,7 +114,7 @@ using directive definitions given by `implicit` instances of:
     *  `T` - your DSLAtom or DSLRes
     * `In` - input parameters collected by preceeding `Serve` instances and tagged by names
     * `Out` - parameters, that will be provided for subtree
- * `trait Serve.Aux[In, Res, Out]`  where:
+ * `trait ResultIn[In, Res, Out]`  where:
     *  `T` - your  DSLRes
     *  `Res` - result type, returned by corresponding method in handler
     *  `Out` - result type, defined in the api definition
@@ -137,3 +141,5 @@ this will create `OpenApi` object that has the [circe Encoder] instance, which y
 [open-api-3.0]: https://swagger.io/specification/
 [haskell-servant]: http://haskell-servant.readthedocs.io/en/stable/
 [circe Encoder]: https://circe.github.io/circe/codec.html
+[maven search]: https://search.maven.org/#search%7Cga%7C1%7Ca%3A%22typed-schema_2.12%22
+[maven badge]: https://img.shields.io/maven-central/v/ru.tinkoff/typed-schema_2.12.svg

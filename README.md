@@ -1,5 +1,7 @@
 # Typed Schema
 
+![Maven Central](https://img.shields.io/maven-central/v/ru.tinkoff/typed-schema_2.12.svg)
+
 Typed schema is an http service definition DSL,
 currently translating to [akka-http Routes]
 and [OpenApi 3.0 definition][open-api-3.0] inspired by the [haskell-servant] library.

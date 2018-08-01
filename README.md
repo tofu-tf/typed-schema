@@ -1,6 +1,6 @@
 # Typed Schema
 
-[![maven central](https://img.shields.io/maven-central/v/ru.tinkoff/typed-schema_2.12.svg)](https://search.maven.org/#search%7Cga%7C1%7Ca%3A%22typed-schema_2.12%22)
+![maven central](https://img.shields.io/maven-central/v/ru.tinkoff/typed-schema_2.12.svg)
 
 Typed schema is an http service definition DSL,
 currently translating to [akka-http Routes]

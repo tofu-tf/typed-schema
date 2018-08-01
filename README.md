@@ -14,10 +14,10 @@ libraryDependencies += "ru.tinkoff" %% "typed-schema" % "0.10.4"
 ## Main IDEA
 
 ### Motivation
-We the People building services using modern scala often struggling satisfy following requirements
-* Service implementation should be checked to be compatible with OpenApi 3.0 specifications at compile time
+We the People building services using modern scala often struggling to satisfy following requirements
+* Service implementation should be checked to be compatible with OpenApi 3.0 specifications at the compile time
 * Service definition should be detachable from the implementation and exportable as mere specification
-* There should be easy way to migrate all the services to different effect\future\task implementation
+* There should be an easy way to migrate all the services to different effect\future\task implementation
 without changing any definition
 * There should be some way to migrate all the service to another framework without reimplementing them
 
@@ -69,19 +69,19 @@ More examples see in subproject `examples`
 ## How it works
 
 ### Definition
-Your schema definitions consists of elements from `ru.tinkoff.tschema.syntax._` and maybe custom directives
+Your schemes definitions consist of elements from `ru.tinkoff.tschema.syntax._` and maybe custom directives
 
 ```scala
 def api = get |> operation('hello) |> capture[String]('name) |> $$[String]
 ```
 
-This may be read as sequence:
+This may be read as a sequence:
 1. check HTTP method is GET
-2. check path prefix is "hello" and mark following definition as part of `hello` operation
+2. check path prefix is "hello" and mark the following definition as part of `hello` operation
 3. capture segment of uri path as `name` parameter
 4. return String
 
-Your definition could have some branching, common prefix will be applied as prefix of all branches.
+Your definition could have some branching, a common prefix will be applied as the prefix of all branches.
 Branching is done with the `<>` operator:
 ```scala
   def api =
@@ -97,7 +97,7 @@ Note that now you must implement `aloha` method in your handler
 or compile error will be raised in the `MkRoute` application
 ### DSL
 All definition elements are functions with almost no implementation, returning types from the
-`ru.tinkoff.tschema.typeDSL._` package, or created by your own.
+`ru.tinkoff.tschema.typeDSL._` package, or created by yourself.
 
 **Those types are the definition.**
 
@@ -112,12 +112,12 @@ When you are ready to build your source, you now can execute route building.
 using directive definitions given by `implicit` instances of:
  * `trait Serve.Aux[T, In]{type Out}`  where:
     *  `T` - your DSLAtom or DSLRes
-    * `In` - input parameters collected by preceeding `Serve` instances and tagged by names
+    * `In` - input parameters collected by preceding `Serve` instances and tagged by names
     * `Out` - parameters, that will be provided for subtree
  * `trait ResultIn[In, Res, Out]`  where:
     *  `T` - your  DSLRes
     *  `Res` - result type, returned by corresponding method in handler
-    *  `Out` - result type, defined in the api definition
+    *  `Out` - result type, defined in the API definition
 
 You generally will need following instances:
 * `ToResponseMarhaller` for returning type of your method

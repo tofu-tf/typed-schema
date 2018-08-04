@@ -69,9 +69,9 @@ object TestModule extends ExampleModule {
   }
 
   object handler extends Mutate {
-    def combine(x: Client, y: Int) =
-      Combine(CombSource(x.value, y),
-              CombRes(mul = x.value * y, sum = x.value + y))
+    def combine(x: Client, y1: Int) =
+      Combine(CombSource(x.value, y1),
+              CombRes(mul = x.value * y1, sum = x.value + y1))
 
     def sum(x: Client, y: Int): Future[Int] = Future(x.value + y)
 

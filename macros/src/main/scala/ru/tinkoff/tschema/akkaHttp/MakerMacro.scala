@@ -22,6 +22,8 @@ import scala.reflect.macros.{TypecheckException, blackbox}
 
 class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with SingletonMacros {
 
+  type Result[A] = Either[String, A]
+
   import c.universe._
 
   def makeRoute[If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
@@ -29,17 +31,19 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   )(
       impl: c.Expr[Impl]
   ): c.Expr[Res] = {
-    val ifP        = getPackage(weakTypeOf[If])
-    val defT       = weakTypeOf[Def]
-    val implT      = weakTypeOf[Impl]
-    val dsl        = constructDslTree(defT)
+    val ifP   = getPackage(weakTypeOf[If])
+    val defT  = weakTypeOf[Def]
+    val implT = weakTypeOf[Impl]
+
     val startInput = q"(HNil : HNil)"
-    val wholeTree  = new RouteTreeMaker(impl.tree).makeRouteTree(dsl, startInput)
 
-    infoTime(s"route $implT")
+    val res = for {
+      dsl       <- constructDslTree(defT)
+      wholeTree = new RouteTreeMaker(impl.tree).makeRouteTree(dsl, startInput)
 
-    val tree =
-      q"""
+      _ = infoTime(s"route $implT")
+
+      tree = q"""
         {
           val $interface =  $ifP
           import shapeless.{::, HNil}
@@ -48,13 +52,14 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
         }
         """
 
-    val checkedTree = try {
-      c.typecheck(tree)
-    } catch {
-      case typecheck: TypecheckException => abort(typecheck.getMessage)
-    }
+      checkedTree <- try {
+                      c.typecheck(tree).asRight
+                    } catch {
+                      case typecheck: TypecheckException => typecheck.getMessage.asLeft
+                    }
+    } yield tree
 
-    c.Expr(checkedTree)
+    c.Expr(getOrError(res))
   }
 
   def makeResult[In <: HList: WeakTypeTag, Out: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
@@ -151,43 +156,51 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   object Key      extends CombMatcher(keyC)
   object Complete extends CombMatcher(CompleteC)
 
-  def constructDefPrefix(t: Type): (Vector[Type], Option[String]) = t match {
-    case Key(KeyName(key))  => (Vector(t), Some(key))
-    case _ if t <:< dslAtom => (Vector(t), None)
+  def constructDefPrefix(t: Type): Result[(Vector[Type], Option[String])] = t match {
+    case Key(KeyName(key))  => (Vector(t), Some(key)).asRight
+    case _ if t <:< dslAtom => (Vector(t), None).asRight
     case Cons(x, y) =>
-      val (a, k1) = constructDefPrefix(x)
-      val (b, k2) = constructDefPrefix(y)
-      (a ++ b, k1 orElse k2)
-    case Split(t1, t2) => abort(s"split over $t1 and $t2 in prefix: this is not allowed")
-    case Complete(_)   => abort(s"$t is usable only as tail element in the DSL")
+      for {
+        (a, k1) <- constructDefPrefix(x)
+        (b, k2) <- constructDefPrefix(y)
+      } yield (a ++ b, k1 orElse k2)
+    case Split(t1, t2) => s"split over $t1 and $t2 in prefix: this is not allowed".asLeft
+    case Complete(_)   => s"$t is usable only as tail element in the DSL".asLeft
   }
 
-  def constructDslTree(t: Type, key: Option[String] = None, prefix: Vector[Type] = Vector.empty): DSLTree[Type] = t match {
-    case Complete(res) =>
-      key match {
-        case Some(str) => DSLLeaf(res, str)
-        case None =>
-          val typLine = (prefix :+ t).map(showType).mkString(" :> ")
-          abort(s"method key for $typLine is not defined")
-      }
+  def constructDslTree(t: Type, key: Option[String] = None, prefix: Vector[Type] = Vector.empty): Result[DSLTree[Type]] =
+    t match {
+      case Complete(res) =>
+        key match {
+          case Some(str) => DSLLeaf(res, str).asRight
+          case None =>
+            val typLine = (prefix :+ t).map(showType).mkString(" :> ")
+            s"method key for $typLine is not defined".asLeft
+        }
 
-    case Cons(x, y) =>
-      val (p1, k1) = constructDefPrefix(x)
-      constructDslTree(y, key orElse k1, prefix = prefix ++ p1) match {
-        case DSLBranch(p2, cdn) => DSLBranch(p1 ++ p2, cdn)
-        case res                => DSLBranch(p1, Vector(res))
-      }
+      case Cons(x, y) =>
+        for {
+          (p1, k1) <- constructDefPrefix(x)
+          next     <- constructDslTree(y, key orElse k1, prefix = prefix ++ p1)
+        } yield
+          next match {
+            case DSLBranch(p2, cdn) => DSLBranch(p1 ++ p2, cdn)
+            case res                => DSLBranch(p1, Vector(res))
+          }
 
-    case Split(x, y) =>
-      val t1 = constructDslTree(x, key, prefix)
-      constructDslTree(y, key, prefix) match {
-        case DSLBranch(Vector(), cdn) => DSLBranch(Vector(), t1 +: cdn)
-        case t2                       => DSLBranch(Vector(), Vector(t1, t2))
-      }
+      case Split(x, y) =>
+        for {
+          t1 <- constructDslTree(x, key, prefix)
+          t2 <- constructDslTree(y, key, prefix)
+        } yield
+          t2 match {
+            case DSLBranch(Vector(), cdn) => DSLBranch(Vector(), t1 +: cdn)
+            case t2                       => DSLBranch(Vector(), Vector(t1, t2))
+          }
 
-    case _ if t <:< dslAtom => abort(s"could not end DSL with $t")
-    case _                  => abort(s"type $t is not a part of type DSL")
-  }
+      case _ if t <:< dslAtom => s"could not end DSL with $t".asLeft
+      case _                  => s"type $t is not a part of type DSL".asLeft
+    }
 
   def extractMethod(meth: MethodSymbol): MethodDecl[Type] =
     meth.paramLists.map(lst => lst.map(p => symbolName(p) -> p.typeSignature)) -> meth.returnType
@@ -207,8 +220,6 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
         q"$pack.${TermName(name)}"
       }
   private def infoTime(label: String) = if (true) info(s"$label: ${Instant.now().toString}")
-
-  type Result[A] = Either[String, A]
 
   private def getOrError(res: Result[Tree]): Tree =
     res.fold({ err =>

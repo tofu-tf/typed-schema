@@ -3,10 +3,18 @@ package ru.tinkoff.tschema.akkaHttp
 import java.time.Instant
 
 import MakerMacro._
+import cats.data.{NonEmptyList, OptionT}
 import com.sun.org.apache.xalan.internal.xsltc.compiler.util.TypeCheckError
 import ru.tinkoff.tschema.macros.{ShapelessMacros, SingletonMacros}
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.HList
+import cats.syntax.either._
+import cats.syntax.traverse._
+import cats.syntax.foldable._
+import cats.syntax.reducible._
+import cats.instances.list._
+import cats.instances.either._
+import cats.syntax.alternative._
 
 import language.experimental.macros
 import scala.reflect.NameTransformer
@@ -59,29 +67,37 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     val implT = weakTypeOf[Impl].dealias
     val inT   = weakTypeOf[In].dealias
     val outT  = weakTypeOf[Out].dealias
-    val keyS: String = key.tree match {
-      case Literal(Constant(s: String)) => NameTransformer.encode(s)
-      case _                            => abort("inproper use of `makeResult` key should be a string constant")
+    val keySR: Result[String] = key.tree match {
+      case Literal(Constant(s: String)) => NameTransformer.encode(s).asRight
+      case _                            => "inproper use of `makeResult` key should be a string constant".asLeft
     }
-    val meth = findMeth(implT, TermName(keyS)) getOrElse abort(s"method $keyS is not implemented")
+    val methR = keySR.flatMap(key => findMeth(implT, TermName(key)))
 
     val rec  = extractRecord(inT)
     val syms = rec.flatten.map { case (paramName, _) => paramName -> freshName(paramName) }.toMap
-    infoTime(s"result $outT $meth $implT")
+    infoTime(s"result $outT $methR $implT")
 
-    val params = meth.paramLists.map(_.map { p =>
+    val paramsR = methR.flatMap(_.paramLists.traverse(_.traverse[Result, TermName] { p =>
       val name = symbolName(p)
-      syms.getOrElse(name, abort(s"could not find input for parameter $name of method $keyS "))
-    })
+      syms.get(name) toRight s"could not find input for parameter $name of method $keySR "
+    }))
+
     val recpat = rec.foldRight(pq"_": Tree) {
       case (None, pat)            => pq"_ :: $pat"
       case (Some((name, _)), pat) => pq"(${syms(name)} @ _) :: $pat"
     }
 
-    c.Expr(c.typecheck(q""" $in match { case $recpat =>
-        val res = $impl.$meth(...$params)
-        val route = $interface.route(res)
-        route[$inT, $outT]($in)}"""))
+    c.Expr(
+      c.typecheck(
+        getOrError(
+          for {
+            meth   <- methR
+            params <- paramsR
+          } yield q""" $in match { case $recpat =>
+                        val res = $impl.$meth(...$params)
+                        val route = $interface.route(res)
+                        route[$inT, $outT]($in)}"""
+        )))
   }
 
   val ConsC     = typeOf[:>[_, _]].typeConstructor
@@ -113,16 +129,14 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
       }
   }
 
-  private def findMeth(typ: Type, name: Name): Option[MethodSymbol] =
+  private def findMeth(typ: Type, name: Name): Result[MethodSymbol] =
     typ.decl(name) match {
-      case ms: MethodSymbol                 => Some(ms)
-      case ov if ov.alternatives.length > 1 => abort("could not handle method overloading")
+      case ms: MethodSymbol                 => ms.asRight
+      case ov if ov.alternatives.length > 1 => "could not handle method overloading".asLeft
       case _ =>
-        typ.baseClasses.tail.iterator.collect {
-          case base: TypeSymbol if base != typ => base.toType
-        }.flatMap {
-          findMeth(_, name)
-        }.collectFirst { case x => x }
+        NonEmptyList(s"method $name is not implemented" asLeft, typ.baseClasses.tail.collect {
+          case base: TypeSymbol if base != typ => findMeth(base.toType, name)
+        }).reduceK
     }
 
   class CombMatcher(constr: Type) {
@@ -180,12 +194,6 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
 
   def symbolName(symbol: Symbol) = symbol.name.decodedName.toString
 
-  def makeRouteTree(t: Type): Tree = {
-    val defTree = constructDslTree(t)
-
-    EmptyTree
-  }
-
   def showType(t: Type): String = t.dealias match {
     case SingletonTypeStr(s)              => s
     case TypeRef(_, s, Nil)               => symbolName(s)
@@ -198,10 +206,19 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
       .foldLeft[Tree](q"_root_") { (pack, name) =>
         q"$pack.${TermName(name)}"
       }
-  private def infoTime(label: String) = if (false) info(s"$label: ${Instant.now().toString}")
+  private def infoTime(label: String) = if (true) info(s"$label: ${Instant.now().toString}")
+
+  type Result[A] = Either[String, A]
+
+  private def getOrError(res: Result[Tree]): Tree =
+    res.fold({ err =>
+      c.error(c.enclosingPosition, err)
+      q"???"
+    }, identity)
 }
 
 object MakerMacro {
+
   sealed trait DSLTree[T]
   case class DSLBranch[T](pref: Vector[T], children: Vector[DSLTree[T]]) extends DSLTree[T]
   case class DSLLeaf[T](res: T, key: String)                             extends DSLTree[T]

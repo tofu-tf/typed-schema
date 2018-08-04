@@ -46,7 +46,7 @@ addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.pa
 
 libraryDependencies += { scalaOrganization.value } % "scala-compiler" % { scalaVersion.value }
 
-sources in(Compile, doc) := Seq.empty
+sources in (Compile, doc) := Seq.empty
 
 
 lazy val macros = project.dependsOn(typedsl)

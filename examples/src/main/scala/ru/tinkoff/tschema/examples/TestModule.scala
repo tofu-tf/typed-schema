@@ -69,7 +69,6 @@ object TestModule extends ExampleModule {
   }
 
   object handler extends Mutate {
-
     def combine(x: Client, y: Int) =
       Combine(CombSource(x.value, y),
               CombRes(mul = x.value * y, sum = x.value + y))

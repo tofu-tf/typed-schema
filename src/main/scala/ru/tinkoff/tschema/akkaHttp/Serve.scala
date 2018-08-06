@@ -12,6 +12,7 @@ import shapeless.labelled.{FieldType, field}
 import catsInstances._
 import cats.syntax.traverse._
 import cats.instances.list._
+import cats.instances.option._
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.common.Name
 import shapeless.ops.hlist.Selector
@@ -24,10 +25,10 @@ trait Serve[T, In <: HList] {
   type Out <: HList
   def directive(in: In): Directive1[Out]
 
-  def as[Q]: Serve.Aux[Q, In , Out] = asInstanceOf[Serve.Aux[Q, In, Out]]
+  def as[Q]: Serve.Aux[Q, In, Out] = asInstanceOf[Serve.Aux[Q, In, Out]]
 }
 
-object Serve extends ServeInstances {}
+object Serve extends ServeInstances
 
 private[akkaHttp] trait ServeTypes {
   type Aux[T, In <: HList, O <: HList] = Serve[T, In] { type Out = O }
@@ -101,7 +102,7 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   }
 }
 
-private[akkaHttp] trait ServeInstances extends ServeFunctions {
+private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstances1 { self: Serve.type =>
   implicit def prefixServe[pref, In <: HList](implicit n: Name[pref]) = serveCheck[Prefix[pref], In](pathPrefix(n.string))
 
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
@@ -112,18 +113,19 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
       parameter(name[name]).flatMap(param => tryParse[x, FromQueryParam, name](param))
     )
 
+  implicit def queryOptParamsServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
+    serveAdd[QueryParams[name, Option[x]], In, List[x], name] {
+      parameterMultiMap.flatMap(
+        _.getOrElse(name[name], Nil).traverse[Directive1, x](value => tryParse[x, FromQueryParam, name](value))
+      )
+    }
+
   implicit def queryOptParamServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
     serveAdd[QueryParam[name, Option[x]], In, Option[x], name](
       OptionT[Directive1, String](parameter(name[name].?)).flatMap { param =>
         OptionT(tryParseOpt[x, FromQueryParam, name](param))
       }.value
     )
-
-  implicit def queryParamsServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
-    serveAdd[QueryParams[name, x], In, List[x], name] {
-      parameterMultiMap.flatMap(
-        _.getOrElse(name[name], Nil).traverse[Directive1, x](value => tryParse[x, FromQueryParam, name](value)))
-    }
 
   implicit def queryFlagServe[name <: Symbol: Witness.Aux, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
     parameterMap.map(_.contains(name[name]))
@@ -198,9 +200,9 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions {
       BearerAuthenticator[x].directive(Name[realm].string).optional
     }
 
-  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](implicit serve: Serve[Param, In]): Serve.Aux[ApiKeyAuth[realm, Param], In, serve.Out] =
+  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](
+      implicit serve: Serve[Param, In]): Serve.Aux[ApiKeyAuth[realm, Param], In, serve.Out] =
     serve.as[ApiKeyAuth[realm, Param]]
-
 
   implicit def asServe[x, name, In <: HList, Head, old, Rest <: HList](
       implicit serveInner: Lazy[Serve.Aux[x, In, FieldType[old, Head] :: Rest]])
@@ -225,4 +227,14 @@ object MethodCheck {
   implicit val checkOptions: MethodCheck[Options] = MethodCheck(HttpMethods.OPTIONS)
   implicit val checkHead: MethodCheck[Head]       = MethodCheck(HttpMethods.HEAD)
   implicit val checkPatch: MethodCheck[Patch]     = MethodCheck(HttpMethods.PATCH)
+}
+trait ServeInstances1 { self: Serve.type =>
+
+  implicit def queryParamsServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
+    serveAdd[QueryParams[name, x], In, List[x], name] {
+      parameterMultiMap.flatMap(
+        _.get(name[name]).fold(Directive[Tuple1[List[x]]](_ => reject(MissingQueryParamRejection(name[name]))))(
+          _.traverse[Directive1, x](value => tryParse[x, FromQueryParam, name](value)))
+      )
+    }
 }

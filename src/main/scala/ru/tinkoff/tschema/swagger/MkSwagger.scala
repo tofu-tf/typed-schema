@@ -14,8 +14,10 @@ import monocle.std.option.some
 import ru.tinkoff.tschema.akkaHttp.MakerMacro
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.swagger.MkSwagger._
+import ru.tinkoff.tschema.swagger.OpenApiParam.In
 import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
 import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
+import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{Lazy, Witness}
 
@@ -312,7 +314,7 @@ trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
   def as[U] = self.asInstanceOf[SwaggerMapper[U]]
 }
 
-object SwaggerMapper {
+object SwaggerMapper extends SwaggerMapperInstances1 {
 
   def apply[T](implicit mapper: SwaggerMapper[T]): SwaggerMapper[T] = mapper
 
@@ -340,12 +342,25 @@ object SwaggerMapper {
       (PathSpec.op ^|-> OpenApiOp.security).modify(_ :+ Map(name -> Vector.empty))(spec)
   }
 
-  private def derivedParam[name, T, param[_, _]](in: In)(implicit name: Name[name],
-                                                         param: AsOpenApiParam[T]): SwaggerMapper[param[name, T]] =
+  private[swagger] def derivedParam[name, T, param[_, _]](in: In)(
+      implicit name: Name[name],
+      param: AsOpenApiParam[T]
+  ): SwaggerMapper[param[name, T]] =
+    derivedParamAtom[name, T, param[name, T]](in)
+
+  private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(
+      implicit name: Name[name],
+      param: AsOpenApiParam[T],
+  ): SwaggerMapper[atom] =
     fromFunc(
       (PathSpec.op ^|-> OpenApiOp.parameters)
-        .modify(_ :+ OpenApiParam(name = name.string, in = in, required = param.required, schema = param.typ.some))) andThen
-      fromTypes[param[name, T]](param.types)
+        .modify(
+          _ :+ OpenApiParam(name = name.string,
+                            in = in,
+                            required = param.required,
+                            schema = param.typ.some,
+                            allowEmptyValue = flag))) andThen
+      fromTypes[atom](param.types)
 
   implicit def derivePath[path](implicit name: Name[path]) =
     fromFunc[path](_.modPath(name.string +: _))
@@ -359,8 +374,11 @@ object SwaggerMapper {
   implicit def deriveQueryParam[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, QueryParam](In.query)
 
+  implicit def deriveOptQueryParams[name: Name, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
+    derivedParamAtom[name, Option[List[T]], QueryParams[name, Option[T]]](In.query)
+
   implicit def deriveQueryFlag[name: Name]: SwaggerMapper[QueryFlag[name]] =
-    derivedParam[name, Option[Boolean], λ[(n, x) => QueryFlag[n]]](In.query)
+    derivedParamAtom[name, Option[Boolean], QueryFlag[name]](In.query, flag = true)
 
   implicit def deriveHeader[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, Header](In.header)
@@ -468,4 +486,9 @@ object ApiKeyParam {
   implicit def header[name, x]: ApiKeyParam[Header[name, x], name, x]    = ApiKeyParam(OpenApiParam.In.header)
   implicit def query[name, x]: ApiKeyParam[QueryParam[name, x], name, x] = ApiKeyParam(OpenApiParam.In.query)
   implicit def cookie[name, x]: ApiKeyParam[Cookie[name, x], name, x]    = ApiKeyParam(OpenApiParam.In.cookie)
+}
+
+trait SwaggerMapperInstances1 { self: SwaggerMapper.type =>
+  implicit def deriveQueryParams[name: Name, T](implicit ev: AsOpenApiParam[List[T]]) =
+    derivedParamAtom[name, List[T], QueryParams[name, T]](In.query)
 }

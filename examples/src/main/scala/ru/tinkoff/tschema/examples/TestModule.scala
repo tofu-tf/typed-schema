@@ -44,11 +44,13 @@ object definitions {
 
   def stats = post |> operation('stats) |> reqBody[Seq[BigDecimal]] |> $$[StatsRes]
 
+  def statsq = get |> operation('statsq) |> queryParams[BigDecimal]('num) |> $$[StatsRes]
+
   def intops = queryParam[Client]('x) |> (combine ~ sum)
 
   def dist = operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[Double]
 
-  def api = tagPrefix('test) |> (concat <> intops <> stats <> dist)
+  def api = tagPrefix('test) |> (concat <> intops <> stats <> statsq <> dist)
 }
 
 object TestModule extends ExampleModule {
@@ -86,6 +88,8 @@ object TestModule extends ExampleModule {
       val std = body.view.map(x => x * x).sum / body.size - mean * mean
       StatsRes(mean, std, median)
     }
+
+    def statsq(num: Seq[BigDecimal]) = stats(num)
   }
 
   val swag = MkSwagger(api)(())

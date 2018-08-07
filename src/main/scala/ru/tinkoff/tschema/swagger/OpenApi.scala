@@ -115,7 +115,10 @@ final case class OpenApiParam(name: String,
                               in: OpenApiParam.In,
                               description: Option[SwaggerDescription] = None,
                               required: Boolean = true,
-                              schema: Option[SwaggerType] = None)
+                              schema: Option[SwaggerType] = None,
+                              deprecated: Boolean = false,
+                              allowEmptyValue: Boolean = false,
+)
 
 object OpenApiParam {
   sealed trait In extends EnumEntry

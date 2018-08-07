@@ -350,7 +350,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(
       implicit name: Name[name],
-      param: AsOpenApiParam[T],
+      param: AsOpenApiParam[T]
   ): SwaggerMapper[atom] =
     fromFunc(
       (PathSpec.op ^|-> OpenApiOp.parameters)

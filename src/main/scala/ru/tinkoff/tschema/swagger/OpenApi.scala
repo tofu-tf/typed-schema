@@ -117,7 +117,7 @@ final case class OpenApiParam(name: String,
                               required: Boolean = true,
                               schema: Option[SwaggerType] = None,
                               deprecated: Boolean = false,
-                              allowEmptyValue: Boolean = false,
+                              allowEmptyValue: Boolean = false
 )
 
 object OpenApiParam {

@@ -32,6 +32,9 @@ object Serve extends ServeInstances
 
 private[akkaHttp] trait ServeTypes {
   type Aux[T, In <: HList, O <: HList] = Serve[T, In] { type Out = O }
+
+  type Check[T, In <: HList]           = Serve[T, In] { type Out = In }
+  type Add[T, In <: HList, key, value] = Serve[T, In] { type Out = FieldType[key, value] :: In }
   class key[name] protected[akkaHttp] ()
 }
 
@@ -54,14 +57,24 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
 
   protected def name[name <: Symbol](implicit w: Witness.Aux[name]): String = w.value.name
 
-  def serveAdd[T, In <: HList, A, key](dir: Directive1[A]): Aux[T, In, FieldType[key, A] :: In] = new Serve[T, In] {
+  def serveAdd[T, In <: HList, A, key](dir: Directive1[A]): Add[T, In, key, A] = new Serve[T, In] {
     type Out = FieldType[key, A] :: In
     def directive(in: In): Directive1[FieldType[key, A] :: In] = dir.map(field[key](_) :: in)
   }
 
-  def serveCheck[T, In <: HList](dir: Directive0): Aux[T, In, In] = new Serve[T, In] {
+  def serveAddIn[T, In <: HList, A, key](f: In => Directive1[A]): Add[T, In, key, A] = new Serve[T, In] {
+    type Out = FieldType[key, A] :: In
+    def directive(in: In): Directive1[FieldType[key, A] :: In] = f(in).map(field[key](_) :: in)
+  }
+
+  def serveCheck[T, In <: HList](dir: Directive0): Check[T, In] = new Serve[T, In] {
     type Out = In
     def directive(in: In): Directive1[In] = dir.tmap(_ => in)
+  }
+
+  def serveCheckIn[T, In <: HList](f: In => Directive0): Check[T, In] = new Serve[T, In] {
+    override type Out = In
+    override def directive(in: In): Directive1[In] = f(in).tmap(_ => in)
   }
 
   def serveMap[T, In <: HList, nameA, nameB, A, B](f: A => B)(

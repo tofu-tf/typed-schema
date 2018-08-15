@@ -21,7 +21,7 @@ object TestServer {
 
   val descriptions = PathDescription.utf8I18n("swagger", Locale.forLanguageTag("ru"))
 
-  val modules = List[ExampleModule](TestModule, VersionModule, FiltersModule, FormFieldsModule, Authorize).combineAll
+  val modules = List[ExampleModule](TestModule, VersionModule, FiltersModule, FormFieldsModule, Authorize, CustomAuth).combineAll
 
   private [this] implicit val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
 

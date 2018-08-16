@@ -45,9 +45,7 @@ final case class BanUser(userToBan: String, description: Option[String], ttl: Op
 @derive(encoder, decoder, swagger)
 final case class Result(message: String)
 
-final case class SpecialBearerAuth(values: Map[String, String]) {
-  def unapply(user: String): Option[String] = values.get(user)
-}
+final case class SpecialBearerAuth(values: Map[String, String])
 
 object SpecialBearerAuth extends DSLAtomAuth {
   import Serve.{Add, serveAdd}

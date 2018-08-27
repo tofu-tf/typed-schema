@@ -15,7 +15,7 @@ import cats.instances.list._
 import cats.instances.option._
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.common.Name
-import shapeless.ops.hlist.Selector
+import shapeless.ops.record.Selector
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,6 +62,12 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
     def directive(in: In): Directive1[FieldType[key, A] :: In] = dir.map(field[key](_) :: in)
   }
 
+  def serveReadAdd[T, param, Value, In <: HList, A, key](dir: Value => Directive1[A])(
+      implicit read: Selector.Aux[In, param, Value]): Add[T, In, key, A] = new Serve[T, In] {
+    type Out = FieldType[key, A] :: In
+    def directive(in: In): Directive1[FieldType[key, A] :: In] = dir(read(in)).map(field[key](_) :: in)
+  }
+
   def serveAddIn[T, In <: HList, A, key](f: In => Directive1[A]): Add[T, In, key, A] = new Serve[T, In] {
     type Out = FieldType[key, A] :: In
     def directive(in: In): Directive1[FieldType[key, A] :: In] = f(in).map(field[key](_) :: in)
@@ -72,26 +78,33 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
     def directive(in: In): Directive1[In] = dir.tmap(_ => in)
   }
 
+  def serveReadCheck[T, param, Value, In <: HList](dir: Value => Directive0)(
+      implicit read: Selector.Aux[In, param, Value]): Check[T, In] =
+    new Serve[T, In] {
+      override type Out = In
+      override def directive(in: In): Directive1[In] = dir(read(in)).tmap(_ => in)
+    }
+
   def serveCheckIn[T, In <: HList](f: In => Directive0): Check[T, In] = new Serve[T, In] {
     override type Out = In
     override def directive(in: In): Directive1[In] = f(in).tmap(_ => in)
   }
 
   def serveMap[T, In <: HList, nameA, nameB, A, B](f: A => B)(
-      implicit select: Selector[In, FieldType[nameA, A]]): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
+      implicit select: Selector.Aux[In, nameA, A]): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
     type Out = FieldType[nameB, B] :: In
     def directive(in: In): Directive1[Out] = provide(field[nameB](f(select(in))) :: in)
   }
 
   def serveMap2[T, In <: HList, nameA, nameB, nameC, A, B, C](f: (A, B) => C)(
-      implicit selectA: Selector[In, FieldType[nameA, A]],
-      selectB: Selector[In, FieldType[nameB, B]]): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
+      implicit selectA: Selector.Aux[In, nameA, A],
+      selectB: Selector.Aux[In, nameB, B]): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
     type Out = FieldType[nameC, C] :: In
     def directive(in: In): Directive1[Out] = provide(field[nameC](f(selectA(in), selectB(in))) :: in)
   }
 
   def serveFMap[T, In <: HList, nameA, nameB, A, B](f: A => Future[B])(
-      implicit select: Selector[In, FieldType[nameA, A]],
+      implicit select: Selector.Aux[In, nameA, A],
       ec: ExecutionContext): Aux[T, In, FieldType[nameB, B] :: In] = new Serve[T, In] {
     type Out = FieldType[nameB, B] :: In
     def directive(in: In): Directive1[Out] = Directive { handle => ctx =>
@@ -104,7 +117,7 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   }
 
   def serveFilter[T, In <: HList, name, A](f: A => Option[Rejection])(
-      implicit select: Selector[In, FieldType[name, A]]): Aux[T, In, In] = new Serve[T, In] {
+      implicit select: Selector.Aux[In, name, A]): Aux[T, In, In] = new Serve[T, In] {
     type Out = In
     def directive(in: In): Directive1[In] = Directive { handle =>
       f(select(in)) match {

@@ -120,7 +120,7 @@ using directive definitions given by `implicit` instances of:
     *  `Out` - result type, defined in the API definition
 
 You generally will need following instances:
-* `ToResponseMarhaller` for returning type of your method
+* `ToResponseMarshaller` for returning type of your method
 * `FromEntityUnmarshaller` for type, used in your `body` directive
 * `FromParam` for any type in parameter directives like `queryParam`
 

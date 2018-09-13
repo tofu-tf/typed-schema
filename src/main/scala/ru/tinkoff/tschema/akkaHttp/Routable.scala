@@ -8,7 +8,7 @@ import scala.concurrent.Future
 
 @implicitNotFound("could not route ${Res} knowing that result should be ${Out}")
 trait Routable[Res, Out] {
-  def route(res: Res): Route
+  def route(res: => Res): Route
 }
 
 object Routable {
@@ -19,7 +19,7 @@ object Routable {
 
 @implicitNotFound("could not route ${Res} knowing that result should be ${Out}")
 trait RoutableIn[In, Res, Out] {
-  def route(in: In, res: Res): Route
+  def route(in: In, res: => Res): Route
 }
 
 object RoutableIn {

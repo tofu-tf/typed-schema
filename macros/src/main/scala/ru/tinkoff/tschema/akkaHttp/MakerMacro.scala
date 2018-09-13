@@ -79,7 +79,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     }
 
     c.Expr(c.typecheck(q""" $in match { case $recpat =>
-        val res = $impl.$meth(...$params)
+        def res = $impl.$meth(...$params)
         val route = $interface.route(res)
         route[$inT, $outT]($in)}"""))
   }

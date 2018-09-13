@@ -1,4 +1,4 @@
-package ru.tinkoff
+package ru.tinkoff.tschema
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -15,10 +15,12 @@ import scala.concurrent.Future
 import ru.tinkoff.tschema.syntax
 import syntax._
 
-
 class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
   object hello {
+    @volatile var testCalled = false
+
     def test: String = {
+      testCalled = true
       "Hello, world!"
     }
 
@@ -27,19 +29,26 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
     }
   }
 
-
   def helloApi = (keyPrefix('test) |> get[String]) <> (keyPrefix('testAsync) |> get[String])
 
   val helloRoute = MkRoute(helloApi)(hello)
 
   "test route" should {
-    "serve sync world" in (Get("/test") ~> helloRoute ~> check {
-      responseAs[String] shouldEqual "Hello, world!"
-    })
+    "serve sync world" in {
+      hello.testCalled = false
+      Get("/test") ~> helloRoute ~> check {
+        responseAs[String] shouldEqual "Hello, world!"
+        hello.testCalled shouldBe true
+      }
+    }
 
-    "serve async world" in (Get("/testAsync") ~> helloRoute ~> check {
-      responseAs[String] shouldEqual "Hello, async world!"
-    })
+    "serve async world" in {
+      hello.testCalled = false
+      Get("/testAsync") ~> helloRoute ~> check {
+        responseAs[String] shouldEqual "Hello, async world!"
+        hello.testCalled shouldBe false
+      }
+    }
 
     "reject bad http method" in (Post("/test") ~> helloRoute ~> check {
       handled shouldBe false
@@ -55,21 +64,22 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
   }
 
   object methods {
-    def getting: Unit = ()
-    def posting: Unit = ()
-    def putting: Unit = ()
-    def deleting: Unit = ()
+    def getting: Unit    = ()
+    def posting: Unit    = ()
+    def putting: Unit    = ()
+    def deleting: Unit   = ()
     def completing: Unit = ()
   }
 
   implicit val unitAsPlainText: ToResponseMarshaller[Unit] =
     Marshaller.strict(_ => Marshalling.WithFixedContentType(ContentTypes.NoContentType, () => HttpResponse()))
 
-  def methodApi = (keyPrefix('getting) |> get[Unit]) <>
-                  (keyPrefix('putting) |> put[Unit]) <>
-                  (keyPrefix('posting) |> post[Unit]) <>
-                  (keyPrefix('deleting) |> delete[Unit]) <>
-                  (keyPrefix('completing) |> syntax.complete[Unit])
+  def methodApi =
+    (keyPrefix('getting) |> get[Unit]) <>
+      (keyPrefix('putting) |> put[Unit]) <>
+      (keyPrefix('posting) |> post[Unit]) <>
+      (keyPrefix('deleting) |> delete[Unit]) <>
+      (keyPrefix('completing) |> syntax.complete[Unit])
 
   val methodRoute = MkRoute(methodApi)(methods)
 
@@ -78,7 +88,7 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
       "complete post" in (Post("/posting") ~> methodRoute ~> check {
         handled shouldBe true
       })
-      "reject get" in (Get("/posting") ~> methodRoute ~> check{
+      "reject get" in (Get("/posting") ~> methodRoute ~> check {
         handled shouldBe false
         rejection shouldBe MethodRejection(HttpMethods.POST)
       })
@@ -88,7 +98,7 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
       "complete get" in (Get("/getting") ~> methodRoute ~> check {
         handled shouldBe true
       })
-      "reject post" in (Post("/getting") ~> methodRoute ~> check{
+      "reject post" in (Post("/getting") ~> methodRoute ~> check {
         handled shouldBe false
         rejection shouldBe MethodRejection(HttpMethods.GET)
       })
@@ -98,7 +108,7 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
       "complete get" in (Get("/completing") ~> methodRoute ~> check {
         handled shouldBe true
       })
-      "complete post" in (Post("/completing") ~> methodRoute ~> check{
+      "complete post" in (Post("/completing") ~> methodRoute ~> check {
         handled shouldBe true
       })
     }

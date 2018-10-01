@@ -1,5 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.{Date, UUID}
 
 import akka.util.ByteString
@@ -89,7 +90,9 @@ trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwagger
   final implicit val swaggerTypeableString: SwaggerTypeable[String] = make[String](SwaggerPrimitive.string)
   final implicit val swaggerTypeableByte: SwaggerTypeable[Byte] = make[Byte](SwaggerPrimitive.byte)
   final implicit val swaggerTypeableBinary: SwaggerTypeable[ByteString] = make[ByteString](SwaggerPrimitive.binary)
-  final implicit val swaggerTypeableDateTime: SwaggerTypeable[Date] = make[Date](SwaggerPrimitive.dateTime)
+  final implicit val swaggerTypeableDate: SwaggerTypeable[Date] = make[Date](SwaggerPrimitive.dateTime)
+  final implicit val swaggerTypeableLocalDate: SwaggerTypeable[LocalDate] = make[LocalDate](SwaggerPrimitive.date)
+  final implicit val swaggerTypeableOffsetDateTime: SwaggerTypeable[OffsetDateTime] = make[OffsetDateTime](SwaggerPrimitive.dateTime)
   final implicit val swaggerTypeableBoolean: SwaggerTypeable[Boolean] = make[Boolean](SwaggerPrimitive.boolean)
   final implicit val swaggerTypeableBigIng: SwaggerTypeable[BigInt] = make[BigInt](SwaggerPrimitive.integer)
   final implicit val swaggerTypeableBigDecimal: SwaggerTypeable[BigDecimal] = make[BigDecimal](SwaggerPrimitive.double)

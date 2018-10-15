@@ -7,11 +7,11 @@ object Version {
   val shapeless = "2.3.3"
   val kindProjector = "0.9.3"
   val akkaHttpCirce = "1.19.0"
-  val cats = "1.1.0"
-  val catsMtl = "0.2.2"
+  val cats = "1.4.0"
   val enumeratum = "1.5.12"
   val enumeratumCirce = "1.5.15"
   val monocle = "1.5.1-cats"
+  val simulacrum = "0.13.0"
 
   val scalaTest = "3.0.1"
   val scalaCheck = "1.13.4"

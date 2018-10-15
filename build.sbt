@@ -37,6 +37,8 @@ libraryDependencies += "org.scalameta" %% "scalameta" % "1.8.0"
 
 libraryDependencies += "com.propensive" %% "magnolia" % "0.7.1"
 
+libraryDependencies += "com.github.mpilquist" %% "simulacrum" % Version.simulacrum
+
 addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
 

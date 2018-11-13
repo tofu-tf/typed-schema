@@ -16,5 +16,4 @@ object Version {
   val scalaTest = "3.0.1"
   val scalaCheck = "1.13.4"
 
-  val knapsack = "0.0.1"
 }

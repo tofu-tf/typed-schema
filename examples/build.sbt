@@ -1,13 +1,25 @@
-val swaggerUI = "3.17.2"
-val derevo = "0.5.1"
+val swaggerUIVersion = SettingKey[Option[String]]("swaggerUIVersion")
 
-libraryDependencies += "org.webjars.npm" % "swagger-ui-dist" % swaggerUI
-libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.6.7"
-libraryDependencies += "org.typelevel" %% "cats-core" % "1.0.1"
+swaggerUIVersion := { libraryDependencies
+  .value
+  .find(_.name == "swagger-ui-dist").map(_.revision) }
 
-libraryDependencies += "org.manatki" %% "derevo-tschema" % derevo
-libraryDependencies += "org.manatki" %% "derevo-circe" % derevo
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion,
+                                       sbtVersion, swaggerUIVersion),
+    buildInfoPackage := "ru.tinkoff.tschema.examples"
+  )
+
+libraryDependencies += "org.webjars.npm" % "swagger-ui-dist" % Version.swaggerUI
+libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
+libraryDependencies += "org.typelevel" %% "cats-core" % Version.catsCore
+
+libraryDependencies += "org.manatki" %% "derevo-tschema" % Version.derevo
+libraryDependencies += "org.manatki" %% "derevo-circe" % Version.derevo
 
 libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
+libraryDependencies += "ru.tinkoff" %% "typed-schema" % Version.typedSchema
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)

@@ -1,0 +1,3 @@
+plugins:
+  scalastyle:
+    enabled: true

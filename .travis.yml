@@ -15,5 +15,4 @@ after_script:
   - ./cc-test-reporter format-coverage -t cobertura typedsl/target/scala-${SCALA_VERSION}/coverage-report/cobertura.xml  -o result/typedsl.json
   - ./cc-test-reporter format-coverage -t cobertura macros/target/scala-${SCALA_VERSION}/coverage-report/cobertura.xml  -o result/macros.json
   - ./cc-test-reporter sum-coverage result/*.json -p 3
-  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
   - if [[ "$TRAVIS_TEST_RESULT" == 0 ]]; then ./cc-test-reporter upload-coverage; fi

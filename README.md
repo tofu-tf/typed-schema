@@ -8,7 +8,7 @@ and [OpenApi 3.0 definition][open-api-3.0] inspired by the [haskell-servant] lib
 
 #### SBT
 ```SBT
-libraryDependencies += "ru.tinkoff" %% "typed-schema" % "0.10.4"
+libraryDependencies += "ru.tinkoff" %% "typed-schema" % "0.10.6"
 ```
 
 ## Main IDEA

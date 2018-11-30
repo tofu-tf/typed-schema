@@ -59,7 +59,3 @@ lazy val typedschema =
   (project in file("."))
     .dependsOn(macros)
     .aggregate(macros, typedsl)
-
-lazy val examples = project
-  .dependsOn(typedschema)
-  .aggregate(typedschema)

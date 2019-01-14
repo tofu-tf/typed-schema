@@ -7,7 +7,7 @@ import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import cats.data.OptionT
 import ru.tinkoff.tschema._
 import ru.tinkoff.tschema.typeDSL._
-import shapeless._
+import shapeless.{Segment => _, _}
 import shapeless.labelled.{FieldType, field}
 import catsInstances._
 import cats.syntax.traverse._
@@ -39,21 +39,25 @@ private[akkaHttp] trait ServeTypes {
 }
 
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
-  protected def tryParse[T, F[x] <: FromParam[x], name <: Symbol](value: String)(implicit parse: F[T],
-                                                                                 w: Witness.Aux[name]): Directive1[T] =
-    Directive[Tuple1[T]](f =>
-      parse(value) match {
-        case Right(result) => f(Tuple1(result))
-        case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
-    })
+  protected def tryParse[T, S <: Source, name <: Symbol](implicit parse: Param[S, T],
+                                                         w: Witness.Aux[name]): String => Directive1[T] =
+    value =>
+      Directive[Tuple1[T]](f =>
+        parse(value) match {
+          case Right(result) => f(Tuple1(result))
+          case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
+      })
 
-  protected def tryParseOpt[T, F[x] <: FromParam[x], name <: Symbol](
-      value: String)(implicit parse: F[T], w: Witness.Aux[name]): Directive1[Option[T]] =
-    Directive[Tuple1[Option[T]]](f =>
-      parse(value) match {
-        case Right(result) => f(Tuple1(Some(result)))
-        case Left(err)     => f(Tuple1(None))
-    })
+//  protected def tryParse1[T, S <: Source, name <: Symbol](
+//      implicit parse: Param[S, T],
+//      w: Witness.Aux[name]
+//  ): (String => Option[String]) => Directive1[T] =
+//    all =>
+//      Directive[Tuple1[T]](f =>
+//        parse.maybeGet(w.value.name, all) match {
+//          case Right(result) => f(Tuple1(result))
+//          case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
+//      })
 
   protected def name[name <: Symbol](implicit w: Witness.Aux[name]): String = w.value.name
 
@@ -134,32 +138,29 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
     serveCheck[method, In](method(check.method))
 
-  implicit def queryParamServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
+  implicit def queryParamServe[name <: Symbol: Witness.Aux, x: Param.Query, In <: HList] =
     serveAdd[QueryParam[name, x], In, x, name](
-      parameter(name[name]).flatMap(param => tryParse[x, FromQueryParam, name](param))
+      parameter(name[name]).flatMap(tryParse[x, Source.Query, name])
     )
 
-  implicit def queryOptParamsServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
+  implicit def queryOptParamsServe[name <: Symbol: Witness.Aux, x: Param.Query, In <: HList] =
     serveAdd[QueryParams[name, Option[x]], In, List[x], name] {
       parameterMultiMap.flatMap(
-        _.getOrElse(name[name], Nil).traverse[Directive1, x](value => tryParse[x, FromQueryParam, name](value))
+        _.getOrElse(name[name], Nil).traverse[Directive1, x](tryParse[x, Source.Query, name])
       )
     }
 
-  implicit def queryOptParamServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
+  implicit def queryOptParamServe[name <: Symbol: Witness.Aux, x: Param.Query, In <: HList] =
     serveAdd[QueryParam[name, Option[x]], In, Option[x], name](
-      OptionT[Directive1, String](parameter(name[name].?)).flatMap { param =>
-        OptionT(tryParseOpt[x, FromQueryParam, name](param))
-      }.value
-    )
+      parameter(name[name].?).flatMap(_.traverse(tryParse[x, Source.Query, name])))
 
   implicit def queryFlagServe[name <: Symbol: Witness.Aux, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
     parameterMap.map(_.contains(name[name]))
   )
 
-  implicit def captureServe[name: Witness.Aux, x, In <: HList](implicit fromPathParam: FromPathParam[x]) =
+  implicit def captureServe[name <: Symbol: Witness.Aux, x, In <: HList](implicit fromPathParam: Param.Path[x]) =
     serveAdd[Capture[name, x], In, x, name] {
-      pathPrefix(fromPathParam.matcher)
+      pathPrefix(Segment).flatMap(tryParse[x, Source.Path, name])
     }
 
   implicit def reqBodyServe[name: Witness.Aux, x: FromRequestUnmarshaller, In <: HList] =
@@ -167,42 +168,30 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
       entity(as[x])
     }
 
-  implicit def headerServe[name <: Symbol: Witness.Aux, x: FromHeader, In <: HList] = serveAdd[Header[name, x], In, x, name] {
-    headerValueByName(name[name]).flatMap(str => tryParse[x, FromHeader, name](str))
+  implicit def headerServe[name <: Symbol: Witness.Aux, x: Param.Header, In <: HList] = serveAdd[Header[name, x], In, x, name] {
+    headerValueByName(name[name]).flatMap(tryParse[x, Source.Header, name])
   }
 
-  implicit def headerOptionServe[name <: Symbol: Witness.Aux, x: FromHeader, In <: HList] =
-    serveAdd[Header[name, Option[x]], In, Option[x], name] {
-      optionalHeaderValueByName(name[name]).flatMap {
-        case Some(str) => tryParseOpt[x, FromHeader, name](str)
-        case None      => provide(Option.empty[x])
-      }
-    }
+  implicit def headerOptionServe[name <: Symbol: Witness.Aux, x: Param.Header, In <: HList] =
+    serveAdd[Header[name, Option[x]], In, Option[x], name](
+      optionalHeaderValueByName(name[name]).flatMap(_.traverse(tryParse[x, Source.Header, name])))
 
-  implicit def cookieServe[name <: Symbol: Witness.Aux, x: FromCookie, In <: HList] = serveAdd[Cookie[name, x], In, x, name] {
-    cookie(name[name]).flatMap(cook => tryParse[x, FromCookie, name](cook.value))
+  implicit def cookieServe[name <: Symbol: Witness.Aux, x: Param.Cookie, In <: HList] = serveAdd[Cookie[name, x], In, x, name] {
+    cookie(name[name]).tflatMap { case Tuple1(kp) => tryParse[x, Source.Cookie, name].apply(kp.value) }
   }
 
-  implicit def cookieOptionServe[name <: Symbol: Witness.Aux, x: FromCookie, In <: HList] =
+  implicit def cookieOptionServe[name <: Symbol: Witness.Aux, x: Param.Cookie, In <: HList] =
     serveAdd[Cookie[name, Option[x]], In, Option[x], name] {
-      optionalCookie(name[name]).flatMap {
-        case Some(cook) => tryParseOpt[x, FromCookie, name](cook.value)
-        case None       => provide(Option.empty[x])
-      }
+      optionalCookie(name[name]).flatMap { _.traverse(kp => tryParse[x, Source.Cookie, name].apply(kp.value)) }
     }
 
-  implicit def formFieldServe[name <: Symbol: Witness.Aux, x: FromFormField, In <: HList] =
-    serveAdd[FormField[name, x], In, x, name] {
-      formField(name[name]).flatMap(str => tryParse[x, FromFormField, name](str))
-    }
+  implicit def formFieldServe[name <: Symbol: Witness.Aux, x: Param.Form, In <: HList] =
+    serveAdd[FormField[name, x], In, x, name](formField(name[name]).flatMap(tryParse[x, Source.Form, name]))
 
-  implicit def formFieldOptionServe[name <: Symbol: Witness.Aux, x: FromFormField, In <: HList] =
+  implicit def formFieldOptionServe[name <: Symbol: Witness.Aux, x: Param.Form, In <: HList] =
     serveAdd[FormField[name, Option[x]], In, Option[x], name] {
       formFieldMap.flatMap { m =>
-        m.get(name[name]) match {
-          case Some(str) => tryParseOpt[x, FromFormField, name](str)
-          case None      => provide(Option.empty[x])
-        }
+        m.get(name[name]).traverse(tryParse[x, Source.Form, name])
       }
     }
 
@@ -256,11 +245,11 @@ object MethodCheck {
 }
 trait ServeInstances1 { self: Serve.type =>
 
-  implicit def queryParamsServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
+  implicit def queryParamsServe[name <: Symbol: Witness.Aux, x: Param.Query, In <: HList] =
     serveAdd[QueryParams[name, x], In, List[x], name] {
       parameterMultiMap.flatMap(
         _.get(name[name]).fold(Directive[Tuple1[List[x]]](_ => reject(MissingQueryParamRejection(name[name]))))(
-          _.traverse[Directive1, x](value => tryParse[x, FromQueryParam, name](value)))
+          _.traverse[Directive1, x](tryParse[x, Source.Query, name]))
       )
     }
 }

@@ -44,7 +44,6 @@ addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
 
-//addCompilerPlugin("io.tryp" % "splain" % "0.2.7" cross CrossVersion.patch)
 
 libraryDependencies += { scalaOrganization.value } % "scala-compiler" % { scalaVersion.value }
 

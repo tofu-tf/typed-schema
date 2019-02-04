@@ -41,12 +41,13 @@ private[akkaHttp] trait ServeTypes {
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
   protected def tryParse[T, S <: Source, name <: Symbol](implicit parse: Param[S, T],
                                                          w: Witness.Aux[name]): String => Directive1[T] =
-    value =>
-      Directive[Tuple1[T]](f =>
-        parse(value) match {
-          case Right(result) => f(Tuple1(result))
-          case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
-      })
+    ???
+//    value =>
+//      Directive[Tuple1[T]](f =>
+//        parse(value) match {
+//          case Right(result) => f(Tuple1(result))
+//          case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
+//      })
 
 //  protected def tryParse1[T, S <: Source, name <: Symbol](
 //      implicit parse: Param[S, T],

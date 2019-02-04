@@ -47,7 +47,7 @@ trait Param[+S <: Source, A] { self =>
 
   def optional: Param[S, Option[A]] =
     fold(new Fold[A, Param[S, Option[A]]] {
-      def single(value: Option[String] => Result[A]): SingleParam[S, Option[A]]                            =
+      def single(value: Option[String] => Result[A]): SingleParam[S, Option[A]] = ???
 
       def multi(names: List[String], values: List[Option[String]] => Result[A]): Param[S, Option[A]] = ???
     })
@@ -108,17 +108,17 @@ object Param {
   def getOrReport(dict: String => Option[String])(name: String): Either[List[String], String] =
     Either.fromOption(dict(name), List(name))
 
-  def tryParam[S <: Source, T](f: String => T): SingleParam[S, T] =
+  def tryParam[S <: Source, T](f: String => T): SingleParamReq[S, T] =
     s =>
       try Right(f(s))
       catch {
         case NonFatal(ex) => Left(ex.toString)
     }
 
-  def instance[S <: Source, T](f: String => Result[T]): SingleParam[S, T] = param => f(param)
+  def instance[S <: Source, T](f: Option[String] => Result[T]): SingleParam[S, T] = param => f(param)
 
   def separated[S <: Source, T](sep: String)(implicit param: SingleParam[S, T]): SingleParam[S, List[T]] =
-    s => s.split(sep).toList.traverse(param.apply)
+    s => s.fold(List.empty[T].asRight[String])(_.split(sep).toList.traverse(s => param.applyOpt(Some(s))))
 
   implicit val stringParam: SingleParam[All, String]         = tryParam(identity)
   implicit val intParam: SingleParam[All, Int]               = tryParam(_.toInt)
@@ -139,7 +139,7 @@ object Param {
 
   trait Enum[S <: Source, E <: enumeratum.EnumEntry] {
     self: enumeratum.Enum[E] =>
-    implicit val fromParam: SingleParam[S, E] =
+    implicit val fromParam: SingleParamReq[S, E] =
       s => Either.fromOption(withNameOption(s), s"could not find $self value: $s")
   }
 }

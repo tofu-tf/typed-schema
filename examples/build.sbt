@@ -1,10 +1,12 @@
+scalaVersion := "2.12.8"
+
 val swaggerUIVersion = SettingKey[Option[String]]("swaggerUIVersion")
 
 swaggerUIVersion := { libraryDependencies
   .value
   .find(_.name == "swagger-ui-dist").map(_.revision) }
 
-lazy val root = (project in file(".")).
+lazy val examples = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
   settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion,

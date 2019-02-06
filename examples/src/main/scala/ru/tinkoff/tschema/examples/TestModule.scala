@@ -7,8 +7,7 @@ import io.circe.derivation.renaming.snakeCase
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
 import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.akkaHttp.Param
-import ru.tinkoff.tschema.akkaHttp.MkRoute
+import ru.tinkoff.tschema.akkaHttp.{MkRoute, Param, ParamSource}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 
@@ -59,7 +58,7 @@ object TestModule extends ExampleModule {
 
   import definitions._
 
-  implicit lazy val clientFromParam: Param[Client] = Param.intParam.map(Client)
+  implicit lazy val clientFromParam: Param[ParamSource.All, Client] = Param.intParam.map(Client)
   implicit val clientSwagger: SwaggerTypeable[Client] =
     SwaggerTypeable.swaggerTypeableInteger.as[Client]
 

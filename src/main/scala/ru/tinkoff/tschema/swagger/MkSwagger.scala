@@ -7,6 +7,9 @@ import akka.http.scaladsl.model.{MediaType, StatusCode, StatusCodes}
 import akka.util.ByteString
 import cats.arrow.FunctionK
 import cats.syntax.option._
+import cats.syntax.foldable._
+import cats.instances.map._
+import cats.instances.vector._
 import cats.{Eval, Monoid, MonoidK}
 import monocle.function.all._
 import monocle.macros.Lenses
@@ -228,52 +231,6 @@ object MkSwagger {
   implicit def monoidInstance[A]: Monoid[MkSwagger[A]] = monoidKInstance.algebra[A]
 }
 
-final case class AsOpenApiParam[T](typ: SwaggerType, required: Boolean = true) {
-  def types = typ.collectTypes
-}
-
-object AsOpenApiParam {
-  implicit def requiredParam[T](implicit typ: SwaggerTypeable[T]): AsOpenApiParam[T] =
-    AsOpenApiParam[T](typ = typ.typ, required = true)
-  implicit def optionalParam[T](implicit typ: SwaggerTypeable[T]): AsOpenApiParam[Option[T]] =
-    AsOpenApiParam[Option[T]](typ = typ.typ, required = false)
-}
-
-case class AsSwaggerParam[T](value: SwaggerValue, required: Boolean = true)
-
-object AsSwaggerParam {
-  implicit lazy val booleanParam = AsSwaggerParam[Boolean](SwaggerBooleanValue())
-
-  implicit lazy val intParam    = AsSwaggerParam[Int](SwaggerIntValue(format = OpenApiFormat.int32.some))
-  implicit lazy val longParam   = AsSwaggerParam[Long](SwaggerIntValue(format = OpenApiFormat.int64.some))
-  implicit lazy val bigIntParam = AsSwaggerParam[BigInt](SwaggerIntValue())
-
-  implicit lazy val floatParam      = AsSwaggerParam[Float](SwaggerNumberValue(format = OpenApiFormat.float.some))
-  implicit lazy val doubleParam     = AsSwaggerParam[Double](SwaggerNumberValue(format = OpenApiFormat.double.some))
-  implicit lazy val bigDecimalParam = AsSwaggerParam[BigDecimal](SwaggerNumberValue())
-
-  implicit lazy val stringParam = AsSwaggerParam[String](SwaggerStringValue())
-  implicit lazy val byteParam   = AsSwaggerParam[Byte](SwaggerStringValue(format = OpenApiFormat.byte.some))
-
-  implicit lazy val byteStringParam = AsSwaggerParam[ByteString](SwaggerStringValue(format = OpenApiFormat.binary.some))
-  implicit lazy val byteArrayParam  = AsSwaggerParam[Array[Byte]](SwaggerStringValue(format = OpenApiFormat.binary.some))
-  implicit lazy val utilDateParam   = AsSwaggerParam[Date](SwaggerStringValue(format = OpenApiFormat.dateTime.some))
-  implicit lazy val uuidParam       = AsSwaggerParam[UUID](SwaggerStringValue.uuid)
-
-  implicit def optionParam[T](implicit param: AsSwaggerParam[T]) = AsSwaggerParam[Option[T]](param.value, required = false)
-  implicit def vectorParam[T](implicit param: AsSwaggerParam[T]) =
-    AsSwaggerParam[Vector[T]](SwaggerArrayValue(param.value), param.required)
-  implicit def listParam[T](implicit param: AsSwaggerParam[T]) =
-    AsSwaggerParam[List[T]](SwaggerArrayValue(param.value), param.required)
-  implicit def streamParam[T](implicit param: AsSwaggerParam[T]) =
-    AsSwaggerParam[Stream[T]](SwaggerArrayValue(param.value), param.required)
-
-  trait Enum[E <: enumeratum.EnumEntry] {
-    self: enumeratum.Enum[E] =>
-    implicit lazy val asSwaggerParam: AsSwaggerParam[E] =
-      AsSwaggerParam[E](SwaggerStringValue(enum = self.values.map(_.entryName).toVector.some))
-  }
-}
 
 @implicitNotFound("Could not find swagger atom for ${T}")
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
@@ -344,13 +301,13 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   private[swagger] def derivedParam[name, T, param[_, _]](in: In)(
       implicit name: Name[name],
-      param: AsOpenApiParam[T]
+      param: AsSingleOpenApiParam[T]
   ): SwaggerMapper[param[name, T]] =
     derivedParamAtom[name, T, param[name, T]](in)
 
   private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(
       implicit name: Name[name],
-      param: AsOpenApiParam[T]
+      param: AsSingleOpenApiParam[T]
   ): SwaggerMapper[atom] =
     fromFunc(
       (PathSpec.op ^|-> OpenApiOp.parameters)
@@ -371,19 +328,19 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
-  implicit def deriveQueryParam[name: Name, T: AsOpenApiParam] =
+  implicit def deriveQueryParam[name: Name, T: AsSingleOpenApiParam] =
     derivedParam[name, T, QueryParam](In.query)
 
-  implicit def deriveOptQueryParams[name: Name, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
+  implicit def deriveOptQueryParams[name: Name, T](implicit ev: AsSingleOpenApiParam[Option[List[T]]]) =
     derivedParamAtom[name, Option[List[T]], QueryParams[name, Option[T]]](In.query)
 
   implicit def deriveQueryFlag[name: Name]: SwaggerMapper[QueryFlag[name]] =
     derivedParamAtom[name, Option[Boolean], QueryFlag[name]](In.query, flag = true)
 
-  implicit def deriveHeader[name: Name, T: AsOpenApiParam] =
+  implicit def deriveHeader[name: Name, T: AsSingleOpenApiParam] =
     derivedParam[name, T, Header](In.header)
 
-  implicit def deriveFormField[name: Name, T](implicit asParam: AsOpenApiParam[T]) =
+  implicit def deriveFormField[name: Name, T](implicit asParam: AsSingleOpenApiParam[T]) =
     fromFunc[FormField[name, T]] {
       val param = MakeFormField(Name[name].string, asParam.typ, asParam.required)
       (PathSpec.op ^|-> OpenApiOp.requestBody).modify(
@@ -391,10 +348,10 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       )
     }
 
-  implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
+  implicit def deriveCookie[name: Name, T: AsSingleOpenApiParam] =
     derivedParam[name, T, Cookie](In.cookie)
 
-  implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
+  implicit def derivePathParam[name, T: AsSingleOpenApiParam](implicit name: Name[name]) =
     derivedParam[name, T, Capture](In.path).map(PathSpec.path.modify(s"{$name}" +: _))
 
   implicit def deriveReqBody[name, T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[name, T]] =
@@ -489,6 +446,6 @@ object ApiKeyParam {
 }
 
 trait SwaggerMapperInstances1 { self: SwaggerMapper.type =>
-  implicit def deriveQueryParams[name: Name, T](implicit ev: AsOpenApiParam[List[T]]) =
+  implicit def deriveQueryParams[name: Name, T](implicit ev: AsSingleOpenApiParam[List[T]]) =
     derivedParamAtom[name, List[T], QueryParams[name, T]](In.query)
 }

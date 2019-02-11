@@ -1,5 +1,35 @@
 package ru.tinkoff.tschema.swagger
 
+import java.util.{Date, UUID}
+
+import akka.http.scaladsl.model.MediaTypes.`application/x-www-form-urlencoded`
+import akka.http.scaladsl.model.{MediaType, StatusCode, StatusCodes}
+import akka.util.ByteString
+import cats.arrow.FunctionK
+import cats.data.NonEmptyList
+import cats.syntax.option._
+import cats.syntax.foldable._
+import cats.syntax.reducible._
+import cats.instances.map._
+import cats.instances.vector._
+import cats.kernel.Semigroup
+import cats.{Eval, Monoid, MonoidK}
+import monocle.function.all._
+import monocle.macros.Lenses
+import monocle.std.option.some
+import ru.tinkoff.tschema.akkaHttp.MakerMacro
+import ru.tinkoff.tschema.common.Name
+import ru.tinkoff.tschema.swagger.MkSwagger._
+import ru.tinkoff.tschema.swagger.OpenApiParam.In
+import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
+import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
+import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
+import ru.tinkoff.tschema.typeDSL._
+import shapeless.{Lazy, Witness}
+
+import scala.annotation.implicitNotFound
+import scala.collection.immutable.TreeMap
+import scala.language.higherKinds
 @implicitNotFound("Could not find swagger atom for ${T}")
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
   self =>
@@ -69,23 +99,31 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   private[swagger] def derivedParam[name, T, param[_, _]](in: In)(
       implicit name: Name[name],
-      param: AsSingleOpenApiParam[T]
+      param: AsOpenApiParam[T]
   ): SwaggerMapper[param[name, T]] =
     derivedParamAtom[name, T, param[name, T]](in)
 
   private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(
       implicit name: Name[name],
-      param: AsSingleOpenApiParam[T]
-  ): SwaggerMapper[atom] =
-    fromFunc(
-      (PathSpec.op ^|-> OpenApiOp.parameters)
-        .modify(
-          _ :+ OpenApiParam(name = name.string,
-                            in = in,
-                            required = param.required,
-                            schema = param.typ.some,
-                            allowEmptyValue = flag))) andThen
+      param: AsOpenApiParam[T]
+  ): SwaggerMapper[atom] = {
+    def makeSingle(p: OpenApiParamInfo, name: String): OpenApiParam =
+      OpenApiParam(
+        name = name,
+        in = in,
+        required = p.required,
+        schema = p.typ.some,
+        allowEmptyValue = flag
+      )
+
+    val parameters: List[OpenApiParam] = param match {
+      case ps: AsSingleOpenApiParam[T] => List(makeSingle(ps, name.string))
+      case pm: AsMultiOpenApiParam[T]  => pm.fields.map(p => makeSingle(p, p.name)).toList
+    }
+
+    fromFunc((PathSpec.op ^|-> OpenApiOp.parameters).modify(_ ++ parameters)) andThen
       fromTypes[atom](param.types)
+  }
 
   implicit def derivePath[path](implicit name: Name[path]) =
     fromFunc[path](_.modPath(name.string +: _))
@@ -96,10 +134,10 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
-  implicit def deriveQueryParam[name: Name, T: AsSingleOpenApiParam] =
+  implicit def deriveQueryParam[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, QueryParam](In.query)
 
-  implicit def deriveOptQueryParams[name: Name, T](implicit ev: AsSingleOpenApiParam[Option[List[T]]]) =
+  implicit def deriveOptQueryParams[name: Name, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
     derivedParamAtom[name, Option[List[T]], QueryParams[name, Option[T]]](In.query)
 
   implicit def deriveQueryFlag[name: Name]: SwaggerMapper[QueryFlag[name]] =
@@ -108,18 +146,24 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def deriveHeader[name: Name, T: AsSingleOpenApiParam] =
     derivedParam[name, T, Header](In.header)
 
-  implicit def deriveFormField[name: Name, T](implicit asParam: AsSingleOpenApiParam[T]) =
+  implicit def deriveFormField[name: Name, T](implicit asParam: AsOpenApiParam[T]) =
     fromFunc[FormField[name, T]] {
-      val param = MakeFormField(Name[name].string, asParam.typ, asParam.required)
+      def param(field: OpenApiParamInfo, name: String) = MakeFormField(name, field.typ, field.required)
+
+      val params = asParam match {
+        case ps: AsSingleOpenApiParam[T] => param(ps, Name[name].string)
+        case pm: AsMultiOpenApiParam[T]  => pm.fields.reduceMap(p => param(p, p.name))
+      }
+
       (PathSpec.op ^|-> OpenApiOp.requestBody).modify(
-        _.fold(param.make)(param.add).some
+        _.fold(params.make)(params.add).some
       )
     }
 
-  implicit def deriveCookie[name: Name, T: AsSingleOpenApiParam] =
+  implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, Cookie](In.cookie)
 
-  implicit def derivePathParam[name, T: AsSingleOpenApiParam](implicit name: Name[name]) =
+  implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
     derivedParam[name, T, Capture](In.path).map(PathSpec.path.modify(s"{$name}" +: _))
 
   implicit def deriveReqBody[name, T](implicit typeable: SwaggerTypeable[T]): SwaggerMapper[ReqBody[name, T]] =
@@ -178,13 +222,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 
-  final case class MakeFormField(name: String, typ: SwaggerType, required: Boolean) {
+  final class MakeFormField(val objType: SwaggerType) {
     def myMediaType: MediaType = `application/x-www-form-urlencoded`
-
-    private def objType: SwaggerType = SwaggerObject(
-      required = Eval.now(Vector(name).filter(_ => required)),
-      properties = Vector(SwaggerProperty(name, typ = Eval.now(typ), description = None))
-    )
 
     def make: OpenApiRequestBody =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
@@ -192,4 +231,20 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     def add: OpenApiRequestBody => OpenApiRequestBody =
       (OpenApiRequestBody.content ^|-? index(myMediaType) ^|-> OpenApiMediaType.schema ^<-? some).modify(_ merge objType)
   }
+
+  object MakeFormField {
+    def apply(name: String, typ: SwaggerType, required: Boolean): MakeFormField =
+      new MakeFormField(
+        SwaggerObject(
+          required = Eval.now(Vector(name).filter(_ => required)),
+          properties = Vector(SwaggerProperty(name, typ = Eval.now(typ), description = None))
+        ))
+
+    implicit val semigroup: Semigroup[MakeFormField] = (x, y) => new MakeFormField(x.objType merge y.objType)
+  }
+}
+
+trait SwaggerMapperInstances1 { self: SwaggerMapper.type =>
+  implicit def deriveQueryParams[name: Name, T](implicit ev: AsSingleOpenApiParam[List[T]]) =
+    derivedParamAtom[name, List[T], QueryParams[name, T]](In.query)
 }

@@ -13,9 +13,7 @@ class MagnoliaSpec extends FlatSpec {
   "magnolia" should "derive known types" in {
     implicit lazy val weirdThingSwaggerTypeable: SwaggerTypeable[WeirdThing] =
       SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
-    implicit lazy val lols: SwaggerTypeable[OuterStuff] = magnoliaDerive
-    implicit lazy val lolk: SwaggerTypeable[InnerStuff] = magnoliaDerive
-    implicit lazy val lots: SwaggerTypeable[LotOfVariants] = magnoliaDerive
+    implicit lazy val lots: SwaggerTypeable[LotOfVariants] = MagnoliaSwagger.derivedInstance
     lazy val testSwagger: SwaggerTypeable[TopStuff] = magnoliaDerive
   }
 
@@ -41,15 +39,10 @@ object MagnoliaSpec {
   implicit val printer = Printer.spaces4.copy(dropNullValues = true)
 
   def main(args: Array[String]): Unit = {
-    import MagnoliaSwagger.{derive => magnoliaDerive}
-
     implicit lazy val weirdThingSwagger: SwaggerTypeable[WeirdThing] =
       SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
 
-    implicit lazy val outerStuffSwagger: SwaggerTypeable[OuterStuff] = magnoliaDerive
-    implicit lazy val innerStuffSwagger: SwaggerTypeable[InnerStuff] = magnoliaDerive
-    implicit lazy val lots: SwaggerTypeable[LotOfVariants] = magnoliaDerive
-    lazy val topStuffSwagger: SwaggerTypeable[TopStuff] = magnoliaDerive
+    lazy val topStuffSwagger: SwaggerTypeable[TopStuff] = MagnoliaSwagger.derivedInstance
 
     println(topStuffSwagger.typ.collectTypes.foreach { case (name, t) => println(s"$name: ${t.asJson.pretty(printer)}") })
 

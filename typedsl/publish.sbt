@@ -1,2 +1,0 @@
-moduleName := "typed-schema-typedsl"
-

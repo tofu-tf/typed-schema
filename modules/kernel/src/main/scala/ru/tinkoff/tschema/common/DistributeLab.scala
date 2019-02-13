@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.common
 
-import akka.shapeless.DepFn2
 import shapeless._
 import shapeless.labelled.FieldType
 import shapeless.ops.hlist.Prepend

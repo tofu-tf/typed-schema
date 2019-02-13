@@ -1,5 +1,4 @@
 package ru.tinkoff.tschema.utils
-
 import cats.Eval
 import monocle.{PSetter, PTraversal}
 import cats.instances.map._

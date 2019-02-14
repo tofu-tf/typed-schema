@@ -4,7 +4,6 @@ import java.util.{Date, UUID}
 
 import akka.http.scaladsl.model.MediaTypes.`application/x-www-form-urlencoded`
 import akka.http.scaladsl.model.{MediaType, StatusCode, StatusCodes}
-import akka.util.ByteString
 import cats.arrow.FunctionK
 import cats.data.NonEmptyList
 import cats.syntax.option._

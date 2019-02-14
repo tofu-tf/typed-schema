@@ -3,7 +3,6 @@ package ru.tinkoff.tschema.swagger
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.{Date, UUID}
 
-import akka.util.ByteString
 import cats.Eval
 import enumeratum.{Enum, EnumEntry}
 import io.circe.JsonObject
@@ -89,7 +88,6 @@ trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwagger
   final implicit val swaggerTypeableDouble: SwaggerTypeable[Double] = make[Double](SwaggerPrimitive.double)
   final implicit val swaggerTypeableString: SwaggerTypeable[String] = make[String](SwaggerPrimitive.string)
   final implicit val swaggerTypeableByte: SwaggerTypeable[Byte] = make[Byte](SwaggerPrimitive.byte)
-  final implicit val swaggerTypeableBinary: SwaggerTypeable[ByteString] = make[ByteString](SwaggerPrimitive.binary)
   final implicit val swaggerTypeableDate: SwaggerTypeable[Date] = make[Date](SwaggerPrimitive.dateTime)
   final implicit val swaggerTypeableLocalDate: SwaggerTypeable[LocalDate] = make[LocalDate](SwaggerPrimitive.date)
   final implicit val swaggerTypeableOffsetDateTime: SwaggerTypeable[OffsetDateTime] = make[OffsetDateTime](SwaggerPrimitive.dateTime)

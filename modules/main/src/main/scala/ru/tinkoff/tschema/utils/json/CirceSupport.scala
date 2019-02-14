@@ -7,7 +7,6 @@ import akka.http.scaladsl.unmarshalling.{Unmarshaller, _}
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
-import cats.syntax.either._
 
 import scala.concurrent.Future
 

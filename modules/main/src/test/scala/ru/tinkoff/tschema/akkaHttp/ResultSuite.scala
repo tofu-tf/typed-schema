@@ -1,19 +1,14 @@
-package ru.tinkoff.tschema
+package ru.tinkoff.tschema.akkaHttp
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToResponseMarshallable, ToResponseMarshaller}
+import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToResponseMarshaller}
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
 import akka.http.scaladsl.server.MethodRejection
-import akka.http.scaladsl.server.RouteResult.Rejected
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.ActorMaterializer
-import org.scalatest.{AsyncFlatSpec, AsyncWordSpec, Matchers}
-import ru.tinkoff.tschema.akkaHttp.MkRoute
+import org.scalatest.{AsyncWordSpec, Matchers}
+import ru.tinkoff.tschema.syntax
+import ru.tinkoff.tschema.syntax._
 
 import scala.concurrent.Future
-import ru.tinkoff.tschema.syntax
-import syntax._
 
 class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
   object hello {

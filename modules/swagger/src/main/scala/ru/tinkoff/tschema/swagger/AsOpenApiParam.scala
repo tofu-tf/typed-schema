@@ -1,7 +1,6 @@
 package ru.tinkoff.tschema.swagger
 import cats.data.NonEmptyList
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import ru.tinkoff.tschema.akkaHttp.Param.Typeclass
 
 sealed trait AsOpenApiParam[T] {
   def types: Map[String, DescribedType]

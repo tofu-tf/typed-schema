@@ -5,23 +5,19 @@ import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
+import scalaz.deriving
 
 object MultiParameters extends ExampleModule {
   final case class Child(childName: String, childAge: Int)
 
   object Child{
-    final implicit val params: HttpParam[Child] = HttpParam.generate
-    final implicit val swagger: AsOpenApiParam[Child] = AsOpenApiParam.generate
+    implicit val params: HttpParam[Child] = HttpParam.generate
+    implicit val swagger: AsOpenApiParam[Child] = AsOpenApiParam.generate
+    implicit val typeable: SwaggerTypeable[Child] = MagnoliaSwagger.derive
   }
 
+  @deriving(SwaggerTypeable, HttpParam, AsOpenApiParam)
   final case class User(name: String, age: Int, child: Child)
-
-  object User {
-    final implicit val params: HttpParam[User] =
-      HttpParam.generate[User]
-    final implicit val swaggerParam: AsOpenApiParam[User] =
-      AsOpenApiParam.generate
-  }
 
   def route: Route = MkRoute(api)(handler)
   def swag: SwaggerBuilder = MkSwagger(api)(())

@@ -266,7 +266,7 @@ object MagnoliaSwagger {
 
   def combine[T](caseClass: CaseClass[Typeclass, T])(
     implicit cfg: Config = SwaggerTypeable.defaultConfig,
-    desc: DescribeTypeable[T] = DescribeTypeable.empty[T]): SwaggerTypeable[T] =
+    desc: DescribeTypeable[T] = DescribeTypeable.empty[T]): Typeclass[T] =
     new Typeclass[T] {
       lazy val typ: SwaggerType =
         SwaggerRef(

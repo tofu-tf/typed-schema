@@ -7,12 +7,14 @@ import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import cats.data.OptionT
 import ru.tinkoff.tschema._
 import ru.tinkoff.tschema.typeDSL._
-import shapeless._
+import shapeless.{Segment => _, _}
 import shapeless.labelled.{FieldType, field}
 import catsInstances._
 import cats.syntax.traverse._
 import cats.instances.list._
 import cats.instances.option._
+import cats.instances.either._
+import ru.tinkoff.tschema.akkaHttp.Param.{MultiResult, SingleResult}
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.common.Name
 import shapeless.ops.record.Selector
@@ -39,21 +41,14 @@ private[akkaHttp] trait ServeTypes {
 }
 
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
-  protected def tryParse[T, F[x] <: FromParam[x], name <: Symbol](value: String)(implicit parse: F[T],
-                                                                                 w: Witness.Aux[name]): Directive1[T] =
-    Directive[Tuple1[T]](f =>
-      parse(value) match {
-        case Right(result) => f(Tuple1(result))
-        case Left(err)     => reject(ParamFormatRejection(w.value.name, err))
-    })
-
-  protected def tryParseOpt[T, F[x] <: FromParam[x], name <: Symbol](
-      value: String)(implicit parse: F[T], w: Witness.Aux[name]): Directive1[Option[T]] =
-    Directive[Tuple1[Option[T]]](f =>
-      parse(value) match {
-        case Right(result) => f(Tuple1(Some(result)))
-        case Left(err)     => f(Tuple1(None))
-    })
+  protected def resolveParam[S <: ParamSource, name, A](implicit param: Param[S, A],
+                                                   w: Name[name],
+                                                   directives: ParamDirectives[S]): Directive1[A] = param match {
+    case single: SingleParam[S, A] =>
+      directives.getByName(w.string).flatMap(s => directives.provideOrReject(w.string, single.applyOpt(s)))
+    case multi: MultiParam[S, A] =>
+      multi.names.traverse(directives.getByName).flatMap(ls => directives.provideOrReject(w.string, multi.applyOpt(ls)))
+  }
 
   protected def name[name <: Symbol](implicit w: Witness.Aux[name]): String = w.value.name
 
@@ -128,107 +123,35 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   }
 }
 
-private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstances1 { self: Serve.type =>
+private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstances1 with ServeAuthInstances { self: Serve.type =>
   implicit def prefixServe[pref, In <: HList](implicit n: Name[pref]) = serveCheck[Prefix[pref], In](pathPrefix(n.string))
 
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
     serveCheck[method, In](method(check.method))
 
-  implicit def queryParamServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
-    serveAdd[QueryParam[name, x], In, x, name](
-      parameter(name[name]).flatMap(param => tryParse[x, FromQueryParam, name](param))
-    )
-
-  implicit def queryOptParamsServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
-    serveAdd[QueryParams[name, Option[x]], In, List[x], name] {
-      parameterMultiMap.flatMap(
-        _.getOrElse(name[name], Nil).traverse[Directive1, x](value => tryParse[x, FromQueryParam, name](value))
-      )
-    }
-
-  implicit def queryOptParamServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
-    serveAdd[QueryParam[name, Option[x]], In, Option[x], name](
-      OptionT[Directive1, String](parameter(name[name].?)).flatMap { param =>
-        OptionT(tryParseOpt[x, FromQueryParam, name](param))
-      }.value
-    )
+  implicit def queryParamServe[name: Name, x: Param.PQuery, In <: HList] =
+    serveAdd[QueryParam[name, x], In, x, name](resolveParam[ParamSource.Query, name, x])
 
   implicit def queryFlagServe[name <: Symbol: Witness.Aux, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
     parameterMap.map(_.contains(name[name]))
   )
 
-  implicit def captureServe[name: Witness.Aux, x, In <: HList](implicit fromPathParam: FromPathParam[x]) =
-    serveAdd[Capture[name, x], In, x, name] {
-      pathPrefix(fromPathParam.matcher)
-    }
+  implicit def captureServe[name: Name, x: Param.PPath, In <: HList] =
+    serveAdd[Capture[name, x], In, x, name](resolveParam[ParamSource.Path, name, x])
 
   implicit def reqBodyServe[name: Witness.Aux, x: FromRequestUnmarshaller, In <: HList] =
     serveAdd[ReqBody[name, x], In, x, name] {
       entity(as[x])
     }
 
-  implicit def headerServe[name <: Symbol: Witness.Aux, x: FromHeader, In <: HList] = serveAdd[Header[name, x], In, x, name] {
-    headerValueByName(name[name]).flatMap(str => tryParse[x, FromHeader, name](str))
-  }
+  implicit def headerServe[name: Name, x: Param.PHeader, In <: HList] =
+    serveAdd[Header[name, x], In, x, name](resolveParam[ParamSource.Header, name, x])
 
-  implicit def headerOptionServe[name <: Symbol: Witness.Aux, x: FromHeader, In <: HList] =
-    serveAdd[Header[name, Option[x]], In, Option[x], name] {
-      optionalHeaderValueByName(name[name]).flatMap {
-        case Some(str) => tryParseOpt[x, FromHeader, name](str)
-        case None      => provide(Option.empty[x])
-      }
-    }
+  implicit def cookieServe[name: Name, x: Param.PCookie, In <: HList] =
+    serveAdd[Cookie[name, x], In, x, name](resolveParam[ParamSource.Cookie, name, x])
 
-  implicit def cookieServe[name <: Symbol: Witness.Aux, x: FromCookie, In <: HList] = serveAdd[Cookie[name, x], In, x, name] {
-    cookie(name[name]).flatMap(cook => tryParse[x, FromCookie, name](cook.value))
-  }
-
-  implicit def cookieOptionServe[name <: Symbol: Witness.Aux, x: FromCookie, In <: HList] =
-    serveAdd[Cookie[name, Option[x]], In, Option[x], name] {
-      optionalCookie(name[name]).flatMap {
-        case Some(cook) => tryParseOpt[x, FromCookie, name](cook.value)
-        case None       => provide(Option.empty[x])
-      }
-    }
-
-  implicit def formFieldServe[name <: Symbol: Witness.Aux, x: FromFormField, In <: HList] =
-    serveAdd[FormField[name, x], In, x, name] {
-      formField(name[name]).flatMap(str => tryParse[x, FromFormField, name](str))
-    }
-
-  implicit def formFieldOptionServe[name <: Symbol: Witness.Aux, x: FromFormField, In <: HList] =
-    serveAdd[FormField[name, Option[x]], In, Option[x], name] {
-      formFieldMap.flatMap { m =>
-        m.get(name[name]) match {
-          case Some(str) => tryParseOpt[x, FromFormField, name](str)
-          case None      => provide(Option.empty[x])
-        }
-      }
-    }
-
-  implicit def basicAuthServe[realm: Name, name <: Symbol: Witness.Aux, x: BasicAuthenticator, In <: HList] =
-    serveAdd[BasicAuth[realm, name, x], In, x, name] {
-      BasicAuthenticator[x].directive(Name[realm].string)
-    }
-
-  implicit def bearerAuthServe[realm: Name, name <: Symbol: Witness.Aux, x: BearerAuthenticator, In <: HList] =
-    serveAdd[BearerAuth[realm, name, x], In, x, name] {
-      BearerAuthenticator[x].directive(Name[realm].string)
-    }
-
-  implicit def basicAuthOptServe[realm: Name, name <: Symbol: Witness.Aux, x: BasicAuthenticator, In <: HList] =
-    serveAdd[BasicAuth[realm, name, Option[x]], In, Option[x], name] {
-      BasicAuthenticator[x].directive(Name[realm].string).optional
-    }
-
-  implicit def bearerAuthOptServe[realm: Name, name <: Symbol: Witness.Aux, x: BearerAuthenticator, In <: HList] =
-    serveAdd[BearerAuth[realm, name, Option[x]], In, Option[x], name] {
-      BearerAuthenticator[x].directive(Name[realm].string).optional
-    }
-
-  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](
-      implicit serve: Serve[Param, In]): Serve.Aux[ApiKeyAuth[realm, Param], In, serve.Out] =
-    serve.as[ApiKeyAuth[realm, Param]]
+  implicit def formFieldServe[name <: Symbol: Witness.Aux, x: Param.PForm, In <: HList] =
+    serveAdd[FormField[name, x], In, x, name](resolveParam[ParamSource.Form, name, x])
 
   implicit def asServe[x, name, In <: HList, Head, old, Rest <: HList](
       implicit serveInner: Lazy[Serve.Aux[x, In, FieldType[old, Head] :: Rest]])
@@ -254,13 +177,112 @@ object MethodCheck {
   implicit val checkHead: MethodCheck[Head]       = MethodCheck(HttpMethods.HEAD)
   implicit val checkPatch: MethodCheck[Patch]     = MethodCheck(HttpMethods.PATCH)
 }
-trait ServeInstances1 { self: Serve.type =>
 
-  implicit def queryParamsServe[name <: Symbol: Witness.Aux, x: FromQueryParam, In <: HList] =
-    serveAdd[QueryParams[name, x], In, List[x], name] {
-      parameterMultiMap.flatMap(
-        _.get(name[name]).fold(Directive[Tuple1[List[x]]](_ => reject(MissingQueryParamRejection(name[name]))))(
-          _.traverse[Directive1, x](value => tryParse[x, FromQueryParam, name](value)))
-      )
+private[akkaHttp] trait ServeInstances1 { self: Serve.type =>
+
+  implicit def queryParamsServe[name: Name, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) = {
+    val name = Name[name].string
+    def rejection(err: SingleParamError): Route =
+      reject(err match {
+        case MissingParamError       => MissingQueryParamRejection(name)
+        case ParseParamError(errTxt) => MalformedQueryParamRejection(name, errTxt)
+      })
+
+    serveAdd[QueryParams[name, x], In, List[x], name](
+      parameterMultiMap.flatMap { multiMap =>
+        Directive { f =>
+          multiMap
+            .get(name)
+            .fold(param.applyOpt(None).map(List(_)))(_.traverse(x => param.applyOpt(Some(x))))
+            .fold(rejection, x => f(Tuple1(x)))
+        }
+      }
+    )
+  }
+}
+
+private[akkaHttp] trait ServeAuthInstances extends ServeFunctions {
+  implicit def basicAuthServe[realm: Name, name <: Symbol: Witness.Aux, x: BasicAuthenticator, In <: HList] =
+    serveAdd[BasicAuth[realm, name, x], In, x, name] {
+      BasicAuthenticator[x].directive(Name[realm].string)
     }
+
+  implicit def bearerAuthServe[realm: Name, name <: Symbol: Witness.Aux, x: BearerAuthenticator, In <: HList] =
+    serveAdd[BearerAuth[realm, name, x], In, x, name] {
+      BearerAuthenticator[x].directive(Name[realm].string)
+    }
+
+  implicit def basicAuthOptServe[realm: Name, name <: Symbol: Witness.Aux, x: BasicAuthenticator, In <: HList] =
+    serveAdd[BasicAuth[realm, name, Option[x]], In, Option[x], name] {
+      BasicAuthenticator[x].directive(Name[realm].string).optional
+    }
+
+  implicit def bearerAuthOptServe[realm: Name, name <: Symbol: Witness.Aux, x: BearerAuthenticator, In <: HList] =
+    serveAdd[BearerAuth[realm, name, Option[x]], In, Option[x], name] {
+      BearerAuthenticator[x].directive(Name[realm].string).optional
+    }
+
+  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](
+      implicit serve: Serve[Param, In]): Serve.Aux[ApiKeyAuth[realm, Param], In, serve.Out] =
+    serve.as[ApiKeyAuth[realm, Param]]
+}
+
+trait ParamDirectives[S <: ParamSource] {
+  def getByName(name: String): Directive1[Option[String]]
+  def notFound(name: String): Rejection
+  def malformed(name: String, error: String): Rejection
+
+  def singleRejection(name: String, error: SingleParamError): Rejection =
+    error match {
+      case MissingParamError    => notFound(name)
+      case ParseParamError(err) => malformed(name, err)
+    }
+
+  def errorReject[A](name: String, error: ParamError): Directive1[A] =
+    error match {
+      case single: SingleParamError => reject(singleRejection(name, single))
+      case MultiParamError(vals) =>
+        reject(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
+    }
+
+  def provideOrReject[A](name: String, result: Param.Result[A]): Directive1[A] =
+    result.fold(errorReject[A](name, _), provide)
+}
+
+object ParamDirectives {
+  type TC[A <: ParamSource] = ParamDirectives[A]
+  import ParamSource._
+  implicit val queryParamDirective: TC[Query] = new TC[Query] {
+    def getByName(name: String): Directive1[Option[String]] = parameter(name.as[Option[String]])
+    def notFound(name: String): Rejection                   = MissingQueryParamRejection(name)
+    def malformed(name: String, error: String): Rejection   = MalformedQueryParamRejection(name, error)
+  }
+
+  implicit val cookieParamDirectives: TC[Cookie] = new TC[Cookie] {
+    def getByName(name: String): Directive1[Option[String]] = optionalCookie(name).map(_.map(_.value))
+    def notFound(name: String): Rejection                   = MissingCookieRejection(name)
+    def malformed(name: String, error: String): Rejection   = MalformedHeaderRejection(s"cookie: $name", error)
+  }
+
+  implicit val pathParamDirectives: TC[Path] = new TC[Path] {
+    def getByName(name: String): Directive1[Option[String]] = path(Segment).map(Some(_): Option[String])
+    def notFound(name: String): Rejection                   = NotFoundPathRejection(name)
+    def malformed(name: String, error: String): Rejection   = MalformedPathRejection(name, error)
+  }
+
+  implicit val formDataParamDirectives: TC[Form] = new TC[Form] {
+    def getByName(name: String): Directive1[Option[String]] = formField(name.?)
+    def notFound(name: String): Rejection                   = MissingFormFieldRejection(name)
+    def malformed(name: String, error: String): Rejection   = MalformedFormFieldRejection(name, error)
+  }
+
+  implicit val headerParamDirectives: TC[Header] = new TC[Header] {
+    def getByName(name: String): Directive1[Option[String]] = optionalHeaderValueByName(name)
+    def notFound(name: String): Rejection                   = MissingHeaderRejection(name)
+    def malformed(name: String, error: String): Rejection   = MalformedHeaderRejection(name, error)
+  }
+
+  final case class NotFoundPathRejection(name: String)                       extends Rejection
+  final case class MalformedPathRejection(name: String, formatError: String) extends Rejection
+  final case class MalformedCookieRejection(error: String)                   extends Rejection
 }

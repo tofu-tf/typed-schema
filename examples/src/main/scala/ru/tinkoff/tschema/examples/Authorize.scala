@@ -6,12 +6,18 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport.marshaller
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
 import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.akkaHttp.MkRoute
+import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
 import ru.tinkoff.tschema.syntax._
+import ru.tinkoff.tschema.typeDSL.QueryParam
+import shapeless.{HNil, Witness}
 
 object Authorize extends ExampleModule {
+//  implicitly[Serve[QueryParam[Witness.`'sessionId`.T, Option[String]], HNil]]
+
+//  Serve.queryParamServe[Witness.`'sessionId`.T, Option[String], HNil]
+  Serve.queryParamServe[Witness.`'sessionId`.T, String, HNil]
   override def route: Route         = MkRoute(api)(handler)
   override def swag: SwaggerBuilder = MkSwagger(api)(())
 

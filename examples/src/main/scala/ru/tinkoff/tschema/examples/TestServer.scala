@@ -19,26 +19,48 @@ object TestServer {
   implicit val mat = ActorMaterializer()
   import system.dispatcher
 
-  val descriptions = PathDescription.utf8I18n("swagger", Locale.forLanguageTag("ru"))
+  val descriptions =
+    PathDescription.utf8I18n("swagger", Locale.forLanguageTag("ru"))
 
-  val modules = List[ExampleModule](TestModule, VersionModule, FiltersModule, FormFieldsModule, Authorize, CustomAuth).combineAll
+  val modules = List[ExampleModule](
+    TestModule,
+    VersionModule,
+    FiltersModule,
+    FormFieldsModule,
+    Authorize,
+    CustomAuth,
+    MultiParameters
+  ).combineAll
 
-  private [this] implicit val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
+  private[this] implicit val printer: Printer =
+    Printer.noSpaces.copy(dropNullValues = true)
 
   val route =
     pathPrefix("api") {
       modules.route
     } ~
-      path("swagger")(get(
-        complete(modules.swag.describe(descriptions).make(OpenApiInfo()).addServer("/api"))
-      )) ~
-      pathPrefix("webjars")(getFromResourceDirectory("META-INF/resources/webjars")) ~
+      path("swagger")(
+        get(
+          complete(
+            modules.swag
+              .describe(descriptions)
+              .make(OpenApiInfo())
+              .addServer("/api")
+          )
+        )
+      ) ~
+      pathPrefix("webjars")(
+        getFromResourceDirectory("META-INF/resources/webjars")
+      ) ~
       path("swagger.php")(
         complete(
           HttpResponse(
             entity = HttpEntity(
               contentType = ContentTypes.`text/html(UTF-8)`,
-              string = SwaggerIndex.index.render)))
+              string = SwaggerIndex.index.render
+            )
+          )
+        )
       )
   def main(args: Array[String]): Unit = {
     for (_ <- Http().bindAndHandle(route, "localhost", 8081))

@@ -16,11 +16,12 @@ libraryDependencies ++= Seq("core", "parser", "generic", "generic-extras")
 
 libraryDependencies += "io.circe" %% "circe-derivation" % Version.circeDerivation
 
-libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test
+libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
 
-libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTest % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTest % Test
 
-libraryDependencies += "org.scalacheck" %% "scalacheck" % Version.scalaCheck % "test"
+libraryDependencies += "org.scalacheck" %% "scalacheck" % Version.scalaCheck % Test
 
 libraryDependencies += "eu.timepit" %% "refined" % Version.refined
 
@@ -35,7 +36,7 @@ libraryDependencies ++= Seq("core")
 
 libraryDependencies += "org.scalameta" %% "scalameta" % "1.8.0"
 
-libraryDependencies += "com.propensive" %% "magnolia" % "0.7.1"
+libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
 libraryDependencies += "com.github.mpilquist" %% "simulacrum" % Version.simulacrum
 
@@ -44,7 +45,6 @@ addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
 
-//addCompilerPlugin("io.tryp" % "splain" % "0.2.7" cross CrossVersion.patch)
 
 libraryDependencies += { scalaOrganization.value } % "scala-compiler" % { scalaVersion.value }
 

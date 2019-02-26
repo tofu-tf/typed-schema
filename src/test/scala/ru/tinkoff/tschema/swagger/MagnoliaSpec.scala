@@ -13,40 +13,38 @@ class MagnoliaSpec extends FlatSpec {
   "magnolia" should "derive known types" in {
     implicit lazy val weirdThingSwaggerTypeable: SwaggerTypeable[WeirdThing] =
       SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
-    lazy val testSwagger: SwaggerTypeable[TopShit] = magnoliaDerive
+    implicit lazy val lots: SwaggerTypeable[LotOfVariants] = MagnoliaSwagger.derivedInstance
+    lazy val testSwagger: SwaggerTypeable[TopStuff] = magnoliaDerive
   }
 
   it should "not derive unknown types" in {
-    illTyped("""lazy val testSwagger: SwaggerTypeable[TopShit] = magnoliaDerive""")
+    illTyped("""lazy val testSwagger: SwaggerTypeable[TopStuff] = magnoliaDerive""")
   }
 }
 
 object MagnoliaSpec {
   trait WeirdThing
 
-  final case class InnerShit(shouldFind: String, shouldNotFind: WeirdThing, outer: Option[OuterShit])
+  final case class InnerStuff(shouldFind: String, shouldNotFind: WeirdThing, outer: Option[OuterStuff])
 
   sealed trait LotOfVariants
 
-  final case class OuterShit(foo: Int, inner: List[InnerShit]) extends LotOfVariants
+  object LotOfVariants
+  final case class OuterStuff(foo: Int, inner: List[InnerStuff]) extends LotOfVariants
   case object AnotherLol extends LotOfVariants
 
-  final case class TopShit(vars: LotOfVariants) extends LotOfVariants
+  final case class TopStuff(vars: LotOfVariants) extends LotOfVariants
 
   implicit val cfg: SwaggerTypeable.Config = SwaggerTypeable.defaultConfig.snakeCaseProps.snakeCaseAlts.withDiscriminator("type")
   implicit val printer = Printer.spaces4.copy(dropNullValues = true)
 
   def main(args: Array[String]): Unit = {
-    import MagnoliaSwagger.{derive => magnoliaDerive}
-
     implicit lazy val weirdThingSwagger: SwaggerTypeable[WeirdThing] =
       SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
 
-    implicit lazy val innerShitSwagger: SwaggerTypeable[InnerShit] = magnoliaDerive
-    implicit lazy val outerShitSwagger: SwaggerTypeable[OuterShit] = magnoliaDerive
-    lazy val topShitSwagger: SwaggerTypeable[TopShit] = magnoliaDerive
+    lazy val topStuffSwagger: SwaggerTypeable[TopStuff] = MagnoliaSwagger.derivedInstance
 
-    println(topShitSwagger.typ.collectTypes.foreach { case (name, t) => println(s"$name: ${t.asJson.pretty(printer)}") })
+    println(topStuffSwagger.typ.collectTypes.foreach { case (name, t) => println(s"$name: ${t.asJson.pretty(printer)}") })
 
     case class Lol(lol: Option[Lol])
 

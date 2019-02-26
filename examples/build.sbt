@@ -23,5 +23,7 @@ libraryDependencies += "org.manatki" %% "derevo-circe" % Version.derevo
 
 libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 libraryDependencies += "ru.tinkoff" %% "typed-schema" % Version.typedSchema
+libraryDependencies += "ru.tinkoff" %% "typed-schema-scalaz" % Version.typedSchema
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+addCompilerPlugin("org.scalaz" %% "deriving-plugin" % Version.scalazDeriving),

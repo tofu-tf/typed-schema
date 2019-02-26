@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import cats.data.OptionT
 import ru.tinkoff.tschema._
+import cats.syntax.either._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{Segment => _, _}
 import shapeless.labelled.{FieldType, field}

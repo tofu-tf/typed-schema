@@ -15,6 +15,7 @@ import cats.instances.list._
 import cats.instances.option._
 import cats.instances.either._
 import ru.tinkoff.tschema.akkaHttp.Param.{MultiResult, SingleResult}
+import ru.tinkoff.tschema.akkaHttp.ParamSource.All
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.common.Name
 import shapeless.ops.record.Selector
@@ -41,9 +42,9 @@ private[akkaHttp] trait ServeTypes {
 }
 
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
-  protected def resolveParam[S <: ParamSource, name, A](implicit param: Param[S, A],
-                                                   w: Name[name],
-                                                   directives: ParamDirectives[S]): Directive1[A] = param match {
+  protected def resolveParam[S >: All <: ParamSource, name, A](implicit param: Param[S, A],
+                                                               w: Name[name],
+                                                               directives: ParamDirectives[S]): Directive1[A] = param match {
     case single: SingleParam[S, A] =>
       directives.getByName(w.string).flatMap(s => directives.provideOrReject(w.string, single.applyOpt(s)))
     case multi: MultiParam[S, A] =>

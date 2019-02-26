@@ -5,35 +5,35 @@ import org.scalactic.Equality
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 import ru.tinkoff.tschema.ForAllTypes.Checker
-import ru.tinkoff.tschema.akkaHttp.ParamSource.{Cookie, Form, Query}
-import ru.tinkoff.tschema.akkaHttp.{Param, SingleParam, ParamSource}
+import ru.tinkoff.tschema.akkaHttp.ParamSource.{All, Cookie, Form, Query}
+import ru.tinkoff.tschema.akkaHttp.{Param, ParamSource, SingleParam}
 import shapeless._
 
 import scala.reflect.runtime.universe._
 
-trait ForAllTypes[S <: ParamSource, L] {
+trait ForAllTypes[S >: All <: ParamSource, L] {
   def check(checker: Checker[S]): Unit
 }
 object ForAllTypes {
   def apply[L] = new Applier[L]
 
   class Applier[L] {
-    def apply[S <: ParamSource](checker: Checker[S])(implicit forAll: ForAllTypes[S, L]) = forAll.check(checker)
+    def apply[S >: All <: ParamSource](checker: Checker[S])(implicit forAll: ForAllTypes[S, L]) = forAll.check(checker)
   }
 
-  abstract class Checker[S <: ParamSource] {
+  abstract class Checker[S >: All <: ParamSource] {
     def check[T](implicit f: SingleParam[S, T], arb: Arbitrary[T], tt: TypeTag[T], eq: Equality[T]): Unit
   }
 
-  implicit def hnilChecks[S <: ParamSource] = new ForAllTypes[S, HNil] {
+  implicit def hnilChecks[S >: All <: ParamSource] = new ForAllTypes[S, HNil] {
     def check(checker: Checker[S]) = ()
   }
 
-  implicit def hconsChecks[S <: ParamSource, A, Tail <: HList](implicit F: SingleParam[S, A],
-                                                          arb: Arbitrary[A],
-                                                          tt: TypeTag[A],
-                                                          eqt: Equality[A],
-                                                          tail: ForAllTypes[S, Tail]) =
+  implicit def hconsChecks[S >: All <: ParamSource, A, Tail <: HList](implicit F: SingleParam[S, A],
+                                                                      arb: Arbitrary[A],
+                                                                      tt: TypeTag[A],
+                                                                      eqt: Equality[A],
+                                                                      tail: ForAllTypes[S, Tail]) =
     new ForAllTypes[S, A :: Tail] {
       def check(checker: Checker[S]): Unit = {
         checker.check[A](F, arb, tt, eqt)
@@ -41,17 +41,20 @@ object ForAllTypes {
       }
     }
 
-  implicit def tupleCheck[S <: ParamSource, T, L <: HList](implicit gen: Generic.Aux[T, L], forAll: ForAllTypes[S, L]) =
+  implicit def tupleCheck[S >: All <: ParamSource, T, L <: HList](implicit gen: Generic.Aux[T, L], forAll: ForAllTypes[S, L]) =
     new ForAllTypes[S, T] {
       def check(checker: Checker[S]): Unit = forAll.check(checker)
     }
 }
 
-trait ParamSpecLow[S <: ParamSource] {
-  implicit def listParam[A: SingleParam[S, ?]]: SingleParam[S, List[A]] = Param.separated(",")
+trait ParamSpecLow[S >: All <: ParamSource] {
+  implicit def listParam[A: SingleParam[S, ?]]: SingleParam[S, List[A]] = {
+    Param.separated[S, A](",")
+  }
 }
 
-abstract class ParamSpec[S <: ParamSource] extends PropSpec with GeneratorDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
+abstract class ParamSpec[S >: All <: ParamSource]
+    extends PropSpec with GeneratorDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
   implicit def listList[A: SingleParam[S, ?]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](";")
   def fromParam[T](s: String)(implicit f: SingleParam[S, T])                 = f.applyOpt(Some(s))
 }

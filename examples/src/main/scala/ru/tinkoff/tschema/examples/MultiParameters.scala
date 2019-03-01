@@ -22,13 +22,11 @@ object MultiParameters extends ExampleModule {
   @deriving(HttpParam, AsOpenApiParam)
   final case class Page(from: Int, count: Int)
 
-  @deriving(HttpParam, AsOpenApiParam)
-  final case class OptPage(opt: Option[Page])
 
   def route: Route = MkRoute(api)(handler)
   def swag: SwaggerBuilder = MkSwagger(api)(())
 
-//  implicitly[AsOpenApiParam[Option[Page]]]
+
 
 
   def api =
@@ -36,12 +34,12 @@ object MultiParameters extends ExampleModule {
       operation('describe) |> get |> queryParam[User]('user) |> $$[String]
     ) <|> (
       operation('pageDescr) |> get |>
-        queryParam[OptPage]('page) |> $$[String]
+        queryParam[Option[Page]]('page) |> $$[String]
     ))
 
   object handler {
     def describe(user: User) = user.toString
-    def pageDescr(page: OptPage) = page.toString
+    def pageDescr(page: Option[Page]) = page.toString
   }
 
 }

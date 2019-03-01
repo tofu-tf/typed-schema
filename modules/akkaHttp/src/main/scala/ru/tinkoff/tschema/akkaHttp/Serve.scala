@@ -32,7 +32,10 @@ trait Serve[T, In <: HList] {
   def as[Q]: Serve.Aux[Q, In, Out] = asInstanceOf[Serve.Aux[Q, In, Out]]
 }
 
-object Serve extends ServeInstances
+object Serve extends ServeInstances {
+  def nil[T](implicit serve: Serve[T, HNil]): Aux[T, HNil, serve.Out]         = serve
+  def apply[L <: HList, T](implicit serve: Serve[T, L]): Aux[T, L, serve.Out] = serve
+}
 
 private[akkaHttp] trait ServeTypes {
   type Aux[T, In <: HList, O <: HList] = Serve[T, In] { type Out = O }
@@ -255,7 +258,7 @@ object ParamDirectives {
   type TC[A <: ParamSource] = ParamDirectives[A]
   import ParamSource._
   implicit val queryParamDirective: TC[Query] = new TC[Query] {
-    def getByName(name: String): Directive1[Option[String]] = parameter(name.as[Option[String]])
+    def getByName(name: String): Directive1[Option[String]] = parameter(name.?)
     def notFound(name: String): Rejection                   = MissingQueryParamRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedQueryParamRejection(name, error)
   }

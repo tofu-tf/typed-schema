@@ -10,6 +10,8 @@ sealed trait AsOpenApiParam[T] {
 object AsOpenApiParam extends AsOpenParamInstances[AsOpenApiParam] {
   type Typeclass[x] = AsOpenApiParam[x]
 
+  def apply[T](param: AsOpenApiParam[T]): AsOpenApiParam[T] = param
+
   def combine[T](ctx: CaseClass[Typeclass, T]): Typeclass[T] =
     AsMultiOpenApiParam[T](
       NonEmptyList

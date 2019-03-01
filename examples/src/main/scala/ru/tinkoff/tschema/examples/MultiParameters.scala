@@ -20,7 +20,7 @@ object MultiParameters extends ExampleModule {
   final case class User(name: String, age: Int, child: Child)
 
   @deriving(HttpParam, AsOpenApiParam)
-  final case class Page(from: Int, count: Int)
+  final case class Page(from: Int, count: Int, opt: Option[String])
 
 
   def route: Route = MkRoute(api)(handler)

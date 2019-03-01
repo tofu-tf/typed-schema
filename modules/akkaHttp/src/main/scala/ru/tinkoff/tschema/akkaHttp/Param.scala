@@ -57,7 +57,9 @@ trait SingleParam[+S >: All <: ParamSource, A] extends Param[S, A] {
   }
 }
 
-object SingleParam extends ParamInstances[SingleParam]
+object SingleParam extends ParamInstances[SingleParam] {
+  def apply[S >: All <: ParamSource, T](implicit param: Param[S, T]) = param
+}
 
 trait SingleParamReq[+S >: All <: ParamSource, A] extends SingleParam[S, A] {
   def applyReq(source: String): SingleResult[A]
@@ -77,7 +79,11 @@ trait MultiParam[+S >: All <: ParamSource, A] extends Param[S, A] { self =>
   def optional: Self[Option[A]] = new HttpMultiParam[Option[A]] {
     def names: List[String] = self.names
     def applyOpt(values: List[Option[String]]): MultiResult[Option[A]] =
-      values.sequence.traverse(vals => self.applyOpt(vals.map(Some(_))))
+      self.applyOpt(values) match {
+        case Right(a)                 => Right(Some(a))
+        case Left(err) if err.missing => Right(None)
+        case Left(err)                => Left(err)
+      }
   }
 }
 
@@ -103,6 +109,8 @@ trait HttpParam[A] extends Param[All, A] {
   def optional: HttpParam[Option[A]]
 }
 object HttpParam extends HttpParamInstances[HttpParam] {
+  def apply[T](implicit param: HttpParam[T]): HttpParam[T] = param
+
   trait Enum[E <: enumeratum.EnumEntry] {
     self: enumeratum.Enum[E] =>
     implicit val fromParam: HttpSingleParamReq[E] =
@@ -238,9 +246,11 @@ sealed trait ParamError
 sealed trait SingleParamError extends ParamError {
   def toMulti(name: String): MultiParamError = MultiParamError(Map(name -> this))
 }
-case object MissingParamError                                         extends SingleParamError
-final case class ParseParamError(message: String)                     extends SingleParamError
-final case class MultiParamError(list: Map[String, SingleParamError]) extends ParamError
+case object MissingParamError                     extends SingleParamError
+final case class ParseParamError(message: String) extends SingleParamError
+final case class MultiParamError(list: Map[String, SingleParamError]) extends ParamError {
+  def missing: Boolean = list.valuesIterator.forall { _ == MissingParamError }
+}
 
 object MultiParamError {
   implicit val semigroup: Semigroup[MultiParamError] = (e1, e2) => MultiParamError(e1.list ++ e2.list)

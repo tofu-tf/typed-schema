@@ -4,10 +4,13 @@ import magnolia.{CaseClass, Magnolia, SealedTrait}
 
 sealed trait AsOpenApiParam[T] {
   def types: Map[String, DescribedType]
+  def optional: AsOpenApiParam[Option[T]]
 }
 
 object AsOpenApiParam extends AsOpenParamInstances[AsOpenApiParam] {
   type Typeclass[x] = AsOpenApiParam[x]
+
+  def apply[T](param: AsOpenApiParam[T]): AsOpenApiParam[T] = param
 
   def combine[T](ctx: CaseClass[Typeclass, T]): Typeclass[T] =
     AsMultiOpenApiParam[T](
@@ -33,17 +36,20 @@ trait OpenApiParamInfo {
 final case class OpenApiParamField(name: String, typ: SwaggerType, required: Boolean) extends OpenApiParamInfo
 
 final case class AsMultiOpenApiParam[T](fields: NonEmptyList[OpenApiParamField]) extends AsOpenApiParam[T] {
-  def parts: NonEmptyList[String] = fields.map(_.name)
-  def types                       = fields.foldLeft(Map.empty[String, DescribedType])(_ ++ _.types)
+  def parts: NonEmptyList[String]              = fields.map(_.name)
+  def types                                    = fields.foldLeft(Map.empty[String, DescribedType])(_ ++ _.types)
+  def optional: AsMultiOpenApiParam[Option[T]] = AsMultiOpenApiParam(fields.map(_.copy(required = false)))
 }
 final case class AsSingleOpenApiParam[T](typ: SwaggerType, required: Boolean = true)
-    extends AsOpenApiParam[T] with OpenApiParamInfo
+    extends AsOpenApiParam[T] with OpenApiParamInfo {
+  def optional: AsOpenApiParam[Option[T]] = AsSingleOpenApiParam(typ, required = false)
+}
 
 object AsSingleOpenApiParam extends AsOpenParamInstances[AsSingleOpenApiParam]
 
-trait AsOpenParamInstances[TC[x] >: AsSingleOpenApiParam[x]] {
+trait AsOpenParamInstances[TC[x] >: AsSingleOpenApiParam[x]]{
   final implicit def requiredParam[T](implicit typ: SwaggerTypeable[T]): TC[T] =
     AsSingleOpenApiParam[T](typ = typ.typ, required = true)
-  final implicit def optionalParam[T](implicit typ: SwaggerTypeable[T]): TC[Option[T]] =
-    AsSingleOpenApiParam[Option[T]](typ = typ.typ, required = false)
+  final implicit def optParam[T](implicit param: AsOpenApiParam[T]): AsOpenApiParam[Option[T]] = param.optional
 }
+

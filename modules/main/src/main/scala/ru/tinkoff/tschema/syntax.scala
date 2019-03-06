@@ -42,6 +42,11 @@ object syntax {
       override def make[s <: Symbol]: FormField[s, x] = new FormField
     })
 
+  def allQuery[x] =
+    new MkComplex(new Maker[x, AllQuery] {
+      override def make[s <: Symbol] = new AllQuery
+    })
+
   def cookie[x] =
     new MkComplex(new Maker[x, Cookie] {
       override def make[s <: Symbol]: Cookie[s, x] = new Cookie

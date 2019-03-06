@@ -106,6 +106,8 @@ object typeDSL {
     */
   final class QueryFlag[name] extends DSLAtom
 
+  final class AllQuery[name, x] extends DSLAtom
+
   /**
     * captures request body and unmarshalls in to requested type
     *

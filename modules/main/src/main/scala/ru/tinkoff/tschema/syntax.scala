@@ -11,7 +11,7 @@ import scala.language.higherKinds
 object syntax {
   def prefix[s](witness: Witness.Lt[s])              = new Prefix[s]
   def queryFlag[s <: Symbol](witness: Witness.Lt[s]) = new QueryFlag[s]
-  def allQuery[s](witness: Witness.Lt[s])            = new AllQuery[s]
+  def allQuery[s <: Symbol](witness: Witness.Lt[s])  = new AllQuery[s]
   def tag[s <: Symbol](witness: Witness.Lt[s])       = new Tag[s]
   def key[s <: Symbol](witness: Witness.Lt[s])       = new Key[s]
   def tagPrefix[s <: Symbol](witness: Witness.Lt[s]) = prefix[s](witness) |> tag[s](witness)

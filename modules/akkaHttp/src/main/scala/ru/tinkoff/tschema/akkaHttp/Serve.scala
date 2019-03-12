@@ -141,8 +141,8 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
     parameterMap.map(_.contains(name[name]))
   )
 
-  implicit def queryMap[name: Name, x, In <: HList] = serveAdd[AllQuery[name, x], In,Map[String, String], name] {
-    parameterMap
+  implicit def queryMap[name <: Symbol: Witness.Aux, x, In <: HList] = serveAdd[AllQuery[name], In, name, Map[String, String]] {
+    ???
   }
 
   implicit def captureServe[name: Name, x: Param.PPath, In <: HList] =

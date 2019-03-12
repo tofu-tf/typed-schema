@@ -11,6 +11,7 @@ import scala.language.higherKinds
 object syntax {
   def prefix[s](witness: Witness.Lt[s])              = new Prefix[s]
   def queryFlag[s <: Symbol](witness: Witness.Lt[s]) = new QueryFlag[s]
+  def allQuery[s](witness: Witness.Lt[s])            = new AllQuery[s]
   def tag[s <: Symbol](witness: Witness.Lt[s])       = new Tag[s]
   def key[s <: Symbol](witness: Witness.Lt[s])       = new Key[s]
   def tagPrefix[s <: Symbol](witness: Witness.Lt[s]) = prefix[s](witness) |> tag[s](witness)
@@ -40,11 +41,6 @@ object syntax {
   def formField[x] =
     new MkComplex(new Maker[x, FormField] {
       override def make[s <: Symbol]: FormField[s, x] = new FormField
-    })
-
-  def allQuery[x] =
-    new MkComplex(new Maker[x, AllQuery] {
-      override def make[s <: Symbol] = new AllQuery
     })
 
   def cookie[x] =

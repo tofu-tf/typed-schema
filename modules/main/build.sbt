@@ -17,9 +17,6 @@ libraryDependencies += "eu.timepit" %% "refined" % Version.refined
 libraryDependencies ++= Seq("actor", "stream")
   .map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
 
-
-libraryDependencies += "org.scalameta" %% "scalameta" % "1.8.0"
-
 libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
 

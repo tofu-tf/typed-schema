@@ -117,8 +117,7 @@ final case class OpenApiParam(name: String,
                               required: Boolean = true,
                               schema: Option[SwaggerType] = None,
                               deprecated: Boolean = false,
-                              allowEmptyValue: Boolean = false
-)
+                              allowEmptyValue: Boolean = false)
 
 object OpenApiParam {
   sealed trait In extends EnumEntry
@@ -268,6 +267,8 @@ object OpenApiRequestBody {
   def fromType(swaggerType: SwaggerType, description: Option[String] = None): OpenApiRequestBody =
     OpenApiRequestBody(description = description, content = Map(swaggerType.mediaType -> OpenApiMediaType(Some(swaggerType))))
 
+  def fromTypes(swaggerTypes: SwaggerType*): OpenApiRequestBody =
+    OpenApiRequestBody(content = swaggerTypes.iterator.map(t => t.mediaType -> OpenApiMediaType(Some(t))).toMap)
 }
 
 @Lenses
@@ -326,6 +327,9 @@ final case class OpenApiResponse(description: Option[SwaggerDescription] = None,
 object OpenApiResponse {
   def make(description: Option[SwaggerDescription] = None, swaggerType: SwaggerType): OpenApiResponse =
     OpenApiResponse(description = description, content = Map(swaggerType.mediaType -> OpenApiMediaType(swaggerType.some)))
+
+  def makeMany(types: SwaggerType*): OpenApiResponse =
+    OpenApiResponse(content = types.iterator.map(t => t.mediaType -> OpenApiMediaType(t.typ.some)).toMap)
 }
 
 @Lenses

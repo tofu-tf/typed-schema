@@ -206,15 +206,13 @@ object MkSwagger {
     val auths: TreeMap[String, OpenApiSecurity] = TreeMap.empty
   }
 
-  implicit def derivedComplete[T](implicit typ: SwaggerTypeable[T]) =
+  implicit def derivedComplete[T](implicit content: SwaggerContent[T]) =
     single[Complete[T]](
       op = OpenApiOp(
         responses = OpenApiResponses(
           codes = Map(
-            StatusCodes.OK -> OpenApiResponse.make(
-              swaggerType = typ.typ
-            )))),
-      typeList = TreeMap(typ.typ.collectTypes.toSeq: _*)
+            StatusCodes.OK -> OpenApiResponse.makeMany( content.types:_*  )))),
+      typeList = TreeMap(content.collectTypes.toSeq: _*)
     )
 
   implicit def deriveJoin[left, right](implicit left: MkSwagger[left], right: MkSwagger[right]) =

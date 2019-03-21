@@ -109,7 +109,7 @@ trait MultiParamReq[S >: All <: ParamSource, A] extends MultiParam[S, A] {
       .flatMap(applyReq)
 }
 
-trait HttpParam[A] extends Param[All, A] {
+sealed trait HttpParam[A] extends Param[All, A] {
   def optional: HttpParam[Option[A]]
 }
 object HttpParam extends HttpParamInstances[HttpParam] {

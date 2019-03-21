@@ -1,3 +1,8 @@
+## Version 0.11.0
+- added support for multiple param parsing into the single case class
+- added specific typeclasses for params for different sources (Header, Query, Cookie, etc...)
+- updated magnolia to 0.10
+
 ## Version 0.10.7
 
 - update circe to `0.11.1`

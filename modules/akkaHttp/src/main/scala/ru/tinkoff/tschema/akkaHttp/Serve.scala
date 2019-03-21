@@ -185,24 +185,30 @@ object MethodCheck {
 
 private[akkaHttp] trait ServeInstances1 { self: Serve.type =>
 
-  implicit def queryParamsServe[name: Name, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) = {
+  implicit def queryParamsServe[name: Name, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
+    serveAdd[QueryParams[name, x], In, List[x], name](extractQueryParams[name, x](allowEmpty = false))
+
+  implicit def queryOptParamsServe[name: Name, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
+    serveAdd[QueryParams[name, Option[x]], In, List[x], name](extractQueryParams[name, x](allowEmpty = true))
+
+  private def extractQueryParams[name: Name, x](allowEmpty: Boolean)(
+      implicit param: SingleParam[ParamSource.Query, x]): Directive1[List[x]] = {
     val name = Name[name].string
+
     def rejection(err: SingleParamError): Route =
       reject(err match {
         case MissingParamError       => MissingQueryParamRejection(name)
         case ParseParamError(errTxt) => MalformedQueryParamRejection(name, errTxt)
       })
 
-    serveAdd[QueryParams[name, x], In, List[x], name](
-      parameterMultiMap.flatMap { multiMap =>
-        Directive { f =>
-          multiMap
-            .get(name)
-            .fold(param.applyOpt(None).map(List(_)))(_.traverse(x => param.applyOpt(Some(x))))
-            .fold(rejection, x => f(Tuple1(x)))
-        }
+    parameterMultiMap.flatMap { multiMap =>
+      Directive { f =>
+        multiMap
+          .get(name)
+          .fold(if (allowEmpty) Right(Nil) else param.applyOpt(None).map(List(_)))(_.traverse(x => param.applyOpt(Some(x))))
+          .fold(rejection, x => f(Tuple1(x)))
       }
-    )
+    }
   }
 }
 

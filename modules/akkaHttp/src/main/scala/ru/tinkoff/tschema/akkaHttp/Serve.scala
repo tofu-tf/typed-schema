@@ -289,5 +289,4 @@ object ParamDirectives {
 
   final case class NotFoundPathRejection(name: String)                       extends Rejection
   final case class MalformedPathRejection(name: String, formatError: String) extends Rejection
-  final case class MalformedCookieRejection(error: String)                   extends Rejection
 }

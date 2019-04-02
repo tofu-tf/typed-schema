@@ -186,6 +186,8 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     EmptyTree
   }
 
+
+
   def showType(t: Type): String = t.dealias match {
     case SingletonTypeStr(s)              => s
     case TypeRef(_, s, Nil)               => symbolName(s)

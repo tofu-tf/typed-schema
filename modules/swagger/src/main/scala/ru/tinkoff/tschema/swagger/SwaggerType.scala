@@ -35,6 +35,8 @@ sealed trait SwaggerType {
     * set ot change type description if this is named type
     */
   def describe(descr: String) = this
+
+  def withMediaType(mediaType: MediaType): SwaggerType = SwaggerMedia(this, mediaType)
 }
 
 class SwaggerPrimitive[Typ <: SwaggerValue](
@@ -155,6 +157,11 @@ final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 @Lenses
 final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType {
   override def mediaType: MediaType = MediaTypes.`application/xml`
+}
+
+@Lenses
+final case class SwaggerMedia(typ: SwaggerType, override val mediaType: MediaType) extends SwaggerType {
+  override def withMediaType(mediaType: MediaType): SwaggerType = SwaggerMedia(typ, mediaType)
 }
 
 object SwaggerXML {
@@ -299,6 +306,8 @@ object SwaggerType {
                 "type"                 -> Json.fromString("object"),
                 "additionalProperties" -> Json.fromJsonObject(enc)
             ))
+
+      case SwaggerMedia(typ, _) => encode(typ)
     }
 
     override def encodeObject(a: SwaggerType): JsonObject = encode(a).value
@@ -321,6 +330,7 @@ object SwaggerType {
             case SwaggerOneOf(alts, _)                       => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
             case SwaggerMap(value)                           => collectTypesImpl(value.value :: rest, acc)
             case SwaggerXML(wrapped, _)                      => collectTypesImpl(wrapped :: rest, acc)
+            case SwaggerMedia(t, _)                          => collectTypesImpl(t :: rest, acc)
             case _                                           => collectTypesImpl(rest, acc)
           }
       }

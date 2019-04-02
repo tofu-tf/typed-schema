@@ -114,8 +114,8 @@ using directive definitions given by `implicit` instances of:
     *  `T` - your DSLAtom or DSLRes
     * `In` - input parameters collected by preceding `Serve` instances and tagged by names
     * `Out` - parameters, that will be provided for subtree
- * `trait ResultIn[In, Res, Out]`  where:
-    *  `T` - your  DSLRes
+ * `trait RoutableIn[In, Res, Out]`  where:
+    *  `In` - your DSLDef
     *  `Res` - result type, returned by corresponding method in handler
     *  `Out` - result type, defined in the API definition
 

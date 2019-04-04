@@ -13,6 +13,7 @@ import io.circe.syntax._
 import io.circe.derivation._
 import monocle.{Optional, Prism, Setter}
 import monocle.macros.{GenPrism, GenPrismImpl, Lenses}
+import ru.tinkoff.tschema.swagger.internal.merge._
 import ru.tinkoff.tschema.utils.json.Skippable
 import ru.tinkoff.tschema.utils.setters
 import shapeless.tag.@@
@@ -78,9 +79,11 @@ final case class SwaggerEnumeration(alts: Vector[String]) extends SwaggerType {
     case SwaggerEnumeration(alts2) => SwaggerEnumeration((alts ++ alts2).distinct)
   }
 }
-final case class SwaggerArray(items: Eval[SwaggerType]) extends SwaggerType {
+final case class SwaggerArray(items: Eval[SwaggerType], minLength: Option[Int] = None, maxLength: Option[Int] = None)
+    extends SwaggerType {
   override def merge = {
-    case SwaggerArray(items2) => SwaggerArray(items.map2(items2)(_ or _))
+    case SwaggerArray(items2, min1, max1) =>
+      SwaggerArray(items.map2(items2)(_ or _), mergeOptWith(minLength, min1)(_ min _), mergeOptWith(maxLength, max1)(_ max _))
   }
 }
 
@@ -232,14 +235,16 @@ object SwaggerType {
           )
           .pure[Eval]
 
-      case SwaggerArray(items) =>
+      case SwaggerArray(items, minLength, maxLength) =>
         items
           .flatMap(encode)
           .map(
             enc =>
               JsonObject(
-                "type"  -> Json.fromString("array"),
-                "items" -> enc.asJson
+                "type"      -> Json.fromString("array"),
+                "items"     -> enc.asJson,
+                "minLength" -> minLength.asJson,
+                "maxLength" -> maxLength.asJson,
             ))
 
       case SwaggerXML(typ, options) => encode(typ).map(o1 => o1.add("xml", options.asJson))
@@ -316,7 +321,7 @@ object SwaggerType {
           cur match {
             case SwaggerRef(name, _, _) if acc contains name => collectTypesImpl(rest, acc)
             case SwaggerRef(name, descr, t)                  => collectTypesImpl(t.value :: rest, acc + (name -> DescribedType(t.value, descr)))
-            case SwaggerArray(items)                         => collectTypesImpl(items.value :: rest, acc)
+            case SwaggerArray(items, _, _)                   => collectTypesImpl(items.value :: rest, acc)
             case SwaggerObject(props, _)                     => collectTypesImpl(props.map(_.typ.value) ++: rest, acc)
             case SwaggerOneOf(alts, _)                       => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
             case SwaggerMap(value)                           => collectTypesImpl(value.value :: rest, acc)

@@ -165,9 +165,11 @@ trait MkSwagger[T] extends SwaggerBuilder {
 }
 
 object MkSwagger {
-
   def apply[Def <: DSLDef](definition: => Def)(impl: Unit): SwaggerBuilder =
-    macro MakerMacro.makeRoute[macroInterface.type, Def, Unit, SwaggerBuilder]
+    macro MakerMacro.makeRouteHNil[macroInterface.type, Def, Unit, SwaggerBuilder]
+
+  def of[Def <: DSLDef](definition: => Def): SwaggerBuilder =
+    macro MakerMacro.makeRouteHNilUnit[macroInterface.type, Def, SwaggerBuilder]
 
   object macroInterface {
     class ResultPA1[Out] {
@@ -208,10 +210,7 @@ object MkSwagger {
 
   implicit def derivedComplete[T](implicit content: SwaggerContent[T]) =
     single[Complete[T]](
-      op = OpenApiOp(
-        responses = OpenApiResponses(
-          codes = Map(
-            StatusCodes.OK -> OpenApiResponse.makeMany( content.types:_*  )))),
+      op = OpenApiOp(responses = OpenApiResponses(codes = Map(StatusCodes.OK -> OpenApiResponse.makeMany(content.types: _*)))),
       typeList = TreeMap(content.collectTypes.toSeq: _*)
     )
 
@@ -227,7 +226,6 @@ object MkSwagger {
   }
   implicit def monoidInstance[A]: Monoid[MkSwagger[A]] = monoidKInstance.algebra[A]
 }
-
 
 final case class MethodDeclare[method](method: OpenApi.Method)
 object MethodDeclare {
@@ -247,5 +245,3 @@ object ApiKeyParam {
   implicit def query[name, x]: ApiKeyParam[QueryParam[name, x], name, x] = ApiKeyParam(OpenApiParam.In.query)
   implicit def cookie[name, x]: ApiKeyParam[Cookie[name, x], name, x]    = ApiKeyParam(OpenApiParam.In.cookie)
 }
-
-

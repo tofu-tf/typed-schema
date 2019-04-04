@@ -9,7 +9,10 @@ import language.experimental.macros
 
 object MkRoute {
   def apply[Def <: DSLDef, Impl](definition: => Def)(impl: Impl): Route =
-    macro MakerMacro.makeRoute[macroInterface.type, Def, Impl, Route]
+    macro MakerMacro.makeRouteHNil[macroInterface.type, Def, Impl, Route]
+
+  def of[Def <: DSLDef, Impl, In <: HList](definition: => Def)(impl: Impl)(input: In): Route =
+    macro MakerMacro.makeRoute[macroInterface.type, Def, Impl, Route, In]
 
   object macroInterface {
     class ResultPA1[Out] {

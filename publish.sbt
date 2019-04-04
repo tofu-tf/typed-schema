@@ -11,7 +11,7 @@ publishTo in ThisBuild := Some(
     Opts.resolver.sonatypeStaging
 )
 
-val pubVersion = "0.11.0-beta5"
+val pubVersion = "0.11.0-beta6"
 
 credentials in ThisBuild += Credentials(Path.userHome / ".sbt" / ".ossrh-credentials")
 
@@ -21,7 +21,7 @@ version in ThisBuild := {
   else s"$pubVersion-$branch-SNAPSHOT"
 }
 
-updateOptions in ThisBuild := updateOptions.value.withGigahorse(false)
+//updateOptions in ThisBuild := updateOptions.value.withGigahorse(false)
 
 scmInfo in ThisBuild := Some(
   ScmInfo(

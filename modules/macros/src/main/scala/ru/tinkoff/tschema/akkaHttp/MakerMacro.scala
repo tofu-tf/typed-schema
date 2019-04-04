@@ -3,6 +3,7 @@ package ru.tinkoff.tschema.akkaHttp
 import java.time.Instant
 
 import MakerMacro._
+import akka.shapeless.HNil
 import com.sun.org.apache.xalan.internal.xsltc.compiler.util.TypeCheckError
 import ru.tinkoff.tschema.macros.{ShapelessMacros, SingletonMacros}
 import ru.tinkoff.tschema.typeDSL._
@@ -16,17 +17,28 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
 
   import c.universe._
 
-  def makeRoute[If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
+  def makeRouteHNilUnit[If: WeakTypeTag, Def: WeakTypeTag, Res: WeakTypeTag](definition: c.Expr[Def]): c.Expr[Res] =
+    makeRouteHNil[If, Def, Unit, Res](definition)(c.Expr(q"()"))
+
+  def makeRouteHNil[If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
       definition: c.Expr[Def]
   )(
       impl: c.Expr[Impl]
+  ): c.Expr[Res] =
+    makeRoute[If, Def, Impl, Res, HNil](definition)(impl)(c.Expr(q"(HNil : HNil)"))
+
+  def makeRoute[If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag, In: WeakTypeTag](
+      definition: c.Expr[Def]
+  )(
+      impl: c.Expr[Impl]
+  )(
+      input: c.Expr[In]
   ): c.Expr[Res] = {
-    val ifP        = getPackage(weakTypeOf[If])
-    val defT       = weakTypeOf[Def]
-    val implT      = weakTypeOf[Impl]
-    val dsl        = constructDslTree(defT)
-    val startInput = q"(HNil : HNil)"
-    val wholeTree  = new RouteTreeMaker(impl.tree).makeRouteTree(dsl, startInput)
+    val ifP       = getPackage(weakTypeOf[If])
+    val defT      = weakTypeOf[Def]
+    val implT     = weakTypeOf[Impl]
+    val dsl       = constructDslTree(defT)
+    val wholeTree = new RouteTreeMaker(impl.tree).makeRouteTree(dsl, input.tree)
 
     infoTime(s"route $implT")
 
@@ -185,6 +197,8 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
 
     EmptyTree
   }
+
+
 
   def showType(t: Type): String = t.dealias match {
     case SingletonTypeStr(s)              => s

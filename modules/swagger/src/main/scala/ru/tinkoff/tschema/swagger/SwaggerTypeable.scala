@@ -11,6 +11,7 @@ import shapeless.labelled.FieldType
 import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, LabelledGeneric, Lazy, Witness, ops}
 import SwaggerTypeable.{Config, seq}
 import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptySet, NonEmptyStream, NonEmptyVector}
+import akka.http.scaladsl.model.MediaType
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import cats.syntax.traverse._
 import cats.instances.vector._
@@ -65,6 +66,8 @@ trait SwaggerTypeable[T] {
                                                                             sel: ops.record.Selector[L, S],
                                                                             witness: Witness.Aux[S]) =
     xmlFields(witness.value.name -> fld)
+
+  def withMediaType(mediaType: MediaType): SwaggerTypeable[T] = updateTyp(_.withMediaType(mediaType))
 }
 
 trait LowLevelSwaggerTypeable {

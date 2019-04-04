@@ -251,7 +251,7 @@ object SwaggerType {
                 "type"      -> Json.fromString("array"),
                 "items"     -> enc.asJson,
                 "minLength" -> minLength.asJson,
-                "maxLength" -> maxLength.asJson,
+                "maxLength" -> maxLength.asJson
             ))
 
       case SwaggerXML(typ, options) => encode(typ).map(o1 => o1.add("xml", options.asJson))

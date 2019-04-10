@@ -12,8 +12,6 @@ libraryDependencies += "org.scalatest" %% "scalatest" % Version.scalaTest % Test
 
 libraryDependencies += "org.scalacheck" %% "scalacheck" % Version.scalaCheck % Test
 
-libraryDependencies += "eu.timepit" %% "refined" % Version.refined
-
 libraryDependencies ++= Seq("actor", "stream")
   .map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
 

@@ -293,6 +293,5 @@ object ParamDirectives {
     def malformed(name: String, error: String): Rejection   = MalformedHeaderRejection(name, error)
   }
 
-  final case class NotFoundPathRejection(name: String)                       extends Rejection
-  final case class MalformedPathRejection(name: String, formatError: String) extends Rejection
+
 }

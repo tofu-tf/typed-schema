@@ -5,9 +5,6 @@ import java.util.UUID
 import HttpParam.tryParam
 import Param.{MultiResult, Result, SingleResult}
 import ParamSource.All
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.StatusCodes.BadRequest
-import akka.http.scaladsl.server.{Directives, Rejection, Route}
 import cats.instances.either._
 import cats.instances.list._
 import cats.instances.map._
@@ -18,7 +15,6 @@ import cats.syntax.either._
 import cats.syntax.parallel._
 import cats.syntax.traverse._
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import ru.tinkoff.tschema.akkaHttp.ParamDirectives.{MalformedPathRejection, NotFoundPathRejection}
 
 import scala.language.higherKinds
 import scala.util.control.NonFatal
@@ -209,12 +205,6 @@ object Param extends ParamInstances[Param] {
       s => Either.fromOption(withNameOption(s), ParseParamError(s"could not find $self value: $s"))
   }
 
-  def rejectionHandler: PartialFunction[Rejection, Route] = {
-    case NotFoundPathRejection(name) =>
-      Directives.complete(BadRequest, s"could not find path parameter $name")
-    case MalformedPathRejection(name, formatError) =>
-      Directives.complete(BadRequest, s"could not parse path parameter $name : $formatError")
-  }
 }
 
 trait LowPriorParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]] {

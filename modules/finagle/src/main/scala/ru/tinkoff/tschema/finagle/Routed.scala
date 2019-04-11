@@ -38,10 +38,6 @@ object Rejection {
 
   type Handler = NonEmptyMap[String, Rejection] => http.Response
 
-  val defaultHandler: Handler = map => {
-    Foldable[NonEmptyMap[String, ?]]
-    val best = map.maximum
-    http.Response(best.status)
-  }
+  val defaultHandler: Handler = map => http.Response(map.maximum.status)
 
 }

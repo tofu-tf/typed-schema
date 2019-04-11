@@ -1,0 +1,1 @@
+libraryDependencies += "org.scalaz" %% "scalaz-zio" % "1.0-RC3"

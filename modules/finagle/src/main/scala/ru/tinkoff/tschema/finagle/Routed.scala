@@ -1,16 +1,23 @@
 package ru.tinkoff.tschema.finagle
-import cats.{Foldable, MonoidK, Order, SemigroupK}
+import java.nio.CharBuffer
+
 import cats.arrow.FunctionK
 import cats.data.NonEmptyMap
-import com.twitter.finagle.{Service, http}
-import cats.syntax.reducible._
 import cats.instances.double._
 import cats.instances.string._
+import cats.{Order, SemigroupK}
+import com.twitter.finagle.{Service, http}
+
+final case class Path(full: String, matchedSize: Int) {
+  def matched: CharSequence   = CharBuffer.wrap(full, 0, matchedSize)
+  def unmatched: CharSequence = CharBuffer.wrap(full, matchedSize)
+}
 
 trait Routed[F[_]] extends SemigroupK[F] {
   def request: F[http.Request]
   def path: F[String]
-  def withPath[A](fa: F[A], f: String => String): F[A]
+  def matchedPath: F[String]
+  def matchNext[A](fa: F[A], length: Int): F[A]
   def reject[A](rejection: Rejection): F[A]
 }
 
@@ -26,7 +33,9 @@ trait Complete[F[_], A] {
   def complete(a: A): F[http.Response]
 }
 
-sealed abstract class Rejection(val priority: Double, val status: http.Status, val message: String = "")
+sealed abstract class Rejection(val priority: Double, val status: http.Status) {
+  def message: String = ""
+}
 
 object Rejection {
   case object NotFound                                   extends Rejection(0, http.Status.NotFound)

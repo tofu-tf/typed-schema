@@ -30,14 +30,15 @@ object zioInstance {
     new Routed[ZIORoute] {
       def request: ZIORoute[http.Request]                                = ZIO.access(_.request)
       def path: ZIORoute[String]                                         = ZIO.access(_.path)
-      def withPath[A](fa: ZIORoute[A], f: String => String): ZIORoute[A] = fa.provideSome(_.modPath(f))
+      def matchNext[A](fa: ZIORoute[A], f: String => String): ZIORoute[A] = fa.provideSome(_.modPath(f))
       def reject[A](rejection: Rejection): ZIORoute[A] =
         ZIO.accessM(hasReq => ZIO.fail(Rejected(NonEmptyMap.one(hasReq.path, rejection))))
       def combineK[A](x: ZIORoute[A], y: ZIORoute[A]): ZIORoute[A] =
         x.catchSome { case Rejected(xrs) => y.catchSome { case Rejected(yrs) => ZIO.fail(Rejected(xrs |+| yrs)) } }
     }
 
-  def zioRunnable[R, E <: Throwable](rejectionHandler: Rejection.Handler): Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] =
+  def zioRunnable[R, E <: Throwable](
+      rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] =
     new Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] {
       def run(fresp: ZIOHttp[R, E, Response]): ZIO[R, E, Service[Request, Response]] =
         ZIO.runtime[R].flatMap { runtime =>

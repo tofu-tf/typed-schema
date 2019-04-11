@@ -15,7 +15,7 @@ object Version {
   val magnolia = "0.10.0"
 
   val scalaTest = "3.0.5"
-  val scalaCheck = "1.13.4"
+  val scalaCheck = "1.13.5"
 
   
   val scalazDeriving = "1.0.0"

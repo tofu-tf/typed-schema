@@ -11,7 +11,7 @@ object Version {
   val enumeratum = "1.5.13"
   val enumeratumCirce = "1.5.19"
   val monocle = "1.5.1-cats"
-  val simulacrum = "0.13.0"
+  val simulacrum = "0.16.0"
   val magnolia = "0.10.0"
 
   val scalaTest = "3.0.5"

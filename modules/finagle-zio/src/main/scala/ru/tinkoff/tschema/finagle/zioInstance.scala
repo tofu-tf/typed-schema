@@ -37,23 +37,24 @@ object zioInstance {
         x.catchSome { case Rejected(xrs) => y.catchSome { case Rejected(yrs) => ZIO.fail(Rejected(xrs |+| yrs)) } }
     }
 
-  def zioRunnable[R, E <: Throwable](runtime: Runtime[R],
-                                     rejectionHandler: Rejection.Handler): Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] =
+  def zioRunnable[R, E <: Throwable](rejectionHandler: Rejection.Handler): Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] =
     new Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] {
       def run(fresp: ZIOHttp[R, E, Response]): ZIO[R, E, Service[Request, Response]] =
-        ZIO.succeedLazy { request =>
-          {
-            val promise = Promise[Response]
-            runtime.unsafeRunAsync(
-              fresp.provideSome[R](r => ZioRoutingEnv(request, request.path, r)).catchAll {
-                case Rejected(rejections) => ZIO.succeed(rejectionHandler(rejections))
-                case OtherFail(e)         => ZIO.fail(e)
+        ZIO.runtime[R].flatMap { runtime =>
+          ZIO.effectTotal { request =>
+            {
+              val promise = Promise[Response]
+              runtime.unsafeRunAsync(
+                fresp.provideSome[R](r => ZioRoutingEnv(request, request.path, r)).catchAll {
+                  case Rejected(rejections) => ZIO.succeed(rejectionHandler(rejections))
+                  case OtherFail(e)         => ZIO.fail(e)
+                }
+              ) {
+                case Exit.Success(resp)  => promise.setValue(resp)
+                case Exit.Failure(cause) => promise.raise(cause.squash)
               }
-            ) {
-              case Exit.Success(resp)  => promise.setValue(resp)
-              case Exit.Failure(cause) => promise.raise(cause.squash)
+              promise
             }
-            promise
           }
         }
       def apply[A](fa: ZIO[R, E, A]): ZIOHttp[R, E, A] = fa.mapError(OtherFail(_)).provideSome(_.embedded)

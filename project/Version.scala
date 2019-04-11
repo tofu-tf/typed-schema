@@ -3,7 +3,7 @@ object Version {
   val circeDerivation = "0.11.0-M1"
   val akka = "2.5.20"
   val akkaHttp = "10.1.7"
-  val refined = "0.8.5"
+  val refined = "0.8.7"
   val shapeless = "2.3.3"
   val kindProjector = "0.9.8"
   val akkaHttpCirce = "1.24.3"

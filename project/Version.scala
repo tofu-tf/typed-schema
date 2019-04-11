@@ -5,7 +5,7 @@ object Version {
   val akkaHttp = "10.1.7"
   val refined = "0.8.5"
   val shapeless = "2.3.3"
-  val kindProjector = "0.9.8"
+  val kindProjector = "0.9.10"
   val akkaHttpCirce = "1.24.3"
   val cats = "1.6.0"
   val enumeratum = "1.5.13"

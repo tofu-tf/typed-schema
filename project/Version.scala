@@ -9,7 +9,7 @@ object Version {
   val akkaHttpCirce = "1.25.2"
   val cats = "1.6.0"
   val enumeratum = "1.5.13"
-  val enumeratumCirce = "1.5.19"
+  val enumeratumCirce = "1.5.21"
   val monocle = "1.5.1-cats"
   val simulacrum = "0.16.0"
   val magnolia = "0.10.0"

@@ -6,4 +6,4 @@ libraryDependencies += "org.typelevel" %% "cats-core" % Version.cats
 libraryDependencies += "com.typesafe.akka" %% "akka-http" % Version.akkaHttp
 libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % "test"
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % Version.kindProjector)
+addCompilerPlugin("org.typelevel" %% "kind-projector" % Version.kindProjector)

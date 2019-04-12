@@ -60,7 +60,8 @@ trait SwaggerBuilder {
   }
 
   def map(f: PathSpec => PathSpec): SwaggerBuilder           = new SwaggerBuilder.SMap(this, f)
-  def describe(descriptions: DescriptionMap): SwaggerBuilder = new SwaggerBuilder.Describe(this, descriptions)
+  def describe(descriptions: DescriptionMap): SwaggerBuilder =
+    new SwaggerBuilder.Describe(this, descriptions)
 }
 
 object SwaggerBuilder {
@@ -93,9 +94,17 @@ object SwaggerBuilder {
 
   class Describe(self: SwaggerBuilder, descriptions: PathDescription.DescriptionMap) extends SwaggerBuilder {
     val paths = self.paths.map {
-      case spec @ PathSpec(_, _, _, Some(key)) =>
+      case spec @ PathSpec(_, _, OpenApiOp(opTags, _, _, _, _, _, _, _, _, _), Some(key)) =>
         import PathDescription.MethodTarget
-        val method = descriptions.method(key)
+        val method: MethodTarget => Option[SwaggerDescription] = {
+          val paths = opTags.map(tag => descriptions.method(s"$tag.$key")) :+ descriptions.method(key)
+          target: PathDescription.MethodTarget => paths.foldLeft(Option.empty[SwaggerDescription]) { (result, path) =>
+            (result, path(target)) match {
+              case (None, desc@Some(_)) => desc
+              case (res, _)             => res
+            }
+          }
+        }
 
         PathSpec.op.modify(
           OpenApiOp.description.modify(method(MethodTarget.Path) orElse _) andThen

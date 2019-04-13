@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.scalaz.example
-import ru.tinkoff.tschema.akkaHttp.{HttpParam, Param}
-import ru.tinkoff.tschema.akkaHttp.ParamSource.All
+import ru.tinkoff.tschema.param.{HttpParam, Param}
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, MagnoliaSwagger, SwaggerTypeable}
 import scalaz.deriving
 

@@ -6,12 +6,13 @@ import io.circe.derivation.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, derivation}
 import org.scalatest.{AsyncFlatSpec, FlatSpec, Matchers}
 import ru.tinkoff.tschema.MultiParamSpec._
-import ru.tinkoff.tschema.akkaHttp.{HttpParam, Serve}
+import ru.tinkoff.tschema.akkaHttp.Serve
 import ru.tinkoff.tschema.typeDSL.QueryParam
 import shapeless.{HNil, Witness}
 import ru.tinkoff.tschema.akkaHttp._
 import ru.tinkoff.tschema.swagger.{MagnoliaSwagger, SwaggerTypeable}
 import akka.http.scaladsl.model.StatusCodes._
+import ru.tinkoff.tschema.param.HttpParam
 
 class MultiParamSpec extends FlatSpec with Matchers with ScalatestRouteTest {
   "Multi parameter case class" should "require first param" in {

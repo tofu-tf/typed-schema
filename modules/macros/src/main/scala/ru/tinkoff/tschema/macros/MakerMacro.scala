@@ -7,9 +7,9 @@ import shapeless.HNil
 import com.sun.org.apache.xalan.internal.xsltc.compiler.util.TypeCheckError
 import ru.tinkoff.tschema.macros.{ShapelessMacros, SingletonMacros}
 import ru.tinkoff.tschema.typeDSL._
-import shapeless.HList
+import shapeless.{HList, HNil}
 
-import language.experimental.macros
+import scala.language.experimental.macros
 import scala.reflect.NameTransformer
 import scala.reflect.macros.{TypecheckException, blackbox}
 

@@ -1,20 +1,18 @@
-package ru.tinkoff.tschema.akkaHttp
+package ru.tinkoff.tschema.param
 
 import java.util.UUID
 
-import HttpParam.tryParam
-import Param.{MultiResult, Result, SingleResult}
-import ParamSource.All
 import cats.instances.either._
 import cats.instances.list._
-import cats.instances.map._
-import cats.instances.option._
 import cats.instances.parallel._
 import cats.kernel.Semigroup
 import cats.syntax.either._
 import cats.syntax.parallel._
 import cats.syntax.traverse._
 import magnolia.{CaseClass, Magnolia, SealedTrait}
+import ru.tinkoff.tschema.param.HttpParam.tryParam
+import ru.tinkoff.tschema.param.Param.{MultiResult, Result, SingleResult}
+import ru.tinkoff.tschema.param.ParamSource.All
 
 import scala.language.higherKinds
 import scala.util.control.NonFatal
@@ -29,6 +27,12 @@ object ParamSource {
   trait Cookie extends ParamSource
 
   trait All extends Query with Path with Header with Form with Cookie
+
+  object Query  extends Query
+  object Path   extends Path
+  object Header extends Header
+  object Form   extends Form
+  object Cookie extends Cookie
 }
 
 sealed trait Param[+S >: All <: ParamSource, A] { self =>

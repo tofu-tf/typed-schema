@@ -1,12 +1,15 @@
 package ru.tinkoff.tschema.finagle
-import cats.data.{NonEmptyList, NonEmptyMap}
-import com.twitter.finagle.{Service, http}
-import scalaz.zio.{Exit, Runtime, ZIO}
+import cats.data.NonEmptyMap
 import cats.instances.string._
 import cats.syntax.semigroup._
 import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
-import scalaz.zio.Exit.Cause
+import ru.tinkoff.tschema.finagle.Rejection.NotFound
+import scalaz.zio
+import scalaz.zio.{Exit, Ref, ZIO}
+
+import scala.collection.immutable.SortedMap
 
 object zioInstance {
 
@@ -15,57 +18,66 @@ object zioInstance {
   final case class Rejected(ms: NonEmptyMap[String, Rejection]) extends Fail[Nothing]
   final case class OtherFail[E](err: E)                         extends Fail[E]
 
-  trait HasRequest[+R] {
-    def request: http.Request
-    def path: String
-    def withPath(path: String): HasRequest[R]
-    def modPath(f: String => String): HasRequest[R] = withPath(f(path))
-    def embedded: R
-  }
+  final case class ZioRouting[+R](
+      request: http.Request,
+      matched: Ref[Int],
+      embedded: R
+  )
 
-  type ZIOHttp[-R, +E, +A] = ZIO[HasRequest[R], Fail[E], A]
+  type ZIOHttp[-R, +E, +A] = ZIO[ZioRouting[R], Fail[E], A]
   type ZIORoute[+A]        = ZIOHttp[Any, Nothing, A]
+
+  val unmatched: ZIORoute[String] = ZIO.accessM(r => r.matched.get.map(r.request.path.substring))
 
   implicit val zioRouted: Routed[ZIORoute] =
     new Routed[ZIORoute] {
-      def request: ZIORoute[http.Request]                                = ZIO.access(_.request)
-      def path: ZIORoute[String]                                         = ZIO.access(_.path)
-      def matchNext[A](fa: ZIORoute[A], f: String => String): ZIORoute[A] = fa.provideSome(_.modPath(f))
+      def matched: ZIORoute[Int]                = ZIO.accessM(_.matched.get)
+      def setMatched[A](m: Int): ZIORoute[Unit] = ZIO.accessM(_.matched.set(m))
+      def request: ZIORoute[http.Request]       = ZIO.access(_.request)
       def reject[A](rejection: Rejection): ZIORoute[A] =
-        ZIO.accessM(hasReq => ZIO.fail(Rejected(NonEmptyMap.one(hasReq.path, rejection))))
+        unmatched.flatMap(path => throwRej(NonEmptyMap.one(path, rejection)))
+
+      def rejectMany[A](rejections: Rejection*): ZIORoute[A] = unmatched.flatMap { path =>
+        throwRej(NonEmptyMap.fromMap(SortedMap(rejections.map(path -> _): _*)).getOrElse(NonEmptyMap.one(path, NotFound)))
+      }
+
       def combineK[A](x: ZIORoute[A], y: ZIORoute[A]): ZIORoute[A] =
-        x.catchSome { case Rejected(xrs) => y.catchSome { case Rejected(yrs) => ZIO.fail(Rejected(xrs |+| yrs)) } }
+        matched >>= (m => catchRej(x)(xrs => setMatched(m) *> catchRej(y)(yrs => throwRej(xrs |+| yrs))))
     }
 
   def zioRunnable[R, E <: Throwable](
       rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] =
     new Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] {
-      def run(fresp: ZIOHttp[R, E, Response]): ZIO[R, E, Service[Request, Response]] =
-        ZIO.runtime[R].flatMap { runtime =>
-          ZIO.effectTotal { request =>
-            {
-              val promise = Promise[Response]
-              runtime.unsafeRunAsync(
-                fresp.provideSome[R](r => ZioRoutingEnv(request, request.path, r)).catchAll {
-                  case Rejected(rejections) => ZIO.succeed(rejectionHandler(rejections))
-                  case OtherFail(e)         => ZIO.fail(e)
-                }
-              ) {
-                case Exit.Success(resp)  => promise.setValue(resp)
-                case Exit.Failure(cause) => promise.raise(cause.squash)
-              }
-              promise
-            }
-          }
-        }
+      def run(zioResponse: ZIOHttp[R, E, Response]): ZIO[R, E, Service[Request, Response]] =
+        for {
+          ref     <- Ref.make(0)
+          runtime <- ZIO.runtime[R]
+        } yield execResponse(ref, runtime, rejectionHandler, zioResponse, _)
+
       def apply[A](fa: ZIO[R, E, A]): ZIOHttp[R, E, A] = fa.mapError(OtherFail(_)).provideSome(_.embedded)
     }
 
-  final case class ZioRoutingEnv[+R](
-      request: http.Request,
-      path: String,
-      embedded: R
-  ) extends HasRequest[R] {
-    def withPath(path: String): ZioRoutingEnv[R] = copy(path = path)
+  @inline private[this] def catchRej[A](z: ZIORoute[A])(f: NonEmptyMap[String, Rejection] => ZIORoute[A]): ZIORoute[A] =
+    z.catchSome { case Rejected(xrs) => f(xrs) }
+
+  @inline private[this] def throwRej[A](map: NonEmptyMap[String, Rejection]): ZIORoute[A] =
+    ZIO.fail(Rejection(map))
+
+  @inline private[this] def execResponse[R, E <: Throwable](matchRef: Ref[Int],
+                                                            runtime: zio.Runtime[R],
+                                                            handler: Rejection.Handler,
+                                                            zioResponse: ZIOHttp[R, E, Response],
+                                                            request: Request): Future[Response] = {
+    val promise = Promise[Response]
+    runtime.unsafeRunAsync(
+      zioResponse.provideSome[R](r => ZioRouting(request, matchRef, r)).catchAll {
+        case Rejected(rejections) => ZIO.succeed(handler(rejections))
+        case OtherFail(e)         => ZIO.fail(e)
+      }
+    ) {
+      case Exit.Success(resp)  => promise.setValue(resp)
+      case Exit.Failure(cause) => promise.raise(cause.squash)
+    }
+    promise
   }
 }

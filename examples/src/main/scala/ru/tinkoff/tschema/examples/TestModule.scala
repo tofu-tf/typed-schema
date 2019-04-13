@@ -2,12 +2,13 @@ package ru.tinkoff.tschema.examples
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.derivation.renaming.snakeCase
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
 import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.akkaHttp.{MkRoute, Param, ParamSource}
+import ru.tinkoff.tschema.ParamSource
+import ru.tinkoff.tschema.akkaHttp.{MkRoute, ParamSource}
+import ru.tinkoff.tschema.param.{Param, ParamSource}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 

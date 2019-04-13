@@ -1,11 +1,10 @@
 package ru.tinkoff.tschema.examples
 import akka.http.scaladsl.server.Route
-import ru.tinkoff.tschema.akkaHttp.{HttpParam, MkRoute, Param, ParamSource, Serve}
+import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
+import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
-import scalaz.deriving
 
 object MultiParameters extends ExampleModule {
   final case class Child(childName: String, childAge: Int)

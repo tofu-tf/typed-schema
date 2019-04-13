@@ -5,8 +5,8 @@ import org.scalactic.Equality
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 import ru.tinkoff.tschema.ForAllTypes.Checker
-import ru.tinkoff.tschema.akkaHttp.ParamSource.{All, Cookie, Form, Query}
-import ru.tinkoff.tschema.akkaHttp.{Param, ParamSource, SingleParam}
+import ru.tinkoff.tschema.param._, ParamSource._
+import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam}
 import shapeless._
 
 import scala.reflect.runtime.universe._

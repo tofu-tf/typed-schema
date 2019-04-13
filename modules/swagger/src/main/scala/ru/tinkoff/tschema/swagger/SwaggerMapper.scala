@@ -16,8 +16,8 @@ import cats.{Eval, Monoid, MonoidK}
 import monocle.function.all._
 import monocle.macros.Lenses
 import monocle.std.option.some
-import ru.tinkoff.tschema.akkaHttp.MakerMacro
 import ru.tinkoff.tschema.common.Name
+import ru.tinkoff.tschema.macros.MakerMacro
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.swagger.OpenApiParam.In
 import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}

@@ -16,6 +16,7 @@ import ru.tinkoff.tschema.param.ParamSource.All
 
 import scala.language.higherKinds
 import scala.util.control.NonFatal
+import scala.util.matching.Regex
 
 sealed trait ParamSource
 
@@ -40,7 +41,7 @@ sealed trait Param[+S >: All <: ParamSource, A] { self =>
 
   def optional: Param[S, Option[A]]
 
-  def get(name: String, all: String => Option[String]): Result[A] =
+  def get(name: String, all: String => Option[CharSequence]): Result[A] =
     this match {
       case s: SingleParam[S, A] => s.applyOpt(all(name))
       case m: MultiParam[S, A]  => m.applyOpt(m.names.map(all))
@@ -48,7 +49,7 @@ sealed trait Param[+S >: All <: ParamSource, A] { self =>
 }
 
 trait SingleParam[+S >: All <: ParamSource, A] extends Param[S, A] {
-  def applyOpt(source: Option[String]): SingleResult[A]
+  def applyOpt(source: Option[CharSequence]): SingleResult[A]
 
   type Self[a] >: HttpSingleParam[a] <: SingleParam[S, a]
 
@@ -66,14 +67,14 @@ object SingleParam extends ParamInstances[SingleParam] {
 }
 
 trait SingleParamReq[+S >: All <: ParamSource, A] extends SingleParam[S, A] {
-  def applyReq(source: String): SingleResult[A]
-  def applyOpt(source: Option[String]): SingleResult[A] = source.fold[SingleResult[A]](Left(MissingParamError))(applyReq)
+  def applyReq(source: CharSequence): SingleResult[A]
+  def applyOpt(source: Option[CharSequence]): SingleResult[A] = source.fold[SingleResult[A]](Left(MissingParamError))(applyReq)
 }
 
 trait MultiParam[+S >: All <: ParamSource, A] extends Param[S, A] { self =>
   def arity: Int = names.length
   def names: List[String]
-  def applyOpt(values: List[Option[String]]): MultiResult[A]
+  def applyOpt(values: List[Option[CharSequence]]): MultiResult[A]
 
   type Self[a] >: HttpMultiParam[a] <: MultiParam[S, a]
 
@@ -82,7 +83,7 @@ trait MultiParam[+S >: All <: ParamSource, A] extends Param[S, A] { self =>
 
   def optional: Self[Option[A]] = new HttpMultiParam[Option[A]] {
     def names: List[String] = self.names
-    def applyOpt(values: List[Option[String]]): MultiResult[Option[A]] =
+    def applyOpt(values: List[Option[CharSequence]]): MultiResult[Option[A]] =
       self.applyOpt(values) match {
         case Right(a)                 => Right(Some(a))
         case Left(err) if err.missing => Right(None)
@@ -92,16 +93,16 @@ trait MultiParam[+S >: All <: ParamSource, A] extends Param[S, A] { self =>
 }
 
 object MultiParam {
-  def apply[A](nameList: List[String], appOpt: List[Option[String]] => MultiResult[A]): MultiParam[All, A] =
+  def apply[A](nameList: List[String], appOpt: List[Option[CharSequence]] => MultiResult[A]): MultiParam[All, A] =
     new MultiParam[All, A] {
-      def names: List[String]                                    = nameList
-      def applyOpt(values: List[Option[String]]): MultiResult[A] = appOpt(values)
+      def names: List[String]                                          = nameList
+      def applyOpt(values: List[Option[CharSequence]]): MultiResult[A] = appOpt(values)
     }
 }
 
 trait MultiParamReq[S >: All <: ParamSource, A] extends MultiParam[S, A] {
-  def applyReq(values: List[String]): MultiResult[A]
-  def applyOpt(values: List[Option[String]]): MultiResult[A] =
+  def applyReq(values: List[CharSequence]): MultiResult[A]
+  def applyOpt(values: List[Option[CharSequence]]): MultiResult[A] =
     values
       .zip(names)
       .parTraverse { case (os, name) => Either.fromOption(os, List(name)) }
@@ -118,10 +119,10 @@ object HttpParam extends HttpParamInstances[HttpParam] {
   trait Enum[E <: enumeratum.EnumEntry] {
     self: enumeratum.Enum[E] =>
     implicit val fromParam: HttpSingleParamReq[E] =
-      s => Either.fromOption(withNameOption(s), ParseParamError(s"could not find $self value: $s"))
+      s => Either.fromOption(withNameOption(s.toString), ParseParamError(s"could not find $self value: $s"))
   }
 
-  def tryParam[T](f: String => T): HttpSingleParamReq[T] =
+  def tryParam[T](f: CharSequence => T): HttpSingleParamReq[T] =
     s =>
       try Right(f(s))
       catch {
@@ -129,12 +130,12 @@ object HttpParam extends HttpParamInstances[HttpParam] {
     }
 
   def empty[A]: HttpMultiParam[List[A]] = new HttpMultiParam[List[A]] {
-    def names: List[String]                                                = Nil
-    def applyOpt(values: List[Option[String]]): MultiResult[List[Nothing]] = Right(Nil)
+    def names: List[String]                                                      = Nil
+    def applyOpt(values: List[Option[CharSequence]]): MultiResult[List[Nothing]] = Right(Nil)
   }
 
-  def separated[T](sep: String)(implicit param: HttpSingleParam[T]): HttpSingleParam[List[T]] =
-    s => s.fold(List.empty[T].asRight[SingleParamError])(_.split(sep).toList.traverse(s => param.applyOpt(Some(s))))
+  def separated[T](sep: Regex)(implicit param: HttpSingleParam[T]): HttpSingleParam[List[T]] =
+    s => s.fold(List.empty[T].asRight[SingleParamError])(sep.split(_).toList.traverse(s => param.applyOpt(Some(s))))
 
   type Typeclass[A] = HttpParam[A]
 
@@ -145,7 +146,7 @@ object HttpParam extends HttpParamInstances[HttpParam] {
           case single: HttpSingleParam[param.PType] =>
             new HttpMultiParam[List[Any]] {
               def names: List[String] = param.label +: prev.names
-              def applyOpt(values: List[Option[String]]): MultiResult[List[Any]] = values match {
+              def applyOpt(values: List[Option[CharSequence]]): MultiResult[List[Any]] = values match {
                 case value :: rest =>
                   (single.applyOpt(value).leftMap(_.toMulti(param.label)), prev.applyOpt(rest)).parMapN(_ :: _)
                 case Nil => Left(MultiParamError(Map(param.label -> MissingParamError)))
@@ -155,7 +156,7 @@ object HttpParam extends HttpParamInstances[HttpParam] {
             new HttpMultiParam[List[Any]] {
               override val arity: Int = multi.arity + prev.arity
               val names: List[String] = multi.names ++ prev.names
-              def applyOpt(values: List[Option[String]]): MultiResult[List[Any]] =
+              def applyOpt(values: List[Option[CharSequence]]): MultiResult[List[Any]] =
                 (multi.applyOpt(values.take(multi.arity)), prev.applyOpt(values.drop(multi.arity))).parMapN(_ :: _)
             }
         }
@@ -193,20 +194,20 @@ object Param extends ParamInstances[Param] {
 
   def apply[S >: All <: ParamSource, T](implicit instance: Param[S, T]): Param[S, T] = instance
 
-  def instance[S >: All <: ParamSource, T](f: Option[String] => SingleResult[T]): SingleParam[S, T] = param => f(param)
+  def instance[S >: All <: ParamSource, T](f: Option[CharSequence] => SingleResult[T]): SingleParam[S, T] = param => f(param)
 
-  def separated[S >: All <: ParamSource, T](sep: String)(implicit param: SingleParam[S, T]): SingleParam[S, List[T]] =
-    s => s.fold(List.empty[T].asRight[SingleParamError])(_.split(sep).toList.traverse(s => param.applyOpt(Some(s))))
+  def separated[S >: All <: ParamSource, T](sep: Regex)(implicit param: SingleParam[S, T]): SingleParam[S, List[T]] =
+    s => s.fold(List.empty[T].asRight[SingleParamError])(sep.split(_).toList.traverse(s => param.applyOpt(Some(s))))
 
   def empty[A]: MultiParam[All, List[A]] = new MultiParam[All, List[A]] {
-    def names: List[String]                                                = Nil
-    def applyOpt(values: List[Option[String]]): MultiResult[List[Nothing]] = Right(Nil)
+    def names: List[String]                                                      = Nil
+    def applyOpt(values: List[Option[CharSequence]]): MultiResult[List[Nothing]] = Right(Nil)
   }
 
   trait Enum[S >: All <: ParamSource, E <: enumeratum.EnumEntry] {
     self: enumeratum.Enum[E] =>
     implicit val fromParam: SingleParamReq[S, E] =
-      s => Either.fromOption(withNameOption(s), ParseParamError(s"could not find $self value: $s"))
+      s => Either.fromOption(withNameOption(s.toString), ParseParamError(s"could not find $self value: $s"))
   }
 
 }
@@ -236,15 +237,15 @@ trait HttpParamInstances[P[a] >: HttpSingleParam[a]] extends LowPriorHttpParamIn
 }
 
 trait PrimitiveParamInstances[P[a] >: HttpSingleParam[a]] {
-  implicit val stringParam: P[String]         = tryParam(identity)
-  implicit val intParam: P[Int]               = tryParam(_.toInt)
-  implicit val doubleParam: P[Double]         = tryParam(_.toDouble)
-  implicit val floatParam: P[Float]           = tryParam(_.toFloat)
-  implicit val longParam: P[Long]             = tryParam(_.toLong)
-  implicit val bigIntParam: P[BigInt]         = tryParam(BigInt.apply)
-  implicit val booleanParam: P[Boolean]       = tryParam(_.toBoolean)
-  implicit val bigDecimalParam: P[BigDecimal] = tryParam(BigDecimal.apply)
-  implicit val uuidParam: P[UUID]             = tryParam(UUID.fromString)
+  implicit val stringParam: P[String]         = tryParam(_.toString)
+  implicit val intParam: P[Int]               = tryParam(_.toString.toInt)
+  implicit val doubleParam: P[Double]         = tryParam(_.toString.toDouble)
+  implicit val floatParam: P[Float]           = tryParam(_.toString.toFloat)
+  implicit val longParam: P[Long]             = tryParam(_.toString.toLong)
+  implicit val bigIntParam: P[BigInt]         = tryParam(s => BigInt(s.toString))
+  implicit val booleanParam: P[Boolean]       = tryParam(_.toString.toBoolean)
+  implicit val bigDecimalParam: P[BigDecimal] = tryParam(s => BigDecimal(s.toString))
+  implicit val uuidParam: P[UUID]             = tryParam(s => UUID.fromString(s.toString))
 }
 
 sealed trait ParamError

@@ -3,8 +3,9 @@ name := "Typed Schema"
 moduleName := "typed-schema-all"
 
 lazy val compilerPlugins = List(
-  addCompilerPlugin("org.spire-math"  %% "kind-projector" % Version.kindProjector),
-  addCompilerPlugin("org.scalamacros" % "paradise"        % "2.1.1" cross CrossVersion.patch)
+  addCompilerPlugin("org.spire-math"  %% "kind-projector"     % Version.kindProjector),
+  addCompilerPlugin("org.scalamacros" % "paradise"            % "2.1.1" cross CrossVersion.patch),
+  addCompilerPlugin("com.olegpy"      %% "better-monadic-for" % "0.3.0")
 )
 
 lazy val commonSettings = compilerPlugins

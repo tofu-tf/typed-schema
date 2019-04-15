@@ -48,14 +48,16 @@ object ForAllTypes {
 }
 
 trait ParamSpecLow[S >: All <: ParamSource] {
+  val byColon = "\\,".r
   implicit def listParam[A: SingleParam[S, ?]]: SingleParam[S, List[A]] = {
-    Param.separated[S, A](",")
+    Param.separated[S, A](byColon)
   }
 }
 
 abstract class ParamSpec[S >: All <: ParamSource]
     extends PropSpec with GeneratorDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
-  implicit def listList[A: SingleParam[S, ?]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](";")
+  val bySemicolon                                                            = ";".r
+  implicit def listList[A: SingleParam[S, ?]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](bySemicolon)
   def fromParam[T](s: String)(implicit f: SingleParam[S, T])                 = f.applyOpt(Some(s))
 }
 

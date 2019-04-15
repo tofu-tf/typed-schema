@@ -19,7 +19,7 @@ final class SubString private[SubString] (private val arr: Array[Char], private 
     val len = end - start
     if (len < 0) outOfBound(len)
     if ((start == 0) && (end == size)) this
-    else new SubString(arr, from + start, from + to)
+    else new SubString(arr, from + start, from + end)
   }
   override def equals(obj: Any): Boolean = obj match {
     case s: CharSequence =>

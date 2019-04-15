@@ -1,1 +1,2 @@
-libraryDependencies += "org.scalaz" %% "scalaz-zio" % "1.0-RC3"
+libraryDependencies += "org.scalaz" %% "scalaz-zio"              % Version.zio
+libraryDependencies += "org.scalaz" %% "scalaz-zio-interop-cats" % Version.zio

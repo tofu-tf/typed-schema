@@ -14,6 +14,7 @@ object Version {
   val simulacrum = "0.13.0"
   val magnolia = "0.10.0"
   val zio             = "1.0-RC3"
+  val finagle = "19.3.0"
 
   val scalaTest = "3.0.7"
   val scalaCheck = "1.13.4"

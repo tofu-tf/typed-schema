@@ -172,10 +172,7 @@ trait MkSwagger[T] extends SwaggerBuilder {
 }
 
 object MkSwagger {
-  def apply[Def <: DSLDef](definition: => Def)(impl: Unit): SwaggerBuilder =
-    macro MakerMacro.makeRouteHNil[macroInterface.type, Def, Unit, SwaggerBuilder]
-
-  def of[Def <: DSLDef](definition: => Def): SwaggerBuilder =
+  def apply[Def <: DSLDef](definition: => Def): SwaggerBuilder =
     macro MakerMacro.makeRouteHNilUnit[macroInterface.type, Def, SwaggerBuilder]
 
   object macroInterface {

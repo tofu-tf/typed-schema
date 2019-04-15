@@ -1,4 +1,5 @@
 package ru.tinkoff.tschema.finagle
+import cats.Monad
 import cats.data.NonEmptyMap
 import cats.instances.string._
 import cats.syntax.semigroup._
@@ -6,6 +7,7 @@ import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.Rejection.NotFound
+import ru.tinkoff.tschema.utils.SubString
 import scalaz.zio
 import scalaz.zio.{Exit, Ref, ZIO}
 
@@ -20,6 +22,7 @@ object zioInstance {
 
   final case class ZioRouting[+R](
       request: http.Request,
+      path: CharSequence,
       matched: Ref[Int],
       embedded: R
   )
@@ -31,8 +34,11 @@ object zioInstance {
 
   implicit val zioRouted: Routed[ZIORoute] =
     new Routed[ZIORoute] {
+      val FMonad: Monad[ZIORoute] = zio.interop.catz.ioInstances
+
       def matched: ZIORoute[Int]                = ZIO.accessM(_.matched.get)
       def setMatched[A](m: Int): ZIORoute[Unit] = ZIO.accessM(_.matched.set(m))
+      def path: ZIORoute[CharSequence]          = ZIO.access(_.path)
       def request: ZIORoute[http.Request]       = ZIO.access(_.request)
       def reject[A](rejection: Rejection): ZIORoute[A] =
         unmatched.flatMap(path => throwRej(NonEmptyMap.one(path, rejection)))
@@ -61,7 +67,7 @@ object zioInstance {
     z.catchSome { case Rejected(xrs) => f(xrs) }
 
   @inline private[this] def throwRej[A](map: NonEmptyMap[String, Rejection]): ZIORoute[A] =
-    ZIO.fail(Rejection(map))
+    ZIO.fail(Rejected(map))
 
   @inline private[this] def execResponse[R, E <: Throwable](matchRef: Ref[Int],
                                                             runtime: zio.Runtime[R],
@@ -70,7 +76,7 @@ object zioInstance {
                                                             request: Request): Future[Response] = {
     val promise = Promise[Response]
     runtime.unsafeRunAsync(
-      zioResponse.provideSome[R](r => ZioRouting(request, matchRef, r)).catchAll {
+      zioResponse.provideSome[R](r => ZioRouting(request, SubString(request.path), matchRef, r)).catchAll {
         case Rejected(rejections) => ZIO.succeed(handler(rejections))
         case OtherFail(e)         => ZIO.fail(e)
       }

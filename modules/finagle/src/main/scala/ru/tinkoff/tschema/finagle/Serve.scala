@@ -13,8 +13,10 @@ import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam}
 import ru.tinkoff.tschema.param.ParamSource.All
 import ru.tinkoff.tschema.param._
+
 import shapeless._
 import shapeless.labelled.{FieldType, field}
+import Routed.implicits._
 
 trait Serve[T, F[_], In, Out] {
   def process(in: In): F[Out]
@@ -23,6 +25,7 @@ trait Serve[T, F[_], In, Out] {
 }
 
 object Serve {
+  import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
   type Add[T, F[_], In <: HList, name, V] = Serve[T, F, In, FieldType[name, V] :: In]
 
@@ -32,25 +35,44 @@ object Serve {
   def serveAddIn[T, F[_]: Functor, In <: HList, A, key](f: In => F[A]): Add[T, F, In, key, A] =
     in => f(in).map(field[key](_) :: in)
 
-  protected def resolveParam[F[_]: Monad: Routed, S >: All <: ParamSource, name, A](
+  protected def resolveParam[F[_], S >: All <: ParamSource, name, A](
       implicit param: Param[S, A],
       w: Name[name],
-      directives: ParamDirectives[S]
-  ): F[A] =
-    param match {
-      case single: SingleParam[S, A] =>
-        directives.getByName[F](w.string).flatMap(s => directives.provideOrReject[F, A](w.string, single.applyOpt(s)))
-      case multi: MultiParam[S, A] =>
-        multi.names
-          .traverse(directives.getByName[F])
-          .flatMap(ls => directives.provideOrReject[F, A](w.string, multi.applyOpt(ls)))
-    }
+      directives: ParamDirectives[S],
+      routed: Routed[F]
+  ): F[A] = param match {
+    case single: SingleParam[S, A] =>
+      directives.getByName[F](w.string).flatMap(s => directives.provideOrReject[F, A](w.string, single.applyOpt(s)))
+    case multi: MultiParam[S, A] =>
+      multi.names
+        .traverse(directives.getByName[F])
+        .flatMap(ls => directives.provideOrReject[F, A](w.string, multi.applyOpt(ls)))
+  }
 
+  implicit def queryParamServe[F[_]: Routed, name: Name, x: Param.PQuery, In <: HList] =
+    serveAdd[QueryParam[name, x], F, In, x, name](resolveParam[F, ParamSource.Query, name, x])
+
+  implicit def captureServe[F[_]: Routed, name: Name, x: Param.PPath, In <: HList] =
+    serveAdd[Capture[name, x], F, In, x, name](resolveParam[F, ParamSource.Path, name, x])
+
+  implicit def headerServe[F[_]: Routed, name: Name, x: Param.PHeader, In <: HList] =
+    serveAdd[Header[name, x], F, In, x, name](resolveParam[F, ParamSource.Header, name, x])
+
+  implicit def cookieServe[F[_]: Routed, name: Name, x: Param.PCookie, In <: HList] =
+    serveAdd[Cookie[name, x], F, In, x, name](resolveParam[F, ParamSource.Cookie, name, x])
+
+  implicit def formFieldServe[F[_]: Routed, name <: Symbol: Witness.Aux, x: Param.PForm, In <: HList] =
+    serveAdd[FormField[name, x], F, In, x, name](resolveParam[F, ParamSource.Form, name, x])
+
+  implicit def bodyServe[F[_]: Functor, name <: Symbol: Witness.Aux, A, In <: HList](implicit A: ParseBody[F, A]) =
+    serveAdd[ReqBody[name, A], F, In, A, name](A.parse)
+
+  implicit def prefix[F[_]: Routed, name: Name]: F[Unit] = Routed.prefix(Name[name].string)
 }
 
 trait ParamDirectives[S <: ParamSource] {
   def source: S
-  def getByName[F[_]: Monad: Routed](name: String): F[Option[String]]
+  def getByName[F[_]: Routed](name: String): F[Option[String]]
 
   def notFound(name: String): Rejection                 = MissingParam(name, source)
   def malformed(name: String, error: String): Rejection = MalformedParam(name, error, source)
@@ -68,15 +90,16 @@ trait ParamDirectives[S <: ParamSource] {
         routed.rejectMany(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
     }
 
-  def provideOrReject[F[_]: Applicative: Routed, A](name: String, result: Param.Result[A]): F[A] =
+  def provideOrReject[F[_]: Routed, A](name: String, result: Param.Result[A]): F[A] =
     result.fold(errorReject[F, A](name, _), _.pure[F])
 }
 
 abstract class ParamDirectivesSimple[S <: ParamSource](val source: S) extends ParamDirectives[S] {
   def getFromRequest(name: String)(req: Request): Option[String]
 
-  def getByName[F[_]: Monad: Routed](name: String): F[Option[String]] =
-    Routed.request[F].map(getFromRequest(name))
+  def getByName[F[_]](name: String)(implicit F: Routed[F]): F[Option[String]] = {
+    F.FMonad.map(Routed.request[F])(getFromRequest(name))
+  }
 }
 
 object ParamDirectives {
@@ -93,12 +116,12 @@ object ParamDirectives {
   }
 
   implicit val pathParamDirectives: TC[ParamSource.Path] = new TC[ParamSource.Path] {
-    def getByName[F[_]: Monad: Routed](name: String): F[Option[String]] = ???
-    def source                                                          = ParamSource.Path
+    def getByName[F[_]: Routed](name: String): F[Option[String]] = Routed.segment.map(_.map(_.toString))
+    def source                                                   = ParamSource.Path
   }
 
   implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {
-    def getFromRequest(name: String)(req: Request): Option[String] = ???
+    def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
   }
 
   implicit val headerParamDirectives: TC[Header] = new TCS[Header](Header) {

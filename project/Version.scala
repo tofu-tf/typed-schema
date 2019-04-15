@@ -1,5 +1,5 @@
 object Version {
-  val circe = "0.11.1"
+  val circe           = "0.11.1"
   val circeDerivation = "0.11.0-M1"
   val akka = "2.5.20"
   val akkaHttp = "10.1.7"
@@ -13,6 +13,7 @@ object Version {
   val monocle = "1.5.1-cats"
   val simulacrum = "0.13.0"
   val magnolia = "0.10.0"
+  val zio             = "1.0-RC3"
 
   val scalaTest = "3.0.7"
   val scalaCheck = "1.13.4"

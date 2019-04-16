@@ -1,22 +1,19 @@
 package ru.tinkoff.tschema
 package finagle
 
-import cats.syntax.functor._
-import cats.syntax.flatMap._
-import cats.syntax.traverse._
-import cats.syntax.applicative._
-import cats.syntax.apply._
+import Routed.implicits._
+import cats.Functor
 import cats.instances.list._
-import cats.{Applicative, Functor, Monad}
-import com.twitter.finagle.http.Request
+import cats.syntax.flatMap._
+import cats.syntax.functor._
+import cats.syntax.traverse._
 import ru.tinkoff.tschema.common.Name
-import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam}
-import ru.tinkoff.tschema.param.ParamSource.All
+import ru.tinkoff.tschema.finagle.Rejection.{MissingParam, missingParam}
+import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
-
+import ru.tinkoff.tschema.typeDSL.{ApiKeyAuth, CanHoldApiKey, QueryParams}
 import shapeless._
 import shapeless.labelled.{FieldType, field}
-import Routed.implicits._
 
 trait Serve[T, F[_], In, Out] {
   def process(in: In): F[Out]
@@ -24,7 +21,7 @@ trait Serve[T, F[_], In, Out] {
   def as[U]: Serve[U, F, In, Out] = this.asInstanceOf[Serve[U, F, In, Out]]
 }
 
-object Serve {
+object Serve extends ServeAuthInstances with ServeParamsInstances {
   import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
   type Add[T, F[_], In <: HList, name, V] = Serve[T, F, In, FieldType[name, V] :: In]
@@ -52,6 +49,9 @@ object Serve {
   implicit def queryParamServe[F[_]: Routed, name: Name, x: Param.PQuery, In <: HList] =
     serveAdd[QueryParam[name, x], F, In, x, name](resolveParam[F, ParamSource.Query, name, x])
 
+  implicit def queryFlagServe[F[_]: Routed, name <: Symbol: Name, x, In <: HList] =
+    serveAdd[QueryFlag[name], F, In, Boolean, name](Routed.request[F].map(_.params.contains(Name[name].string)))
+
   implicit def captureServe[F[_]: Routed, name: Name, x: Param.PPath, In <: HList] =
     serveAdd[Capture[name, x], F, In, x, name](resolveParam[F, ParamSource.Path, name, x])
 
@@ -70,62 +70,25 @@ object Serve {
   implicit def prefix[F[_]: Routed, name: Name]: F[Unit] = Routed.prefix(Name[name].string)
 }
 
-trait ParamDirectives[S <: ParamSource] {
-  def source: S
-  def getByName[F[_]: Routed](name: String): F[Option[String]]
 
-  def notFound(name: String): Rejection                 = MissingParam(name, source)
-  def malformed(name: String, error: String): Rejection = MalformedParam(name, error, source)
+private[finagle] trait ServeParamsInstances { self: Serve.type =>
 
-  def singleRejection(name: String, error: SingleParamError): Rejection =
-    error match {
-      case MissingParamError    => notFound(name)
-      case ParseParamError(err) => malformed(name, err)
+  implicit def queryParamsServe[F[_]: Routed, name: Name, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
+    serveAdd[QueryParams[name, x], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = false))
+
+  implicit def queryOptParamsServe[F[_]: Routed, name: Name, x, In <: HList](
+      implicit param: SingleParam[ParamSource.Query, x]) =
+    serveAdd[QueryParams[name, Option[x]], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = true))
+
+  private def extractQueryParams[F[_]: Routed, name: Name, x](allowEmpty: Boolean)(
+      implicit param: SingleParam[ParamSource.Query, x]): F[List[x]] =
+    Routed.request.flatMap { req =>
+      val name = Name[name].string
+      val dir  = ParamDirectives[Query]
+      req.params.getAll(name) match {
+        case it if it.nonEmpty || allowEmpty => it.toList.traverse(s => dir.provideOrReject(name, param.applyOpt(Some(s))))
+        case _                               => Routed.reject(missingParam(name, Query))
+      }
     }
-
-  def errorReject[F[_], A](name: String, error: ParamError)(implicit routed: Routed[F]): F[A] =
-    error match {
-      case single: SingleParamError => routed.reject(singleRejection(name, single))
-      case MultiParamError(vals) =>
-        routed.rejectMany(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
-    }
-
-  def provideOrReject[F[_]: Routed, A](name: String, result: Param.Result[A]): F[A] =
-    result.fold(errorReject[F, A](name, _), _.pure[F])
-}
-
-abstract class ParamDirectivesSimple[S <: ParamSource](val source: S) extends ParamDirectives[S] {
-  def getFromRequest(name: String)(req: Request): Option[String]
-
-  def getByName[F[_]](name: String)(implicit F: Routed[F]): F[Option[String]] = {
-    F.FMonad.map(Routed.request[F])(getFromRequest(name))
-  }
-}
-
-object ParamDirectives {
-  type TC[A <: ParamSource]  = ParamDirectives[A]
-  type TCS[A <: ParamSource] = ParamDirectivesSimple[A]
-  import ParamSource._
-
-  implicit val queryParamDirective: TC[Query] = new TCS[Query](Query) {
-    def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
-  }
-
-  implicit val cookieParamDirectives: TC[Cookie] = new TCS[Cookie](Cookie) {
-    def getFromRequest(name: String)(req: Request): Option[String] = req.cookies.get(name).map(_.value)
-  }
-
-  implicit val pathParamDirectives: TC[ParamSource.Path] = new TC[ParamSource.Path] {
-    def getByName[F[_]: Routed](name: String): F[Option[String]] = Routed.segment.map(_.map(_.toString))
-    def source                                                   = ParamSource.Path
-  }
-
-  implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {
-    def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
-  }
-
-  implicit val headerParamDirectives: TC[Header] = new TCS[Header](Header) {
-    def getFromRequest(name: String)(req: Request): Option[String] = req.headerMap.get(name)
-  }
 
 }

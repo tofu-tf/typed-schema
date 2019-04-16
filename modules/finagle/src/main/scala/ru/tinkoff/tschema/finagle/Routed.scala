@@ -2,18 +2,24 @@ package ru.tinkoff.tschema.finagle
 import cats.arrow.FunctionK
 import cats.data.NonEmptyMap
 import cats.instances.double._
+import cats.instances.list._
 import cats.instances.option._
 import cats.instances.string._
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.foldable._
+import cats.syntax.order._
 import cats.syntax.functor._
 import cats.syntax.reducible._
-import cats.{Apply, Monad, Order, SemigroupK}
+import cats.{Apply, Foldable, Monad, Monoid, Order, SemigroupK}
+import com.twitter.finagle.http.Status._
+import com.twitter.finagle.http.Version
 import com.twitter.finagle.{Service, http}
-import ru.tinkoff.tschema.finagle.Rejection.NotFound
+import com.twitter.io.Buf
+import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam, notFound}
 import ru.tinkoff.tschema.finagle.Routed.SegmentPattern
 import ru.tinkoff.tschema.param.ParamSource
+import com.twitter.io
 
 import scala.util.matching.Regex
 
@@ -31,7 +37,8 @@ trait Routed[F[_]] extends SemigroupK[F] {
   def matched: F[Int]
   def setMatched[A](m: Int): F[Unit]
   def reject[A](rejection: Rejection): F[A]
-  def rejectMany[A](rejections: Rejection*): F[A]
+
+  def rejectMany[A](rejections: Rejection*): F[A] = reject(Foldable[List].fold(rejections.toList))
 
   def addMatched[A](i: Int): F[Unit] = matched >>= (m => setMatched(m + i))
 
@@ -51,17 +58,18 @@ trait Routed[F[_]] extends SemigroupK[F] {
     for {
       path <- matchedPath
       i    = Routed.commonPathPrefix(path, pref)
-      res  <- if (i < 0) reject[Unit](NotFound) else if (i > 0) addMatched(i) else FMonad.unit
+      res  <- if (i < 0) reject[Unit](notFound) else if (i > 0) addMatched(i) else FMonad.unit
     } yield res
 
   def checkPath(path: CharSequence): F[Unit] =
     for {
       path <- matchedPath
       i    = Routed.commonPathPrefix(path, path)
-      res  <- if (i == path.length()) addMatched(i) else reject[Unit](NotFound)
+      res  <- if (i == path.length()) addMatched(i) else reject[Unit](notFound)
     } yield res
 
   def checkPathEnd: F[Unit] = checkPath("")
+
 }
 
 object Routed {
@@ -98,27 +106,69 @@ trait Runnable[F[_], G[_]] extends FunctionK[G, F] {
 }
 
 trait ParseBody[F[_], A] {
-  def parse: F[A]
+  def parse(): F[A]
 }
 
 trait Complete[F[_], A] {
   def complete(a: A): F[http.Response]
 }
 
-sealed abstract class Rejection(val priority: Double, val status: http.Status) {
-  def message: String = ""
+final case class Rejection(
+    priority: Double,
+    status: http.Status = NotFound,
+    path: String = "",
+    wrongMethod: List[String] = Nil,
+    missing: List[MissingParam] = Nil,
+    malformed: List[MalformedParam] = Nil,
+    unauthorized: Boolean = false,
+    messages: List[String] = Nil
+) {
+  def withPath(p: String): Rejection   = copy(path = p)
+  def addMessage(s: String): Rejection = copy(messages = s :: messages)
 }
 
 object Rejection {
-  case object NotFound                                                        extends Rejection(0, http.Status.NotFound)
-  case class WrongMethod(method: String)                                      extends Rejection(1, http.Status.MethodNotAllowed)
-  case class MissingParam(name: String, source: ParamSource)                  extends Rejection(2, http.Status.BadRequest)
-  case class MalformedParam(name: String, error: String, source: ParamSource) extends Rejection(3, http.Status.BadRequest)
+  val notFound                                        = Rejection(0)
+  def wrongMethod(method: String)                     = Rejection(1, MethodNotAllowed, wrongMethod = List(method))
+  def missingParam(name: String, source: ParamSource) = Rejection(3, BadRequest, missing = List(MissingParam(name, source)))
+  def malformedParam(name: String, error: String, source: ParamSource) =
+    Rejection(4, BadRequest, malformed = List(MalformedParam(name, error, source)))
+  def body(error: String) = Rejection(5, BadRequest, messages = List(error))
+  val unauthorized        = Rejection(6, Unauthorized)
+  case class MissingParam(name: String, source: ParamSource)
+  case class MalformedParam(name: String, error: String, source: ParamSource)
 
-  implicit val order: Order[Rejection] = Order.by(_.priority)
+  implicit val rejectionMonoid: Monoid[Rejection] = new Monoid[Rejection] {
+    def empty: Rejection = notFound
+    def combine(x: Rejection, y: Rejection): Rejection =
+      if (x < y) combine(y, x)
+      else
+        Rejection(
+          x.priority,
+          x.status,
+          x.path,
+          x.wrongMethod ::: y.wrongMethod,
+          x.missing ::: y.missing,
+          x.malformed ::: y.malformed,
+          x.unauthorized || y.unauthorized,
+          x.messages ::: y.messages
+        )
+  }
 
-  type Handler = NonEmptyMap[String, Rejection] => http.Response
+  implicit val order: Order[Rejection] =
+    (x, y) =>
+      x.priority compare y.priority match {
+        case 0 => x.path.length compare y.path.length
+        case i => i
+    }
 
-  val defaultHandler: Handler = map => http.Response(map.maximum.status)
+  type Handler = Rejection => http.Response
+
+  val defaultHandler: Handler = rej =>
+    http.Response(
+      Version.Http10,
+      rej.status,
+      io.Reader.fromBuf(rej.messages.headOption.fold(Buf.Empty)(Buf.Utf8(_)))
+  )
 
 }

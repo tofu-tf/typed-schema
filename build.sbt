@@ -23,11 +23,13 @@ val finagleHttp     = "com.twitter"          %% "finagle-http"      % Version.fi
 val circeDerivation = "io.circe"             %% "circe-derivation"  % Version.circeDerivation
 val scalazDeriving  = "org.scalaz"           %% "scalaz-deriving"   % Version.scalazDeriving
 val scalazDMacro    = "org.scalaz"           %% "deriving-macro"    % Version.scalazDeriving
+val derevo          = "org.manatki"          %% "derevo-cats"       % Version.derevo
 
 val monocle = List("core", "macro").map(module => "com.github.julien-truffaut"             %% s"monocle-$module" % Version.monocle)
 val circe   = List("core", "parser", "generic", "generic-extras").map(module => "io.circe" %% s"circe-$module"   % Version.circe)
 val akka    = List("actor", "stream").map(module => "com.typesafe.akka"                    %% s"akka-$module"    % Version.akka)
 val zio     = List("zio", "zio-interop-cats").map(module => "org.scalaz"                   %% s"scalaz-$module"  % Version.zio)
+val tethys  = List("core", "jackson").map(module => "com.tethys-json"                      %% s"tethys-$module"  % Version.tethys)
 
 val reflect  = libraryDependencies += scalaOrganization.value % "scala-reflect"  % scalaVersion.value
 val compiler = libraryDependencies += scalaOrganization.value % "scala-compiler" % scalaVersion.value
@@ -94,6 +96,24 @@ lazy val finagle = project
     commonSettings,
     moduleName := "typed-schema-finagle",
     libraryDependencies += finagleHttp
+  )
+
+lazy val finagleCirce = project
+  .in(file("modules/finagleCirce"))
+  .dependsOn(finagle)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-finagle-circe",
+    libraryDependencies ++= circe
+  )
+
+lazy val finagleTethys = project
+  .in(file("modules/finagleTethys"))
+  .dependsOn(finagle)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-finagle-tethys",
+    libraryDependencies ++= tethys
   )
 
 lazy val finagleZio = project

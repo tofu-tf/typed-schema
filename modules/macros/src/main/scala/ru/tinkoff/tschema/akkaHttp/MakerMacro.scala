@@ -3,7 +3,7 @@ package ru.tinkoff.tschema.akkaHttp
 import java.time.Instant
 
 import MakerMacro._
-import akka.shapeless.HNil
+import shapeless.HNil
 import com.sun.org.apache.xalan.internal.xsltc.compiler.util.TypeCheckError
 import ru.tinkoff.tschema.macros.{ShapelessMacros, SingletonMacros}
 import ru.tinkoff.tschema.typeDSL._

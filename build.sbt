@@ -131,7 +131,8 @@ lazy val main = project
   .settings(
     commonSettings,
     moduleName := "typed-schema",
-    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: scalacheck :: scalatest :: magnolia :: akka
+    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: scalacheck :: scalatest :: magnolia :: akka,
+    scalacOptions += "-Ymacro-debug-lite"
   )
 
 lazy val scalaz = project

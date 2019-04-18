@@ -2,8 +2,6 @@ package ru.tinkoff.tschema.swagger
 
 import java.util.{Date, UUID}
 
-import akka.http.scaladsl.model.MediaTypes.`application/x-www-form-urlencoded`
-import akka.http.scaladsl.model.{MediaType, StatusCode, StatusCodes}
 import cats.arrow.FunctionK
 import cats.data.NonEmptyList
 import cats.syntax.option._
@@ -222,7 +220,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 
   final class MakeFormField(val objType: SwaggerType) {
-    def myMediaType: MediaType = `application/x-www-form-urlencoded`
+    def myMediaType: MediaType = "application/x-www-form-urlencoded"
 
     def make: OpenApiRequestBody =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))

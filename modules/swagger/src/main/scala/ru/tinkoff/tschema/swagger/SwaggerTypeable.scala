@@ -11,7 +11,6 @@ import shapeless.labelled.FieldType
 import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, LabelledGeneric, Lazy, Witness, ops}
 import SwaggerTypeable.{Config, seq}
 import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptySet, NonEmptyStream, NonEmptyVector}
-import akka.http.scaladsl.model.MediaType
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import cats.syntax.traverse._
 import cats.instances.vector._

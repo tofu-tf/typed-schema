@@ -1,7 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
 import OpenApi.defaultMediaTypeVec
-import akka.http.scaladsl.model.{MediaType, MediaTypes, StatusCode}
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe._
 import io.circe.generic._
@@ -12,7 +11,6 @@ import ru.tinkoff.tschema.utils.json.CirceKeyEnum
 import ru.tinkoff.tschema.utils.json.circeSyntax._
 import ru.tinkoff.tschema.utils.json.circeCodecs._
 import cats.syntax.option._
-import specialCodecs._
 
 import scala.collection.immutable.TreeMap
 
@@ -305,7 +303,7 @@ object OpenApiOp {
 final case class OpenApiResponses(default: Option[OpenApiResponse] = None, codes: Map[StatusCode, OpenApiResponse] = Map.empty)
 
 object OpenApiResponses {
-  implicit lazy val statusCodeEncoder = KeyEncoder.encodeKeyInt.contramap[StatusCode](_.intValue)
+  implicit lazy val statusCodeEncoder = KeyEncoder.encodeKeyInt
 
   val mapEnc = Encoder.encodeMapLike[StatusCode, OpenApiResponse, Map]
 
@@ -336,7 +334,3 @@ object OpenApiResponse {
 @JsonCodec(encodeOnly = true)
 final case class OpenApiMediaType(schema: Option[SwaggerType] = None, example: Option[Json] = None)
 object OpenApiMediaType
-
-private object specialCodecs {
-  implicit val mediaTypeKeyEncoder: KeyEncoder[MediaType] = KeyEncoder[String].contramap(_.toString)
-}

@@ -1,5 +1,6 @@
 package ru.tinkoff.tschema.finagle
 import cats.Applicative
+import ru.tinkoff.tschema.finagle.util.message
 import ru.tinkoff.tschema.finagle.util.message.{jsonBodyParse, jsonComplete}
 import tethys._
 import tethys.readers.tokens.TokenIteratorProducer
@@ -9,6 +10,10 @@ object tethysInstances {
   implicit def tethysEncodeComplete[F[_]: Applicative, A: JsonWriter](
       implicit producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, A] =
     jsonComplete(_.asJson)
+
+  implicit def tethysEncodeCompleteF[F[_]: Applicative, A: JsonWriter](
+      implicit producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, F[A]] =
+    message.fjsonComplete(_.asJson)
 
   implicit def tethysDecodeParseBody[F[_]: Routed, A: JsonReader](
       implicit producer: TokenIteratorProducer = jackson.jacksonTokenIteratorProducer

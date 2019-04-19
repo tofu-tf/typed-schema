@@ -10,16 +10,18 @@ import cats.syntax.flatMap._
 import cats.syntax.foldable._
 import cats.syntax.order._
 import cats.syntax.functor._
+import cats.syntax.traverse._
 import cats.syntax.reducible._
-import cats.{Apply, Foldable, Monad, Monoid, Order, SemigroupK}
+import cats.{Applicative, Apply, Contravariant, Foldable, Functor, Monad, Monoid, Order, SemigroupK, Traverse}
 import com.twitter.finagle.http.Status._
-import com.twitter.finagle.http.Version
+import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route, Version}
 import com.twitter.finagle.{Service, http}
 import com.twitter.io.Buf
 import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam, notFound}
 import ru.tinkoff.tschema.finagle.Routed.SegmentPattern
 import ru.tinkoff.tschema.param.ParamSource
 import com.twitter.io
+import ru.tinkoff.tschema.finagle.util.message
 
 import scala.util.matching.Regex
 
@@ -32,7 +34,7 @@ final case class Path(full: String, matchedSize: Int = 0) {
 trait Routed[F[_]] extends SemigroupK[F] {
   implicit def FMonad: Monad[F]
 
-  def request: F[http.Request]
+  def request: F[Request]
   def path: F[CharSequence]
   def matched: F[Int]
   def setMatched[A](m: Int): F[Unit]
@@ -47,7 +49,7 @@ trait Routed[F[_]] extends SemigroupK[F] {
 
   def customSegment(pattern: Regex, groupId: Int): F[Option[CharSequence]] =
     for {
-      path     <- matchedPath
+      path     <- unmatchedPath
       matchOpt = pattern.findPrefixMatchOf(path)
       _        <- matchOpt.traverse_(m => addMatched(m.end - m.start))
     } yield matchOpt.map(_.group(groupId))
@@ -56,7 +58,7 @@ trait Routed[F[_]] extends SemigroupK[F] {
 
   def checkPrefix(pref: CharSequence): F[Unit] =
     for {
-      path <- matchedPath
+      path <- unmatchedPath
       i    = Routed.commonPathPrefix(path, pref)
       res  <- if (i < 0) reject[Unit](notFound) else if (i > 0) addMatched(i) else FMonad.unit
     } yield res
@@ -75,7 +77,7 @@ trait Routed[F[_]] extends SemigroupK[F] {
 object Routed {
   def apply[F[_]](implicit instance: Routed[F]): Routed[F] = instance
 
-  def request[F[_]](implicit routed: Routed[F]): F[http.Request]              = routed.request
+  def request[F[_]](implicit routed: Routed[F]): F[Request]                   = routed.request
   def matchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence]   = routed.matchedPath
   def unmatchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence] = routed.unmatchedPath
   def reject[F[_], A](rejection: Rejection)(implicit routed: Routed[F]): F[A] = routed.reject(rejection)
@@ -102,7 +104,25 @@ object Routed {
 }
 
 trait Runnable[F[_], G[_]] extends FunctionK[G, F] {
-  def run(fresp: F[http.Response]): G[Service[http.Request, http.Response]]
+  def run(fresp: F[Response]): G[Service[Request, Response]]
+}
+
+object Runnable {
+  def run[G[_]] = new Run[G]
+
+  class Run[G[_]] {
+    def apply[F[_]](resp: F[Response])(implicit runnable: Runnable[F, G]): G[Service[Request, Response]] = runnable.run(resp)
+    def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(
+        implicit runnable: Runnable[F, G],
+        G: Monad[G]
+    ): G[Service[Request, Response]] =
+      resps
+        .foldM[G, HttpMuxer](HttpMuxer) {
+          case (mux, (name, svc)) => runnable.run(svc).map(s => mux withHandler Route(name, s))
+        }
+        .widen
+  }
+
 }
 
 trait ParseBody[F[_], A] {
@@ -110,7 +130,14 @@ trait ParseBody[F[_], A] {
 }
 
 trait Complete[F[_], A] {
-  def complete(a: A): F[http.Response]
+  def complete(a: A): F[Response]
+}
+
+object Complete {
+  implicit def contravariant[F[_]]: Contravariant[Complete[F, ?]] =
+    new Contravariant[Complete[F, ?]] {
+      def contramap[A, B](fa: Complete[F, A])(f: B => A): Complete[F, B] = b => fa.complete(f(b))
+    }
 }
 
 final case class Rejection(
@@ -162,13 +189,12 @@ object Rejection {
         case i => i
     }
 
-  type Handler = Rejection => http.Response
+  type Handler = Rejection => Response
 
-  val defaultHandler: Handler = rej =>
-    http.Response(
-      Version.Http10,
-      rej.status,
-      io.Reader.fromBuf(rej.messages.headOption.fold(Buf.Empty)(Buf.Utf8(_)))
-  )
+  val defaultHandler: Handler = rej => {
+    val response = http.Response(rej.status)
+    rej.messages.headOption.foreach(response.setContentString)
+    response
+  }
 
 }

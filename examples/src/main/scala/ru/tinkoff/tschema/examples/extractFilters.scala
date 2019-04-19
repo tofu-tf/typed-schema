@@ -5,7 +5,7 @@ import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.swagger.{SwaggerTypeable, _}
-import ru.tinkoff.tschema.syntax._
+import syntax._
 import ru.tinkoff.tschema.typeDSL.DSLAtom
 import shapeless.{HList, Witness}
 

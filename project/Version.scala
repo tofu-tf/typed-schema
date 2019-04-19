@@ -9,6 +9,7 @@ object Version {
   val kindProjector = "0.9.10"
   val akkaHttpCirce = "1.24.3"
   val cats = "1.6.0"
+  val catsEffect      = "1.2.0"
   val enumeratum = "1.5.13"
   val enumeratumCirce = "1.5.19"
   val monocle = "1.5.1-cats"

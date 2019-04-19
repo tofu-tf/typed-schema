@@ -6,7 +6,6 @@ import cats.instances.list._
 import cats.syntax.applicative._
 import cats.syntax.functor._
 import com.twitter.finagle.http.Request
-import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam}
 import ru.tinkoff.tschema.param._
 
 trait ParamDirectives[S <: ParamSource] {

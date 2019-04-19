@@ -10,27 +10,31 @@ import cats.syntax.apply._
 import ru.tinkoff.tschema.typeDSL.DSLDef
 
 object MkService {
-  def apply[F[_], Def <: DSLDef, Impl](definition: => Def)(impl: Impl): F[Response] =
-    macro MakerMacro.makeRouteHNil[macroInterface.type, Def, Impl, F[Response]]
+  def apply[F[_]] = new MkApply[F]
 
-  def of[F[_], Def <: DSLDef, Impl, In <: HList](definition: => Def)(impl: Impl)(input: In): F[Response] =
-    macro MakerMacro.makeRoute[macroInterface.type, Def, Impl, F[Response], In]
+  class MkApply[F[_]] {
+    def apply[Def <: DSLDef, Impl](definition: => Def)(impl: Impl): F[Response] =
+      macro MakerMacro.makeRouteHNil[F, macroInterface.type, Def, Impl, F[Response]]
+
+    def of[Def <: DSLDef, Impl, In <: HList](definition: => Def)(impl: Impl)(input: In): F[Response] =
+      macro MakerMacro.makeRoute[F, macroInterface.type, Def, Impl, F[Response], In]
+  }
 
   object macroInterface {
     import Routed.implicits._
 
-    def makeResult[Out]: ResultPA1[Out] = new ResultPA1[Out]
+    def makeResult[F[_], Out]: ResultPA1[F, Out] = new ResultPA1[F, Out]
 
     def concatResults[F[_]: Routed](x: F[Response], y: F[Response]): F[Response] =
       x combineK y
 
-    def serve[T] = new ServePA[T]
+    def serve[F[_], T] = new ServePA[F, T]
 
-    def route[Res](res: => Res) = new RoutePA(res)
+    def route[Res](res: => Res) = new RoutePA[Res](res)
 
-    class ResultPA1[Out] {
-      def apply[F[_], In <: HList, Impl](in: In)(impl: Impl)(key: String): F[Response] =
-        macro MakerMacro.makeResult[In, Out, Impl, F[Response]]
+    class ResultPA1[F[_], Out] {
+      def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String): F[Response] =
+        macro MakerMacro.makeResult[F, In, Out, Impl, F[Response]]
     }
 
     class RoutePA[Res](res: => Res) {
@@ -38,8 +42,8 @@ object MkService {
         Routed.checkPathEnd *> complete.complete(res)
     }
 
-    class ServePA[T] {
-      def apply[F[_]: FlatMap, In, Out](in: In)(implicit serve: Serve[T, F, In, Out]) = new ServePA2[F, T, In, Out](in)(serve)
+    class ServePA[F[_], T] {
+      def apply[In, Out](in: In)(implicit serve: Serve[T, F, In, Out], F: FlatMap[F]) = new ServePA2[F, T, In, Out](in)(serve)
     }
 
     class ServePA2[F[_]: FlatMap, T, In, Out](val in: In)(srv: Serve[T, F, In, Out]) {

@@ -4,7 +4,7 @@ import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
 import ru.tinkoff.tschema.swagger._
-import ru.tinkoff.tschema.syntax._
+import syntax._
 
 object MultiParameters extends ExampleModule {
   final case class Child(childName: String, childAge: Int)

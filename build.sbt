@@ -9,6 +9,7 @@ lazy val compilerPlugins = List(
 )
 
 val catsCore        = "org.typelevel"        %% s"cats-core"        % Version.cats
+val catsEffect      = "org.typelevel"        %% s"cats-effect"      % Version.catsEffect
 val simulacrum      = "com.github.mpilquist" %% "simulacrum"        % Version.simulacrum
 val shapeless       = "com.chuusai"          %% "shapeless"         % Version.shapeless
 val enumeratum      = "com.beachape"         %% "enumeratum"        % Version.enumeratum
@@ -122,7 +123,7 @@ lazy val finagleZio = project
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-zio",
-    libraryDependencies ++= zio
+    libraryDependencies ++= catsEffect :: zio
   )
 
 lazy val main = project
@@ -149,4 +150,4 @@ lazy val scalaz = project
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .aggregate(macros, kernel, main, swagger, akkaHttp, scalaz, finagle, finagleZio)
+    .aggregate(macros, kernel, main, param, swagger, akkaHttp, scalaz, finagle, finagleZio, finagleCirce, finagleTethys)

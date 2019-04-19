@@ -172,18 +172,20 @@ trait MkSwagger[T] extends SwaggerBuilder {
 }
 
 object MkSwagger {
+  import MakerMacro.Skip
+
   def apply[Def <: DSLDef](definition: => Def): SwaggerBuilder =
-    macro MakerMacro.makeRouteHNilUnit[macroInterface.type, Def, SwaggerBuilder]
+    macro MakerMacro.makeRouteHNilUnit[Skip, macroInterface.type, Def, SwaggerBuilder]
 
   object macroInterface {
     class ResultPA1[Out] {
       def apply(in: Unit)(impl: Unit)(key: String)(implicit swagger: MkSwagger[Complete[Out]]): SwaggerBuilder =
         swagger
     }
-    def makeResult[Out]: ResultPA1[Out]                                     = new ResultPA1[Out]
+    def makeResult[F[_], Out]: ResultPA1[Out]                                     = new ResultPA1[Out]
     def concatResults(x: SwaggerBuilder, y: SwaggerBuilder): SwaggerBuilder = x ++ y
 
-    def serve[T](in: Unit) = new ServePA[T](in)
+    def serve[F[_], T](in: Unit) = new ServePA[T](in)
 
     class ServePA[T](val in: Unit) extends AnyVal {
       def apply(f: Unit => SwaggerBuilder)(implicit swagger: SwaggerMapper[T]): SwaggerBuilder = swagger.to(f(()))

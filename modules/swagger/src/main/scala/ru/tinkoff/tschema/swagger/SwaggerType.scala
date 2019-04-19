@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.swagger
 
-import akka.http.scaladsl.model.{MediaType, MediaTypes}
 import cats.Eval
 import cats.instances.vector._
 import cats.syntax.applicative._
@@ -28,7 +27,7 @@ sealed trait SwaggerType {
 
   def deref: Eval[SwaggerType] = Eval.now(this)
 
-  def mediaType: MediaType = MediaTypes.`application/json`
+  def mediaType: MediaType = "application/json"
 
   def nameOpt: Option[String] = None
 
@@ -43,7 +42,7 @@ sealed trait SwaggerType {
 class SwaggerPrimitive[Typ <: SwaggerValue](
     val typ: Typ,
     val format: Option[OpenApiFormat[Typ]] = None,
-    override val mediaType: MediaType = MediaTypes.`application/json`
+    override val mediaType: MediaType = "application/json"
 ) extends SwaggerType {
   override def merge = {
     case prim: SwaggerPrimitive[_] if typ == prim.typ =>
@@ -159,7 +158,7 @@ final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 
 @Lenses
 final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType {
-  override def mediaType: MediaType = MediaTypes.`application/xml`
+  override def mediaType: MediaType = "application/xml"
 }
 
 @Lenses

@@ -2,8 +2,6 @@ package ru.tinkoff.tschema.swagger
 
 import java.util.{Date, UUID}
 
-import akka.http.scaladsl.model.MediaTypes.`application/x-www-form-urlencoded`
-import akka.http.scaladsl.model.{MediaType, StatusCode, StatusCodes}
 import cats.arrow.FunctionK
 import cats.syntax.option._
 import cats.syntax.foldable._
@@ -13,8 +11,8 @@ import cats.{Eval, Monoid, MonoidK}
 import monocle.function.all._
 import monocle.macros.Lenses
 import monocle.std.option.some
-import ru.tinkoff.tschema.akkaHttp.MakerMacro
 import ru.tinkoff.tschema.common.Name
+import ru.tinkoff.tschema.macros.MakerMacro
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.swagger.OpenApiParam.In
 import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
@@ -219,7 +217,7 @@ object MkSwagger {
 
   implicit def derivedComplete[T](implicit content: SwaggerContent[T]) =
     single[Complete[T]](
-      op = OpenApiOp(responses = OpenApiResponses(codes = Map(StatusCodes.OK -> OpenApiResponse.makeMany(content.types: _*)))),
+      op = OpenApiOp(responses = OpenApiResponses(codes = Map(200 -> OpenApiResponse.makeMany(content.types: _*)))),
       typeList = TreeMap(content.collectTypes.toSeq: _*)
     )
 

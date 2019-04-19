@@ -19,12 +19,17 @@ object Server extends App {
   } yield res
 
   def run(args: List[String]): ZIO[Environment, Nothing, Int] =
-    server.catchAll(ex => putStr(ex.getMessage)).provide(Example("lol")) const 0
+    for {
+      ref <- Ref.make(0)
+      _   <- server.catchAll(ex => putStr(ex.getMessage)).provide(Example("lol", ref))
+    } yield 0
 }
 
-final case class Example(trackingId: String) extends Console.Live
+final case class Example(trackingId: String, alohas: Ref[Int]) extends Console.Live
 
 object Example {
   final implicit val httpRouted: Routed[Http]      = zioRouted
   final implicit val httpRun: Runnable[Http, Exec] = zioRunnable()
+
+  val incrementAlohas: Http[Int] = ZIO.accessM(_.embedded.alohas.update(_ + 1))
 }

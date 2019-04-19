@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.akkaHttp
+package ru.tinkoff.tschema.macros
 
 import java.time.Instant
 

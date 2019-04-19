@@ -17,6 +17,11 @@ object syntax {
   def keyPrefix[s <: Symbol](witness: Witness.Lt[s]) = prefix[s](witness) |> key[s](witness)
   def operation[s <: Symbol](witness: Witness.Lt[s]) = keyPrefix[s](witness)
 
+  def allQuery =
+    new MkComplex(new Maker[Map[String, String], AllQuery] {
+      override def make[s <: Symbol]: AllQuery[s, Map[String, String]] = new AllQuery
+    })
+
   def capture[x] =
     new MkComplex(new Maker[x, Capture] {
       override def make[s <: Symbol]: Capture[s, x] = new Capture

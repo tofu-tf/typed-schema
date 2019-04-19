@@ -20,6 +20,11 @@ object typeDSL {
   class Key[key] extends DSLAtom
 
   /**
+    * return query params as Map[String, String]
+    */
+  final class AllQuery[name, x] extends DSLAtom
+
+  /**
     * indicates result of element of type `x`
     * does not check HTTP method
     */

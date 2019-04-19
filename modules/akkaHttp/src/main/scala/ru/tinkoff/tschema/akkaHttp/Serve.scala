@@ -1,6 +1,7 @@
 package ru.tinkoff.tschema.akkaHttp
 
 import akka.http.scaladsl.model.{HttpMethod, HttpMethods}
+import akka.http.scaladsl.server
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
@@ -133,6 +134,11 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
 
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
     serveCheck[method, In](method(check.method))
+
+  implicit def queryMap[name <: Symbol, x, In <: HList] =
+    serveAdd[AllQuery[name, x], In, Map[String, String], name] {
+      parameterMap
+    }
 
   implicit def queryParamServe[name: Name, x: Param.PQuery, In <: HList] =
     serveAdd[QueryParam[name, x], In, x, name](resolveParam[ParamSource.Query, name, x])

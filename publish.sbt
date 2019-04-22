@@ -32,8 +32,7 @@ scmInfo in ThisBuild := Some(
 licenses in ThisBuild += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 publishMavenStyle in ThisBuild := true
 
-
 homepage in ThisBuild := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
 developers in ThisBuild := List(
-  Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois")),
+  Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
 )

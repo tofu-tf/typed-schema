@@ -20,7 +20,7 @@ object zioInstance {
   final case class ZioRouting[+R](
       request: http.Request,
       path: CharSequence,
-      matched: Ref[Int],
+      matched: Int,
       embedded: R
   )
 
@@ -31,15 +31,19 @@ object zioInstance {
     new Routed[ZIOHttp[R, E, ?]] {
       val FMonad: Monad[ZIOHttp[R, E, ?]] = zio.interop.catz.ioInstances
 
-      def matched: ZIORoute[Int]                = ZIO.accessM(_.matched.get)
-      def setMatched[A](m: Int): ZIORoute[Unit] = ZIO.accessM(_.matched.set(m))
-      def path: ZIORoute[CharSequence]          = ZIO.access(_.path)
-      def request: ZIORoute[http.Request]       = ZIO.access(_.request)
+      def matched: ZIORoute[Int] = ZIO.access(_.matched)
+
+      def withMatched[A](m: Int, fa: ZIOHttp[R, E, A]): ZIOHttp[R, E, A] = fa.provideSome(_.copy(matched = m))
+
+      override def addMatched[A](i: Int, fa: ZIOHttp[R, E, A]): ZIOHttp[R, E, A] =
+        fa.provideSome(r => r.copy(matched = r.matched + i))
+      def path: ZIORoute[CharSequence]    = ZIO.access(_.path)
+      def request: ZIORoute[http.Request] = ZIO.access(_.request)
       def reject[A](rejection: Rejection): ZIOHttp[R, E, A] =
         unmatchedPath.flatMap(path => throwRej(rejection withPath path.toString))
 
       def combineK[A](x: ZIOHttp[R, E, A], y: ZIOHttp[R, E, A]): ZIOHttp[R, E, A] =
-        matched >>= (m => catchRej(x)(xrs => setMatched(m) *> catchRej(y)(yrs => throwRej(xrs |+| yrs))))
+        catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
     }
 
   def zioRunnable[R, E <: Throwable](
@@ -62,13 +66,10 @@ object zioInstance {
                                                             request: Request): Future[Response] = {
     val promise = Promise[Response]
     runtime.unsafeRunAsync(
-      Ref
-        .make(0)
-        .flatMap(ref => zioResponse.provideSome[R](r => ZioRouting(request, SubString(request.path), ref, r)))
-        .catchAll {
-          case Rejected(rejection) => ZIO.succeed(handler(rejection))
-          case OtherFail(e)        => ZIO.fail(e)
-        }
+      zioResponse.provideSome[R](r => ZioRouting(request, SubString(request.path), 0, r)).catchAll {
+        case Rejected(rejection) => ZIO.succeed(handler(rejection))
+        case OtherFail(e)        => ZIO.fail(e)
+      }
     ) {
       case Exit.Success(resp) => promise.setValue(resp)
       case Exit.Failure(cause) =>

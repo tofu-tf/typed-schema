@@ -55,7 +55,7 @@ private[finagle] trait ServeAuthInstances { self: Serve.type =>
 
   private def authServe[F[_]: Routed, realm, name <: Symbol: Name, x, In <: HList, K <: Kind, atom](
       implicit auth: Authorization[K, F, x]): Add[atom, F, In, name, x] =
-    serveAdd(Routed.request.flatMap(r => auth(r.authorization)))
+    add(Routed.request.flatMap(r => auth(r.authorization)))
 
   implicit def basicAuthServe[F[_]: Routed, realm, name <: Symbol: Name, x: Authorization[Basic, F, ?], In <: HList]
     : Add[BasicAuth[realm, name, x], F, In, name, x] = authServe[F, realm, name, x, In, Basic, BasicAuth[realm, name, x]]

@@ -96,7 +96,7 @@ lazy val finagle = project
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle",
-    libraryDependencies += finagleHttp
+    libraryDependencies ++= finagleHttp :: catsEffect :: Nil
   )
 
 lazy val finagleCirce = project

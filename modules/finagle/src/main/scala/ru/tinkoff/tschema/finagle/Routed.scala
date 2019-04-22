@@ -12,7 +12,7 @@ import cats.syntax.order._
 import cats.syntax.functor._
 import cats.syntax.traverse._
 import cats.syntax.reducible._
-import cats.{Applicative, Apply, Contravariant, Foldable, Functor, Monad, Monoid, Order, SemigroupK, Traverse}
+import cats.{Applicative, Apply, Contravariant, Defer, Foldable, Functor, Monad, Monoid, Order, SemigroupK, Traverse}
 import com.twitter.finagle.http.Status._
 import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route, Version}
 import com.twitter.finagle.{Service, http}
@@ -37,40 +37,40 @@ trait Routed[F[_]] extends SemigroupK[F] {
   def request: F[Request]
   def path: F[CharSequence]
   def matched: F[Int]
-  def setMatched[A](m: Int): F[Unit]
+  def withMatched[A](m: Int, fa: F[A]): F[A]
   def reject[A](rejection: Rejection): F[A]
 
   def rejectMany[A](rejections: Rejection*): F[A] = reject(Foldable[List].fold(rejections.toList))
 
-  def addMatched[A](i: Int): F[Unit] = matched >>= (m => setMatched(m + i))
+  def addMatched[A](i: Int, fa: F[A]): F[A] = matched >>= (m => withMatched(m + i, fa))
 
   def matchedPath: F[CharSequence]   = (path, matched).mapN(_.subSequence(0, _))
   def unmatchedPath: F[CharSequence] = (path, matched).mapN((p, m) => p.subSequence(m, p.length()))
 
-  def customSegment(pattern: Regex, groupId: Int): F[Option[CharSequence]] =
+  def customSegment[A](pattern: Regex, groupId: Int, f: Option[CharSequence] => F[A]): F[A] =
     for {
       path     <- unmatchedPath
       matchOpt = pattern.findPrefixMatchOf(path)
-      _        <- matchOpt.traverse_(m => addMatched(m.end - m.start))
-    } yield matchOpt.map(_.group(groupId))
+      res      <- matchOpt.fold(f(None))(m => addMatched(m.end - m.start, f(Some(m.group(groupId)))))
+    } yield res
 
-  def segment: F[Option[CharSequence]] = customSegment(SegmentPattern, 1)
+  def segment[A](f: Option[CharSequence] => F[A]): F[A] = customSegment(SegmentPattern, 1, f)
 
-  def checkPrefix(pref: CharSequence): F[Unit] =
+  def checkPrefix[A](pref: CharSequence, fa: F[A]): F[A] =
     for {
       path <- unmatchedPath
       i    = Routed.commonPathPrefix(path, pref)
-      res  <- if (i < 0) reject[Unit](notFound) else if (i > 0) addMatched(i) else FMonad.unit
+      res  <- if (i < 0) reject[A](notFound) else if (i > 0) addMatched(i, fa) else fa
     } yield res
 
-  def checkPath(path: CharSequence): F[Unit] =
+  def checkPath[A](path: CharSequence, fa: F[A]): F[A] =
     for {
       path <- matchedPath
       i    = Routed.commonPathPrefix(path, path)
-      res  <- if (i == path.length()) addMatched(i) else reject[Unit](notFound)
+      res  <- if (i == path.length()) addMatched(i, fa) else reject[A](notFound)
     } yield res
 
-  def checkPathEnd: F[Unit] = checkPath("")
+  def checkPathEnd[A](fa: F[A]): F[A] = checkPath("", fa)
 
 }
 
@@ -81,16 +81,16 @@ object Routed {
   def matchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence]   = routed.matchedPath
   def unmatchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence] = routed.unmatchedPath
   def reject[F[_], A](rejection: Rejection)(implicit routed: Routed[F]): F[A] = routed.reject(rejection)
-  def checkPathEnd[F[_], A](implicit routed: Routed[F]): F[Unit]              = routed.checkPathEnd
+  def checkPathEnd[F[_], A](fa: F[A])(implicit routed: Routed[F]): F[A]       = routed.checkPathEnd(fa)
 
   val SegmentPattern = "\\/?([^\\/]*)".r
 
-  def customSegment[F[_]](pattern: Regex, groupId: Int)(implicit routed: Routed[F]): F[Option[CharSequence]] =
-    routed.customSegment(pattern, groupId)
+  def customSegment[F[_], A](pattern: Regex, groupId: Int, fa: Option[CharSequence] => F[A])(implicit routed: Routed[F]): F[A] =
+    routed.customSegment(pattern, groupId, fa)
 
-  def segment[F[_]](implicit routed: Routed[F]): F[Option[CharSequence]] = routed.segment
+  def segment[F[_], A](f: Option[CharSequence] => F[A])(implicit routed: Routed[F]): F[A] = routed.segment(f)
 
-  def prefix[F[_]](pref: CharSequence)(implicit routed: Routed[F]): F[Unit] = routed.checkPrefix(pref)
+  def prefix[F[_], A](pref: CharSequence, fa: F[A])(implicit routed: Routed[F]): F[A] = routed.checkPrefix(pref, fa)
 
   private[Routed] def commonPathPrefix(path: CharSequence, pref: CharSequence): Int =
     if (pref.length() <= path.length() && path.subSequence(0, pref.length()) == pref) pref.length()

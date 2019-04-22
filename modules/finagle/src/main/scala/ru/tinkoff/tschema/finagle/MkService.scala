@@ -39,7 +39,7 @@ object MkService {
 
     class RoutePA[Res](res: => Res) {
       def apply[F[_]: Routed, In, Out](in: In)(implicit complete: Complete[F, Res]): F[Response] =
-        Routed.checkPathEnd *> complete.complete(res)
+        Routed.checkPathEnd(complete.complete(res))
     }
 
     class ServePA[F[_], T] {
@@ -47,7 +47,7 @@ object MkService {
     }
 
     class ServePA2[F[_]: FlatMap, T, In, Out](val in: In)(srv: Serve[T, F, In, Out]) {
-      def apply(f: Out => F[Response]): F[Response] = srv.process(in).flatMap(f)
+      def apply(f: Out => F[Response]): F[Response] = srv.process(in, f)
     }
   }
 }

@@ -9,6 +9,7 @@ lazy val compilerPlugins = List(
 )
 
 val catsCore        = "org.typelevel"        %% s"cats-core"        % Version.cats
+val catsFree        = "org.typelevel"        %% s"cats-free"        % Version.cats
 val catsEffect      = "org.typelevel"        %% s"cats-effect"      % Version.catsEffect
 val simulacrum      = "com.github.mpilquist" %% "simulacrum"        % Version.simulacrum
 val shapeless       = "com.chuusai"          %% "shapeless"         % Version.shapeless
@@ -96,7 +97,7 @@ lazy val finagle = project
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle",
-    libraryDependencies ++= finagleHttp :: catsEffect :: Nil
+    libraryDependencies ++= finagleHttp :: catsEffect :: catsFree :: Nil
   )
 
 lazy val finagleCirce = project
@@ -132,8 +133,7 @@ lazy val main = project
   .settings(
     commonSettings,
     moduleName := "typed-schema",
-    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: scalacheck :: scalatest :: magnolia :: akka,
-    scalacOptions += "-Ymacro-debug-lite"
+    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: scalacheck :: scalatest :: magnolia :: akka
   )
 
 lazy val scalaz = project

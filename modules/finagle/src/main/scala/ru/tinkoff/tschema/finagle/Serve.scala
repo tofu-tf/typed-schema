@@ -1,18 +1,20 @@
 package ru.tinkoff.tschema
 package finagle
 
-import Routed.implicits._
-import cats.effect.{Bracket, Resource}
+import cats.arrow.Arrow
+import cats.data.ContT
+import cats.effect.Resource
+import cats.free.Free
 import cats.instances.list._
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.traverse._
-import cats.{Applicative, Apply, FlatMap, Functor, Monad}
+import cats.{Applicative, Apply, Defer, FlatMap, Functor, Monad, StackSafeMonad}
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.finagle.Rejection.missingParam
-import ru.tinkoff.tschema.finagle.util.cont.traverseCont
+import ru.tinkoff.tschema.finagle.Routed.implicits._
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
 import ru.tinkoff.tschema.typeDSL.QueryParams
@@ -25,7 +27,7 @@ trait Serve[T, F[_], In, Out] {
   def as[U]: Serve[U, F, In, Out] = this.asInstanceOf[Serve[U, F, In, Out]]
 }
 
-object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunctions with ServeMonadInstance {
+object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunctions with ServeCatsInstance {
   import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
   type Add[T, F[_], In <: HList, name, V] = Serve[T, F, In, FieldType[name, V] :: In]
@@ -43,11 +45,15 @@ object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunc
       routed: Routed[F]
   ): F[A] = param match {
     case single: SingleParam[S, A] =>
-      directives.getByName[F, A](w.string, s => directives.provideOrReject[F, A](w.string, single.applyOpt(s)))
+      directives
+        .getByName[F, A](w.string, s => Free.liftF(directives.provideOrReject[F, A](w.string, single.applyOpt(s))))
+        .runTailRec
     case multi: MultiParam[S, A] =>
-      traverseCont[F, A, String, Option[CharSequence]](multi.names)((name, k) => directives.getByName(name, k))(
-        ls => directives.provideOrReject(w.string, multi.applyOpt(ls))
-      )
+      multi.names
+        .traverse(name => ContT[Free[F, ?], A, Option[CharSequence]](directives.getByName(name, _)))
+        .run(ls => Free.liftF(directives.provideOrReject(w.string, multi.applyOpt(ls))))
+        .runTailRec
+
   }
 
   implicit def queryParamServe[F[_]: Routed, name: Name, x: Param.PQuery, In <: HList]
@@ -72,7 +78,7 @@ object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunc
 
   implicit def bodyServe[F[_]: FlatMap, name <: Symbol: Witness.Aux, A, In <: HList](
       implicit A: ParseBody[F, A]): Add[ReqBody[name, A], F, In, name, A] =
-    add[ReqBody[name, A], F, In, A, name](A.parse)
+    add[ReqBody[name, A], F, In, A, name](A.parse())
 
   implicit def prefix[F[_]: Routed, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.prefix(Name[name].string, _))
@@ -103,12 +109,11 @@ private[finagle] trait ServeParamsInstances { self: Serve.type =>
 }
 
 private[finagle] trait ServeFunctions { self: Serve.type =>
-
   def ignore[T, F[_], In]: Filter[T, F, In]                         = (in, f) => f(in)
   def pure[T, F[_]: FlatMap, In, A](a: A): Serve[T, F, In, A]       = (_, f) => f(a)
   def read[T, F[_]: FlatMap, In, A](a: In => A): Serve[T, F, In, A] = (in, f) => f(a(in))
 
-  def provide[T, F[_]: FlatMap, In, A](fa: F[A]): Serve[T, F, In, A]         = (_, f) => fa.flatMap(f)
+  def provide[T, F[_]: FlatMap, In, A](fa: => F[A]): Serve[T, F, In, A]      = (_, f) => fa.flatMap(a => f(a))
   def provideIn[T, F[_]: FlatMap, In, A](fa: In => F[A]): Serve[T, F, In, A] = (in, f) => fa(in).flatMap(f)
 
   def check[T, F[_]: Apply, In <: HList, A](fu: F[A]): Filter[T, F, In]                        = (in, f) => fu *> f(in)
@@ -125,10 +130,20 @@ private[finagle] trait ServeFunctions { self: Serve.type =>
   def respondIn[T, F[_], In, Out](r: In => F[Response]): Serve[T, F, In, Out] = (in, _) => r(in)
 }
 
-private[finagle] trait ServeMonadInstance {
-  implicit def serveMonad[T, F[_]: Monad, In]: Monad[Serve[T, F[_], In, ?]] = new Monad[Serve[T, F[_], In, ?]] {
-    def flatMap[A, B](fa: Serve[T, F[_], In, A])(f: A => Serve[T, F[_], In, B]): Serve[T, F[_], In, B] = ???
-    def tailRecM[A, B](a: A)(f: A => Serve[T, F[_], In, Either[A, B]]): Serve[T, F[_], In, B]          = ???
-    def pure[A](x: A): Serve[T, F[_], In, A]                                                           = Serve.provide()
-  }
+private[finagle] trait ServeCatsInstance {
+  implicit def serveMonad[T, F[_], In](implicit FD: Defer[F]): Monad[Serve[T, F, In, ?]] =
+    new StackSafeMonad[Serve[T, F, In, ?]] {
+      def flatMap[A, B](fa: Serve[T, F, In, A])(f: A => Serve[T, F, In, B]): Serve[T, F, In, B] =
+        (in, k) => FD.defer(fa.process(in, a => f(a).process(in, k)))
+      def pure[A](x: A): Serve[T, F, In, A] = (_, k) => k(x)
+    }
+
+  implicit def serveArrow[T, F[_], In](implicit FD: Defer[F]): Arrow[Serve[T, F, ?, ?]] =
+    new Arrow[Serve[T, F, ?, ?]] {
+      def lift[A, B](f: A => B): Serve[T, F, A, B] = (a, kb) => FD.defer(kb(f(a)))
+      def compose[A, B, C](f: Serve[T, F, B, C], g: Serve[T, F, A, B]): Serve[T, F, A, C] =
+        (a, kc) => FD.defer(g.process(a, b => f.process(b, kc)))
+      def first[A, B, C](fa: Serve[T, F, A, B]): Serve[T, F, (A, C), (B, C)] =
+        (ac, kbc) => FD.defer(fa.process(ac._1, b => kbc((b, ac._2))))
+    }
 }

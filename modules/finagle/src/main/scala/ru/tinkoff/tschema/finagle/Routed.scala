@@ -1,27 +1,20 @@
 package ru.tinkoff.tschema.finagle
 import cats.arrow.FunctionK
-import cats.data.NonEmptyMap
-import cats.instances.double._
+import cats.free.Free
 import cats.instances.list._
-import cats.instances.option._
-import cats.instances.string._
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.foldable._
-import cats.syntax.order._
 import cats.syntax.functor._
-import cats.syntax.traverse._
-import cats.syntax.reducible._
-import cats.{Applicative, Apply, Contravariant, Defer, Foldable, Functor, Monad, Monoid, Order, SemigroupK, Traverse}
+import cats.syntax.order._
+import cats.{Apply, Contravariant, Foldable, Monad, Monoid, Order, SemigroupK}
 import com.twitter.finagle.http.Status._
-import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route, Version}
+import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route}
 import com.twitter.finagle.{Service, http}
-import com.twitter.io.Buf
 import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam, notFound}
 import ru.tinkoff.tschema.finagle.Routed.SegmentPattern
+import ru.tinkoff.tschema.finagle.impl.FreeRouted
 import ru.tinkoff.tschema.param.ParamSource
-import com.twitter.io
-import ru.tinkoff.tschema.finagle.util.message
 
 import scala.util.matching.Regex
 
@@ -31,7 +24,7 @@ final case class Path(full: String, matchedSize: Int = 0) {
   def matchMore(size: Int)    = Path(full, matchedSize + size)
 }
 
-trait Routed[F[_]] extends SemigroupK[F] {
+trait Routed[F[_]] {
   implicit def FMonad: Monad[F]
 
   def request: F[Request]
@@ -74,6 +67,8 @@ trait Routed[F[_]] extends SemigroupK[F] {
 
 }
 
+trait RoutedPlus[F[_]] extends Routed[F] with SemigroupK[F]
+
 object Routed {
   def apply[F[_]](implicit instance: Routed[F]): Routed[F] = instance
 
@@ -97,6 +92,8 @@ object Routed {
     else if (pref.length() < path.length() && path.charAt(0) == '/' && path.subSequence(1, pref.length() + 1) == pref)
       pref.length() + 1
     else -1
+
+  implicit def freeRouted[F[_]: Routed]: Routed[Free[F, ?]] = new FreeRouted[F]
 
   object implicits {
     implicit def extractRoutedMonad[F[_]](implicit F: Routed[F]): Monad[F] = F.FMonad

@@ -2,6 +2,8 @@ package ru.tinkoff.tschema
 package finagle
 
 import Routed.implicits._
+import cats.Eval
+import cats.free.Free
 import cats.instances.list._
 import cats.syntax.applicative._
 import com.twitter.finagle.http.Request
@@ -9,7 +11,7 @@ import ru.tinkoff.tschema.param._
 
 trait ParamDirectives[S <: ParamSource] {
   def source: S
-  def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => F[A]): F[A]
+  def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => Free[F, A]): Free[F, A]
 
   def notFound(name: String): Rejection                 = Rejection.missingParam(name, source)
   def malformed(name: String, error: String): Rejection = Rejection.malformedParam(name, error, source)
@@ -34,9 +36,8 @@ trait ParamDirectives[S <: ParamSource] {
 abstract class ParamDirectivesSimple[S <: ParamSource](val source: S) extends ParamDirectives[S] {
   def getFromRequest(name: String)(req: Request): Option[CharSequence]
 
-  def getByName[F[_], A](name: String, f: Option[CharSequence] => F[A])(implicit F: Routed[F]): F[A] = {
-    F.FMonad.flatMap(Routed.request[F])(getFromRequest(name) _ andThen f)
-  }
+  def getByName[F[_], A](name: String, f: Option[CharSequence] => Free[F, A])(implicit F: Routed[F]): Free[F, A] =
+    Free.liftF(Routed.request).flatMap(req => f(getFromRequest(name)(req)))
 }
 
 object ParamDirectives {
@@ -55,8 +56,8 @@ object ParamDirectives {
   }
 
   implicit val pathParamDirectives: TC[ParamSource.Path] = new TC[ParamSource.Path] {
-    def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => F[A]): F[A] = Routed.segment(fa)
-    def source                                                                           = ParamSource.Path
+    def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => Free[F, A]): Free[F, A] = Routed.segment(fa)
+    def source                                                                                       = ParamSource.Path
   }
 
   implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {

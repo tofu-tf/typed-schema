@@ -1,5 +1,5 @@
 package ru.tinkoff.tschema.finagle
-import cats.{FlatMap, Monad}
+import cats.{FlatMap, Monad, SemigroupK}
 import com.twitter.finagle.http
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.macros.MakerMacro
@@ -25,7 +25,7 @@ object MkService {
 
     def makeResult[F[_], Out]: ResultPA1[F, Out] = new ResultPA1[F, Out]
 
-    def concatResults[F[_]: Routed](x: F[Response], y: F[Response]): F[Response] =
+    def concatResults[F[_]: SemigroupK](x: F[Response], y: F[Response]): F[Response] =
       x combineK y
 
     def serve[F[_], T] = new ServePA[F, T]

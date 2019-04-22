@@ -27,8 +27,8 @@ object zioInstance {
   type ZIOHttp[-R, +E, +A] = ZIO[ZioRouting[R], Fail[E], A]
   type ZIORoute[+A]        = ZIOHttp[Any, Nothing, A]
 
-  def zioRouted[R, E]: Routed[ZIOHttp[R, E, ?]] =
-    new Routed[ZIOHttp[R, E, ?]] {
+  def zioRouted[R, E]: RoutedPlus[ZIOHttp[R, E, ?]] =
+    new RoutedPlus[ZIOHttp[R, E, ?]] {
       val FMonad: Monad[ZIOHttp[R, E, ?]] = zio.interop.catz.ioInstances
 
       def matched: ZIORoute[Int] = ZIO.access(_.matched)

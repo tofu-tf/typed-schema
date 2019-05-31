@@ -1,14 +1,13 @@
 package ru.tinkoff.tschema.example
 import com.twitter.finagle.http.Response
-import ru.tinkoff.tschema.finagle.{MkService, Serve}
+import ru.tinkoff.tschema.example.ExampleEnv.incrementAlohas
+import ru.tinkoff.tschema.finagle.MkService
 import ru.tinkoff.tschema.syntax._
-import ru.tinkoff.tschema.typeDSL.Prefix
-import scalaz.zio._
-import cats.instances.all._
-import ru.tinkoff.tschema.example.Example.incrementAlohas
-import shapeless.{HNil, Witness}
 import scalaz.zio.interop.catz._
+import scalaz.zio._
+import ru.tinkoff.tschema.finagle.zioInstance._
 import ru.tinkoff.tschema.finagle.showInstances._
+import cats.instances.all._
 
 case object Greeting {
   def api =

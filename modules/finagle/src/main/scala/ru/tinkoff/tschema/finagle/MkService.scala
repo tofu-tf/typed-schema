@@ -1,13 +1,10 @@
 package ru.tinkoff.tschema.finagle
-import cats.{FlatMap, Monad, SemigroupK}
-import com.twitter.finagle.http
+import cats.syntax.semigroupk._
+import cats.{FlatMap, SemigroupK}
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.macros.MakerMacro
-import shapeless.HList
-import cats.syntax.semigroupk._
-import cats.syntax.flatMap._
-import cats.syntax.apply._
 import ru.tinkoff.tschema.typeDSL.DSLDef
+import shapeless.HList
 
 object MkService {
   def apply[F[_]] = new MkApply[F]
@@ -21,8 +18,6 @@ object MkService {
   }
 
   object macroInterface {
-    import Routed.implicits._
-
     def makeResult[F[_], Out]: ResultPA1[F, Out] = new ResultPA1[F, Out]
 
     def concatResults[F[_]: SemigroupK](x: F[Response], y: F[Response]): F[Response] =

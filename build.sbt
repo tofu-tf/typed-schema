@@ -26,6 +26,8 @@ val circeDerivation = "io.circe"             %% "circe-derivation"  % Version.ci
 val scalazDeriving  = "org.scalaz"           %% "scalaz-deriving"   % Version.scalazDeriving
 val scalazDMacro    = "org.scalaz"           %% "deriving-macro"    % Version.scalazDeriving
 val derevo          = "org.manatki"          %% "derevo-cats"       % Version.derevo
+val swaggerUILib    = "org.webjars.npm"      % "swagger-ui-dist"    % Version.swaggerUI
+val scalaTags       = "com.lihaoyi"          %% "scalatags"         % Version.scalaTags
 
 val monocle = List("core", "macro").map(module => "com.github.julien-truffaut"             %% s"monocle-$module" % Version.monocle)
 val circe   = List("core", "parser", "generic", "generic-extras").map(module => "io.circe" %% s"circe-$module"   % Version.circe)
@@ -45,7 +47,11 @@ def resourcesOnCompilerCp(config: Configuration): Setting[_] =
     Attributed.blank(res) +: old
   }
 
-lazy val commonSettings = compilerPlugins
+val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
+
+lazy val testLibs = libraryDependencies ++= scalacheck :: scalatest :: Nil
+
+lazy val commonSettings = testLibs :: compilerPlugins 
 
 lazy val kernel = project
   .in(file("modules/kernel"))
@@ -133,7 +139,7 @@ lazy val main = project
   .settings(
     commonSettings,
     moduleName := "typed-schema",
-    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: scalacheck :: scalatest :: magnolia :: akka
+    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit  :: magnolia :: akka
   )
 
 lazy val scalaz = project
@@ -147,7 +153,35 @@ lazy val scalaz = project
     resourcesOnCompilerCp(Compile)
   )
 
+lazy val swaggerUI =
+  (project in file("modules/swaggerUI"))
+    .dependsOn(swagger)
+    .enablePlugins(BuildInfoPlugin)
+    .settings(
+      commonSettings,
+      moduleName := "typed-schema-swagger-ui",
+      libraryDependencies ++= swaggerUILib :: scalaTags :: Nil,
+      swaggerUIVersion := {
+        libraryDependencies.value
+          .find(_.name == "swagger-ui-dist")
+          .map(_.revision).get
+      },
+      buildInfoKeys := swaggerUIVersion :: Nil,
+      buildInfoPackage := "ru.tinkoff.tschema.swagger"
+    )
+
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .aggregate(macros, kernel, main, param, swagger, akkaHttp, scalaz, finagle, finagleZio, finagleCirce, finagleTethys)
+    .aggregate(macros,
+               kernel,
+               main,
+               param,
+               swagger,
+               akkaHttp,
+               scalaz,
+               finagle,
+               finagleZio,
+               finagleCirce,
+               finagleTethys,
+               swaggerUI)

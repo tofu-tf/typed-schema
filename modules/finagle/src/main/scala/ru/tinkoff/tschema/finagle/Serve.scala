@@ -18,6 +18,7 @@ import ru.tinkoff.tschema.finagle.Routed.implicits._
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
 import ru.tinkoff.tschema.typeDSL.QueryParams
+import ru.tinkoff.tschema.utils.cont
 import shapeless._
 import shapeless.labelled.{FieldType, field}
 
@@ -46,13 +47,11 @@ object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunc
   ): F[A] = param match {
     case single: SingleParam[S, A] =>
       directives
-        .getByName[F, A](w.string, s => Free.liftF(directives.provideOrReject[F, A](w.string, single.applyOpt(s))))
-        .runTailRec
+        .getByName[F, A](w.string, s => directives.provideOrReject[F, A](w.string, single.applyOpt(s)))
     case multi: MultiParam[S, A] =>
-      multi.names
-        .traverse(name => ContT[Free[F, ?], A, Option[CharSequence]](directives.getByName(name, _)))
-        .run(ls => Free.liftF(directives.provideOrReject(w.string, multi.applyOpt(ls))))
-        .runTailRec
+      cont.traverseCont[String, Option[CharSequence], A, F](multi.names)(directives.getByName)(
+        ls => directives.provideOrReject(w.string, multi.applyOpt(ls))
+      )
 
   }
 
@@ -116,15 +115,15 @@ private[finagle] trait ServeFunctions { self: Serve.type =>
   def provide[T, F[_]: FlatMap, In, A](fa: => F[A]): Serve[T, F, In, A]      = (_, f) => fa.flatMap(a => f(a))
   def provideIn[T, F[_]: FlatMap, In, A](fa: In => F[A]): Serve[T, F, In, A] = (in, f) => fa(in).flatMap(f)
 
-  def check[T, F[_]: Apply, In <: HList, A](fu: F[A]): Filter[T, F, In]                        = (in, f) => fu *> f(in)
-  def checkCont[T, F[_]: Apply, In <: HList](fr: F[Response] => F[Response]): Filter[T, F, In] = (in, f) => fr(f(in))
-  def checkIn[T, F[_]: Apply, In <: HList](f: In => F[Unit]): Filter[T, F, In]                 = (in, g) => f(in) *> g(in)
+  def check[T, F[_]: Apply, In, A](fu: F[A]): Filter[T, F, In]                        = (in, f) => fu *> f(in)
+  def checkCont[T, F[_]: Apply, In](fr: F[Response] => F[Response]): Filter[T, F, In] = (in, f) => fr(f(in))
+  def checkIn[T, F[_]: Apply, In](f: In => F[Unit]): Filter[T, F, In]                 = (in, g) => f(in) *> g(in)
 
   def add[T, F[_]: FlatMap, In <: HList, A, key](fa: F[A]): Add[T, F, In, key, A]        = provide[T, F, In, A](fa).add[key]
   def addIn[T, F[_]: FlatMap, In <: HList, A, key](f: In => F[A]): Add[T, F, In, key, A] = provideIn[T, F, In, A](f).add[key]
 
-  def resource[T, F[_]: BracketThrow, In <: HList, A, key](r: Resource[F, A]): Serve[T, F, In, A]         = (_, f) => r.use(f)
-  def resourceIn[T, F[_]: BracketThrow, In <: HList, A, key](r: In => Resource[F, A]): Serve[T, F, In, A] = r(_).use(_)
+  def resource[T, F[_]: BracketThrow, In, A, key](r: Resource[F, A]): Serve[T, F, In, A]         = (_, f) => r.use(f)
+  def resourceIn[T, F[_]: BracketThrow, In, A, key](r: In => Resource[F, A]): Serve[T, F, In, A] = r(_).use(_)
 
   def respond[T, F[_], In, Out](r: F[Response]): Serve[T, F, In, Out]         = (_, _) => r
   def respondIn[T, F[_], In, Out](r: In => F[Response]): Serve[T, F, In, Out] = (in, _) => r(in)

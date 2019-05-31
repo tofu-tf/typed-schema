@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.finagle
 import cats.arrow.FunctionK
-import cats.free.Free
 import cats.instances.list._
 import cats.syntax.apply._
 import cats.syntax.flatMap._
@@ -13,7 +12,6 @@ import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route}
 import com.twitter.finagle.{Service, http}
 import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam, notFound}
 import ru.tinkoff.tschema.finagle.Routed.SegmentPattern
-import ru.tinkoff.tschema.finagle.impl.FreeRouted
 import ru.tinkoff.tschema.param.ParamSource
 
 import scala.util.matching.Regex
@@ -92,8 +90,6 @@ object Routed {
     else if (pref.length() < path.length() && path.charAt(0) == '/' && path.subSequence(1, pref.length() + 1) == pref)
       pref.length() + 1
     else -1
-
-  implicit def freeRouted[F[_]: Routed]: Routed[Free[F, ?]] = new FreeRouted[F]
 
   object implicits {
     implicit def extractRoutedMonad[F[_]](implicit F: Routed[F]): Monad[F] = F.FMonad

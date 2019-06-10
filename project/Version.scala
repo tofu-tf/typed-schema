@@ -13,7 +13,7 @@ object Version {
   val simulacrum = "0.16.0"
   val magnolia = "0.10.0"
 
-  val scalaTest = "3.0.7"
+  val scalaTest = "3.0.8"
   val scalaCheck = "1.14.0"
   
   val scalazDeriving = "1.0.0"

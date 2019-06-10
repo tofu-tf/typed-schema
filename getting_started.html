@@ -1,0 +1,129 @@
+<html><head><title>Typed Schema: Getting started</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Tinkoff" /><meta name="description" content="Typelevel DSL for defining webservices, convertible to akka-http and swagger definitions" /><meta name="og:image" content="/typed-schema/img/poster.png" /><meta name="image" property="og:image" content="/typed-schema/img/poster.png" /><meta name="og:title" content="Typed Schema: Getting started" /><meta name="title" property="og:title" content="Typed Schema: Getting started" /><meta name="og:site_name" content="Typed Schema" /><meta name="og:url" content="http://tinkoffcreditsystems.github.io/typed-schema" /><meta name="og:type" content="website" /><meta name="og:description" content="Typelevel DSL for defining webservices, convertible to akka-http and swagger definitions" /><link rel="icon" type="image/png" href="/typed-schema/img/favicon.png" /><meta name="twitter:title" content="Typed Schema: Getting started" /><meta name="twitter:image" content="/typed-schema/img/poster.png" /><meta name="twitter:description" content="Typelevel DSL for defining webservices, convertible to akka-http and swagger definitions" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:site" content="@Tinkoff" /><link rel="icon" type="image/png" sizes="16x16" href="/typed-schema/img/favicon-16x16.png" /><link rel="icon" type="image/png" sizes="32x32" href="/typed-schema/img/favicon-32x32.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/typed-schema/highlight/styles/atom-one-light.css" /><link rel="stylesheet" href="/typed-schema/css/style.css" /><link rel="stylesheet" href="/typed-schema/css/palette.css" /><link rel="stylesheet" href="/typed-schema/css/codemirror.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/typed-schema/" class="brand"><div class="brand-wrapper"><span>Typed Schema</span></div></a></li> <li><a href="/typed-schema/examples.html" class="">Examples ...</a></li>  <li><a href="/typed-schema/index.html" class="">Home</a></li> <li><a href="/typed-schema/getting_started.html" class="">Getting Started</a></li> <li><a href="/typed-schema/release_notes.html" class="">Release Notes</a></li></ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/TinkoffCreditSystems/typed-schema"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/TinkoffCreditSystems/typed-schema"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li><li><a href="#" onclick="shareSiteTwitter('Typed Schema Typelevel DSL for defining webservices, convertible to akka-http and swagger definitions');"><i class="fa fa-twitter"></i></a></li><li><a href="#" onclick="shareSiteFacebook('Typed Schema Typelevel DSL for defining webservices, convertible to akka-http and swagger definitions');"><i class="fa fa-facebook"></i></a></li><li><a href="#" onclick="shareSiteGoogle();"><i class="fa fa-google-plus"></i></a></li></ul></div></div></div></div><div id="content" data-github-owner="TinkoffCreditSystems" data-github-repo="typed-schema"><div class="content-wrapper"><section><h2 id="getting-started">Getting started</h2>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+<span class="k">import</span> <span class="nn">akka.http.scaladsl.Http</span>
+<span class="k">import</span> <span class="nn">akka.stream.</span><span class="o">{</span><span class="nc">ActorMaterializer</span><span class="o">,</span> <span class="nc">Materializer</span><span class="o">}</span>
+<span class="k">import</span> <span class="nn">io.circe.Printer</span>
+<span class="k">import</span> <span class="nn">ru.tinkoff.tschema.akkaHttp.MkRoute</span>
+<span class="k">import</span> <span class="nn">io.circe.syntax._</span>
+<span class="k">import</span> <span class="nn">ru.tinkoff.tschema.swagger._</span>
+
+<span class="k">object</span> <span class="nc">ExampleDefinition</span> <span class="o">{</span>
+  <span class="k">import</span> <span class="nn">ru.tinkoff.tschema.syntax._</span>
+  <span class="k">def</span> <span class="n">api</span> <span class="k">=</span> <span class="n">get</span> <span class="o">|&gt;</span> <span class="n">operation</span><span class="o">(</span><span class="ss">'hello)</span> <span class="o">|&gt;</span> <span class="n">capture</span><span class="o">[</span><span class="kt">String</span><span class="o">](</span><span class="ss">'name)</span> <span class="o">|&gt;</span> <span class="n">$$</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+<span class="o">}</span>
+
+<span class="k">object</span> <span class="nc">ExampleSwagger</span> <span class="o">{}</span>
+
+<span class="k">object</span> <span class="nc">Example</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+  <span class="k">import</span> <span class="nn">ExampleDefinition.api</span>
+  <span class="k">import</span> <span class="nn">akka.http.scaladsl.server.Directives._</span>
+
+  <span class="c1">// building service
+</span>  <span class="k">object</span> <span class="nc">handler</span> <span class="o">{</span>
+    <span class="k">def</span> <span class="n">hello</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">s</span><span class="s">"Hello, $name"</span>
+  <span class="o">}</span>
+
+  <span class="k">val</span> <span class="n">apiRoute</span> <span class="k">=</span> <span class="nc">MkRoute</span><span class="o">(</span><span class="n">api</span><span class="o">)(</span><span class="n">handler</span><span class="o">)</span>
+
+  <span class="c1">//building swagger
+</span>  <span class="k">val</span> <span class="n">apiSwagger</span>   <span class="k">=</span> <span class="nc">MkSwagger</span><span class="o">(</span><span class="n">api</span><span class="o">)(()).</span><span class="n">make</span><span class="o">(</span><span class="nc">OpenApiInfo</span><span class="o">(</span><span class="s">"example"</span><span class="o">))</span>
+  <span class="k">val</span> <span class="n">printer</span>      <span class="k">=</span> <span class="nc">Printer</span><span class="o">.</span><span class="n">spaces2</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">dropNullValues</span> <span class="k">=</span> <span class="kc">true</span><span class="o">)</span>
+  <span class="k">val</span> <span class="n">swaggerRoute</span> <span class="k">=</span> <span class="n">path</span><span class="o">(</span><span class="s">"swagger"</span><span class="o">)(</span><span class="n">complete</span><span class="o">(</span><span class="n">apiSwagger</span><span class="o">.</span><span class="n">asJson</span><span class="o">.</span><span class="n">pretty</span><span class="o">(</span><span class="n">printer</span><span class="o">)))</span>
+
+  <span class="c1">//typical akka http boilerplate
+</span>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">system</span><span class="k">:</span> <span class="kt">ActorSystem</span>        <span class="o">=</span> <span class="nc">ActorSystem</span><span class="o">(</span><span class="s">"tschema-example"</span><span class="o">)</span>
+  <span class="k">implicit</span> <span class="k">val</span> <span class="n">materializer</span><span class="k">:</span> <span class="kt">Materializer</span> <span class="o">=</span> <span class="nc">ActorMaterializer</span><span class="o">()</span>
+
+  <span class="c1">//run the server
+</span>  <span class="nc">Http</span><span class="o">().</span><span class="n">bindAndHandle</span><span class="o">(</span><span class="n">apiRoute</span> <span class="o">~</span> <span class="n">swaggerRoute</span><span class="o">,</span> <span class="s">"localhost"</span><span class="o">,</span> <span class="mi">8080</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>More examples see in subproject <code class="highlighter-rouge">examples</code></p>
+
+<h2 id="how-it-works">How it works</h2>
+
+<h3 id="definition">Definition</h3>
+<p>Your schemes definitions consist of elements from <code class="highlighter-rouge">ru.tinkoff.tschema.syntax._</code> and maybe custom directives</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="n">api</span> <span class="k">=</span> <span class="n">get</span> <span class="o">|&gt;</span> <span class="n">operation</span><span class="o">(</span><span class="ss">'hello)</span> <span class="o">|&gt;</span> <span class="n">capture</span><span class="o">[</span><span class="kt">String</span><span class="o">](</span><span class="ss">'name)</span> <span class="o">|&gt;</span> <span class="n">$$</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+</code></pre></div></div>
+
+<p>This may be read as a sequence:</p>
+<ol>
+  <li>check HTTP method is GET</li>
+  <li>check path prefix is “hello” and mark the following definition as part of <code class="highlighter-rouge">hello</code> operation</li>
+  <li>capture segment of uri path as <code class="highlighter-rouge">name</code> parameter</li>
+  <li>return String</li>
+</ol>
+
+<p>Your definition could have some branching, a common prefix will be applied as the prefix of all branches.
+Branching is done with the <code class="highlighter-rouge">&lt;&gt;</code> operator:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="k">def</span> <span class="n">api</span> <span class="k">=</span>
+    <span class="n">get</span> <span class="o">|&gt;</span> <span class="n">prefix</span><span class="o">(</span><span class="ss">'greeting)</span> <span class="o">|&gt;</span> <span class="n">capture</span><span class="o">[</span><span class="kt">String</span><span class="o">](</span><span class="ss">'name)</span> <span class="o">|&gt;</span> <span class="o">((</span>
+      <span class="n">operation</span><span class="o">(</span><span class="ss">'hello)</span> <span class="o">|&gt;</span> <span class="n">$$</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+    <span class="o">)</span> <span class="o">&lt;&gt;</span> <span class="o">(</span>
+      <span class="n">operation</span><span class="o">(</span><span class="ss">'aloha)</span> <span class="o">|&gt;</span> <span class="n">queryParam</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="ss">'age)</span> <span class="o">|&gt;</span> <span class="n">$$</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span>
+    <span class="o">))</span>
+</code></pre></div></div>
+
+<p>Note that now you must implement <code class="highlighter-rouge">aloha</code> method in your handler
+or compile error will be raised in the <code class="highlighter-rouge">MkRoute</code> application</p>
+<h3 id="dsl">DSL</h3>
+<p>All definition elements are functions with almost no implementation, returning types from the
+<code class="highlighter-rouge">ru.tinkoff.tschema.typeDSL._</code> package, or created by yourself.</p>
+
+<p><strong>Those types are the definition.</strong></p>
+
+<p>All interpreters just traversing the tree type and building construction using information from types only</p>
+
+<p>Type tree will consist of type constructors, subtypes of <code class="highlighter-rouge">DSlAtom</code> at it branches, and <code class="highlighter-rouge">DSLRes</code> at leafs.
+Each <code class="highlighter-rouge">DSLAtom</code> describes single step like parameter matching, filter or anything you’d like to do inside</p>
+
+<h3 id="akka-http-route">Akka http route.</h3>
+<p>When you are ready to build your source, you now can execute route building.
+<code class="highlighter-rouge">MkRoute(api)(handler)</code> will take the type of <code class="highlighter-rouge">api</code> parameter and create corresponding tree.
+using directive definitions given by <code class="highlighter-rouge">implicit</code> instances of:</p>
+<ul>
+  <li><code class="highlighter-rouge">trait Serve.Aux[T, In]{type Out}</code>  where:
+    <ul>
+      <li><code class="highlighter-rouge">T</code> - your DSLAtom or DSLRes</li>
+      <li><code class="highlighter-rouge">In</code> - input parameters collected by preceding <code class="highlighter-rouge">Serve</code> instances and tagged by names</li>
+      <li><code class="highlighter-rouge">Out</code> - parameters, that will be provided for subtree</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">trait RoutableIn[In, Res, Out]</code>  where:
+    <ul>
+      <li><code class="highlighter-rouge">In</code> - your DSLDef</li>
+      <li><code class="highlighter-rouge">Res</code> - result type, returned by corresponding method in handler</li>
+      <li><code class="highlighter-rouge">Out</code> - result type, defined in the API definition</li>
+    </ul>
+  </li>
+</ul>
+
+<p>You generally will need following instances:</p>
+<ul>
+  <li><code class="highlighter-rouge">ToResponseMarshaller</code> for returning type of your method</li>
+  <li><code class="highlighter-rouge">FromEntityUnmarshaller</code> for type, used in your <code class="highlighter-rouge">body</code> directive</li>
+  <li><code class="highlighter-rouge">FromParam</code> for any type in parameter directives like <code class="highlighter-rouge">queryParam</code></li>
+</ul>
+
+<h3 id="swagger">Swagger</h3>
+<p>When you need to create OpenApi 3.0 object, you can just apply <code class="highlighter-rouge">MkSwagger(api)(())</code></p>
+
+<p>This will create <code class="highlighter-rouge">SwaggerBuilder</code> object.
+These builders could be concatenated with <code class="highlighter-rouge">++</code> to collect definitions from several modules
+To successfully run you’ll need following implicits:</p>
+<ul>
+  <li><code class="highlighter-rouge">SwaggerTypeable</code> for any mentioned type</li>
+  <li><code class="highlighter-rouge">SwaggerMapper</code> for any custom directive</li>
+</ul>
+
+<p>When you final <code class="highlighter-rouge">SwaggerBuilder</code> is ready, apply it’s <code class="highlighter-rouge">make</code> method supplying some top-level info,
+this will create <code class="highlighter-rouge">OpenApi</code> object that has the <a href="https://circe.github.io/circe/codec.html">circe Encoder</a> instance, which you can serve any way you want.</p>
+
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/typed-schema/highlight/highlight.pack.js"></script><script>hljs.configure({languages:['scala','java','bash']});
+hljs.initHighlighting();
+              </script><script>((window.gitter = {}).chat = {}).options = {
+room: 'TinkoffCreditSystems/typed-schema'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/typed-schema/js/main.js"></script></body></html>

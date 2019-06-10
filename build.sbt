@@ -21,7 +21,15 @@ lazy val main = project.in(file("modules/main")).dependsOn(kernel, macros, swagg
 
 lazy val scalaz = project.in(file("modules/scalaz")).dependsOn(main).settings(commonSettings)
 
+lazy val docs = project.in(file("modules/docs"))
+  .enablePlugins(ScalaUnidocPlugin)
+  .settings(Seq(
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
+  ))
+  .dependsOn(kernel, macros, main, akkaHttp)
+  .settings(commonSettings)
+
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .aggregate(macros, kernel, main, swagger, akkaHttp, scalaz)
+    .aggregate(macros, kernel, main, swagger, akkaHttp, scalaz, docs)

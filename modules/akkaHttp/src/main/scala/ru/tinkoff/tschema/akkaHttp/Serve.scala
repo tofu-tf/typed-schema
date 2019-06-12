@@ -282,7 +282,7 @@ object ParamDirectives {
   }
 
   implicit val pathParamDirectives: TC[Path] = new TC[Path] {
-    def getByName(name: String): Directive1[Option[String]] = path(Segment).map(Some(_): Option[String])
+    def getByName(name: String): Directive1[Option[String]] = pathPrefix(Segment).map(Some(_): Option[String])
     def notFound(name: String): Rejection                   = NotFoundPathRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedPathRejection(name, error)
   }

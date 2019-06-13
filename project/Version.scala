@@ -1,6 +1,6 @@
 object Version {
   val circe = "0.11.1"
-  val circeDerivation = "0.11.0-M1"
+  val circeDerivation = "0.12.0-M3"
   val akka = "2.5.22"
   val akkaHttp = "10.1.8"
   val shapeless = "2.3.3"

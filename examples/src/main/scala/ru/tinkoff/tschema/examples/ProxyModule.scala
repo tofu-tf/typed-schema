@@ -8,6 +8,8 @@ import org.manatki.derevo.derive
 import org.manatki.derevo.tschemaInstances._
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
+import ru.tinkoff.tschema.examples.TestModule.handler
+import ru.tinkoff.tschema.examples.definitions.api
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
 import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL.QueryParam
@@ -30,4 +32,7 @@ object ProxyModule extends ExampleModule {
     def proxy(foo: String, bar: String, rest: Map[String, String]): String =
       s"Proxy echo: $foo, $bar, $rest"
   }
+
+  val swag = MkSwagger(api)(())
+  val route = MkRoute(api)(handler)
 }

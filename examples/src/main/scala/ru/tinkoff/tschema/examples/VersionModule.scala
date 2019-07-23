@@ -4,7 +4,7 @@ import akka.http.scaladsl.server.{Directive, Rejection}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.swagger.{SwaggerMapper, _}
-import ru.tinkoff.tschema.syntax._
+import syntax._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
 

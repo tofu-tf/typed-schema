@@ -9,7 +9,7 @@ import org.manatki.derevo.tschemaInstances._
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
-import ru.tinkoff.tschema.syntax._
+import syntax._
 import ru.tinkoff.tschema.typeDSL.QueryParam
 import shapeless.{HNil, Witness}
 

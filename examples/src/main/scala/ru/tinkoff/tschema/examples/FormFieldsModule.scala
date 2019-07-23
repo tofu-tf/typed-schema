@@ -6,7 +6,7 @@ import org.manatki.derevo.derive
 import org.manatki.derevo.tschemaInstances.swagger
 import ru.tinkoff.tschema.akkaHttp.MkRoute
 import ru.tinkoff.tschema.swagger._
-import ru.tinkoff.tschema.syntax._
+import syntax._
 
 object FormFieldsModule extends ExampleModule {
   @derive(encoder, decoder, swagger)

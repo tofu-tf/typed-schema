@@ -1,12 +1,7 @@
 package ru.tinkoff.tschema
-
 import ru.tinkoff.tschema.common.HasReq
-import ru.tinkoff.tschema.macros.ParamMaker
-import ru.tinkoff.tschema.swagger.Tag
-import shapeless._
-import typeDSL._
-
-import scala.language.higherKinds
+import ru.tinkoff.tschema.typeDSL._
+import shapeless.Witness
 
 object syntax {
   def prefix[s](witness: Witness.Lt[s])              = new Prefix[s]
@@ -81,10 +76,7 @@ object syntax {
     def as[name <: Symbol](name: Witness.Lt[name]): As[x, name] = new As
   }
 
-  object query   extends ParamMaker[QueryParam]
-  object path    extends ParamMaker[Capture]
-  object headers extends ParamMaker[Header]
-  object form    extends ParamMaker[FormField]
+
 
   implicit class ResultMaker[x <: DSLMethod](x: => x) {
     def apply[A]: x :> Complete[A] = x :> new Complete

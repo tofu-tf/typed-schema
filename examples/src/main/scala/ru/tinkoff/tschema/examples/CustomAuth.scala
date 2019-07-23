@@ -9,7 +9,7 @@ import org.manatki.derevo.tschemaInstances.swagger
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.examples.SpecialAuth.validateAuth
 import ru.tinkoff.tschema.swagger._
-import ru.tinkoff.tschema.syntax._
+import syntax._
 import ru.tinkoff.tschema.typeDSL.{DSLAtom, DSLAtomAuth}
 import shapeless.ops.record.Selector
 import shapeless.{HList, Witness => W}

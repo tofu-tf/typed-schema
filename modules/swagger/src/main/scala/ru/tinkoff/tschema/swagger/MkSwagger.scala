@@ -2,8 +2,6 @@ package ru.tinkoff.tschema.swagger
 
 import java.util.{Date, UUID}
 
-import akka.http.scaladsl.model.MediaTypes.`application/x-www-form-urlencoded`
-import akka.http.scaladsl.model.{MediaType, StatusCode, StatusCodes}
 import cats.arrow.FunctionK
 import cats.syntax.option._
 import cats.syntax.foldable._
@@ -60,7 +58,8 @@ trait SwaggerBuilder {
   }
 
   def map(f: PathSpec => PathSpec): SwaggerBuilder           = new SwaggerBuilder.SMap(this, f)
-  def describe(descriptions: DescriptionMap): SwaggerBuilder = new SwaggerBuilder.Describe(this, descriptions)
+  def describe(descriptions: DescriptionMap): SwaggerBuilder =
+    new SwaggerBuilder.Describe(this, descriptions)
 }
 
 object SwaggerBuilder {
@@ -93,9 +92,17 @@ object SwaggerBuilder {
 
   class Describe(self: SwaggerBuilder, descriptions: PathDescription.DescriptionMap) extends SwaggerBuilder {
     val paths = self.paths.map {
-      case spec @ PathSpec(_, _, _, Some(key)) =>
+      case spec @ PathSpec(_, _, OpenApiOp(opTags, _, _, _, _, _, _, _, _, _), Some(key)) =>
         import PathDescription.MethodTarget
-        val method = descriptions.method(key)
+        val method: MethodTarget => Option[SwaggerDescription] = {
+          val paths = opTags.map(tag => descriptions.method(s"$tag.$key")) :+ descriptions.method(key)
+          target: PathDescription.MethodTarget => paths.foldLeft(Option.empty[SwaggerDescription]) { (result, path) =>
+            (result, path(target)) match {
+              case (None, desc@Some(_)) => desc
+              case (res, _)             => res
+            }
+          }
+        }
 
         PathSpec.op.modify(
           OpenApiOp.description.modify(method(MethodTarget.Path) orElse _) andThen
@@ -165,18 +172,20 @@ trait MkSwagger[T] extends SwaggerBuilder {
 }
 
 object MkSwagger {
+  import MakerMacro.Skip
+
   def apply[Def <: DSLDef](definition: => Def): SwaggerBuilder =
-    macro MakerMacro.makeRouteHNilUnit[macroInterface.type, Def, SwaggerBuilder]
+    macro MakerMacro.makeRouteHNilUnit[Skip, macroInterface.type, Def, SwaggerBuilder]
 
   object macroInterface {
     class ResultPA1[Out] {
       def apply(in: Unit)(impl: Unit)(key: String)(implicit swagger: MkSwagger[Complete[Out]]): SwaggerBuilder =
         swagger
     }
-    def makeResult[Out]: ResultPA1[Out]                                     = new ResultPA1[Out]
+    def makeResult[F[_], Out]: ResultPA1[Out]                                     = new ResultPA1[Out]
     def concatResults(x: SwaggerBuilder, y: SwaggerBuilder): SwaggerBuilder = x ++ y
 
-    def serve[T](in: Unit) = new ServePA[T](in)
+    def serve[F[_], T](in: Unit) = new ServePA[T](in)
 
     class ServePA[T](val in: Unit) extends AnyVal {
       def apply(f: Unit => SwaggerBuilder)(implicit swagger: SwaggerMapper[T]): SwaggerBuilder = swagger.to(f(()))
@@ -207,7 +216,7 @@ object MkSwagger {
 
   implicit def derivedComplete[T](implicit content: SwaggerContent[T]) =
     single[Complete[T]](
-      op = OpenApiOp(responses = OpenApiResponses(codes = Map(StatusCodes.OK -> OpenApiResponse.makeMany(content.types: _*)))),
+      op = OpenApiOp(responses = OpenApiResponses(codes = Map(200 -> OpenApiResponse.makeMany(content.types: _*)))),
       typeList = TreeMap(content.collectTypes.toSeq: _*)
     )
 

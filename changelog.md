@@ -2,6 +2,8 @@
 - added support for multiple param parsing into the single case class
 - added specific typeclasses for params for different sources (Header, Query, Cookie, etc...)
 - updated magnolia to 0.10
+- added posibility to specify custom MediaType for SwaggerTypeable
+- MkRoute can now consume custom HList as input that could be usable in Serve instances
 
 ## Version 0.10.7
 

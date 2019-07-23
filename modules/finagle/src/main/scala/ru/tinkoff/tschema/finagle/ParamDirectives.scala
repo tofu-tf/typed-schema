@@ -4,14 +4,13 @@ package finagle
 import Routed.implicits._
 import cats.instances.list._
 import cats.syntax.applicative._
-import cats.syntax.functor._
+import cats.syntax.flatMap._
 import com.twitter.finagle.http.Request
-import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam}
 import ru.tinkoff.tschema.param._
 
 trait ParamDirectives[S <: ParamSource] {
   def source: S
-  def getByName[F[_]: Routed](name: String): F[Option[String]]
+  def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => F[A]): F[A]
 
   def notFound(name: String): Rejection                 = Rejection.missingParam(name, source)
   def malformed(name: String, error: String): Rejection = Rejection.malformedParam(name, error, source)
@@ -34,11 +33,10 @@ trait ParamDirectives[S <: ParamSource] {
 }
 
 abstract class ParamDirectivesSimple[S <: ParamSource](val source: S) extends ParamDirectives[S] {
-  def getFromRequest(name: String)(req: Request): Option[String]
+  def getFromRequest(name: String)(req: Request): Option[CharSequence]
 
-  def getByName[F[_]](name: String)(implicit F: Routed[F]): F[Option[String]] = {
-    F.FMonad.map(Routed.request[F])(getFromRequest(name))
-  }
+  def getByName[F[_], A](name: String, f: Option[CharSequence] => F[A])(implicit F: Routed[F]): F[A] =
+    Routed.request.flatMap(req => f(getFromRequest(name)(req)))
 }
 
 object ParamDirectives {
@@ -57,8 +55,8 @@ object ParamDirectives {
   }
 
   implicit val pathParamDirectives: TC[ParamSource.Path] = new TC[ParamSource.Path] {
-    def getByName[F[_]: Routed](name: String): F[Option[String]] = Routed.segment.map(_.map(_.toString))
-    def source                                                   = ParamSource.Path
+    def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => F[A]): F[A] = Routed.segment(fa)
+    def source                                                                           = ParamSource.Path
   }
 
   implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {

@@ -10,7 +10,7 @@ import ru.tinkoff.tschema.ParamSource
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, ParamSource}
 import ru.tinkoff.tschema.param.{Param, ParamSource}
 import ru.tinkoff.tschema.swagger._
-import ru.tinkoff.tschema.syntax._
+import syntax._
 
 import scala.concurrent.Future
 

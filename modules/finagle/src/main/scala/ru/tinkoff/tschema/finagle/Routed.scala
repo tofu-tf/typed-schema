@@ -1,25 +1,18 @@
 package ru.tinkoff.tschema.finagle
 import cats.arrow.FunctionK
-import cats.data.NonEmptyMap
-import cats.instances.double._
 import cats.instances.list._
-import cats.instances.option._
-import cats.instances.string._
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.foldable._
-import cats.syntax.order._
 import cats.syntax.functor._
-import cats.syntax.reducible._
-import cats.{Apply, Foldable, Monad, Monoid, Order, SemigroupK}
+import cats.syntax.order._
+import cats.{Apply, Contravariant, Foldable, Monad, Monoid, Order, SemigroupK}
 import com.twitter.finagle.http.Status._
-import com.twitter.finagle.http.Version
+import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route}
 import com.twitter.finagle.{Service, http}
-import com.twitter.io.Buf
 import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam, notFound}
 import ru.tinkoff.tschema.finagle.Routed.SegmentPattern
 import ru.tinkoff.tschema.param.ParamSource
-import com.twitter.io
 
 import scala.util.matching.Regex
 
@@ -29,66 +22,68 @@ final case class Path(full: String, matchedSize: Int = 0) {
   def matchMore(size: Int)    = Path(full, matchedSize + size)
 }
 
-trait Routed[F[_]] extends SemigroupK[F] {
+trait Routed[F[_]] {
   implicit def FMonad: Monad[F]
 
-  def request: F[http.Request]
+  def request: F[Request]
   def path: F[CharSequence]
   def matched: F[Int]
-  def setMatched[A](m: Int): F[Unit]
+  def withMatched[A](m: Int, fa: F[A]): F[A]
   def reject[A](rejection: Rejection): F[A]
 
   def rejectMany[A](rejections: Rejection*): F[A] = reject(Foldable[List].fold(rejections.toList))
 
-  def addMatched[A](i: Int): F[Unit] = matched >>= (m => setMatched(m + i))
+  def addMatched[A](i: Int, fa: F[A]): F[A] = matched >>= (m => withMatched(m + i, fa))
 
   def matchedPath: F[CharSequence]   = (path, matched).mapN(_.subSequence(0, _))
   def unmatchedPath: F[CharSequence] = (path, matched).mapN((p, m) => p.subSequence(m, p.length()))
 
-  def customSegment(pattern: Regex, groupId: Int): F[Option[CharSequence]] =
+  def customSegment[A](pattern: Regex, groupId: Int, f: Option[CharSequence] => F[A]): F[A] =
     for {
-      path     <- matchedPath
+      path     <- unmatchedPath
       matchOpt = pattern.findPrefixMatchOf(path)
-      _        <- matchOpt.traverse_(m => addMatched(m.end - m.start))
-    } yield matchOpt.map(_.group(groupId))
-
-  def segment: F[Option[CharSequence]] = customSegment(SegmentPattern, 1)
-
-  def checkPrefix(pref: CharSequence): F[Unit] =
-    for {
-      path <- matchedPath
-      i    = Routed.commonPathPrefix(path, pref)
-      res  <- if (i < 0) reject[Unit](notFound) else if (i > 0) addMatched(i) else FMonad.unit
+      res      <- matchOpt.fold(f(None))(m => addMatched(m.end - m.start, f(Some(m.group(groupId)))))
     } yield res
 
-  def checkPath(path: CharSequence): F[Unit] =
+  def segment[A](f: Option[CharSequence] => F[A]): F[A] = customSegment(SegmentPattern, 1, f)
+
+  def checkPrefix[A](pref: CharSequence, fa: F[A]): F[A] =
+    for {
+      path <- unmatchedPath
+      i    = Routed.commonPathPrefix(path, pref)
+      res  <- if (i < 0) reject[A](notFound) else if (i > 0) addMatched(i, fa) else fa
+    } yield res
+
+  def checkPath[A](path: CharSequence, fa: F[A]): F[A] =
     for {
       path <- matchedPath
       i    = Routed.commonPathPrefix(path, path)
-      res  <- if (i == path.length()) addMatched(i) else reject[Unit](notFound)
+      res  <- if (i == path.length()) addMatched(i, fa) else reject[A](notFound)
     } yield res
 
-  def checkPathEnd: F[Unit] = checkPath("")
+  def checkPathEnd[A](fa: F[A]): F[A] = checkPath("", fa)
 
 }
+
+trait RoutedPlus[F[_]] extends Routed[F] with SemigroupK[F]
 
 object Routed {
   def apply[F[_]](implicit instance: Routed[F]): Routed[F] = instance
 
-  def request[F[_]](implicit routed: Routed[F]): F[http.Request]              = routed.request
+  def request[F[_]](implicit routed: Routed[F]): F[Request]                   = routed.request
   def matchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence]   = routed.matchedPath
   def unmatchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence] = routed.unmatchedPath
   def reject[F[_], A](rejection: Rejection)(implicit routed: Routed[F]): F[A] = routed.reject(rejection)
-  def checkPathEnd[F[_], A](implicit routed: Routed[F]): F[Unit]              = routed.checkPathEnd
+  def checkPathEnd[F[_], A](fa: F[A])(implicit routed: Routed[F]): F[A]       = routed.checkPathEnd(fa)
 
   val SegmentPattern = "\\/?([^\\/]*)".r
 
-  def customSegment[F[_]](pattern: Regex, groupId: Int)(implicit routed: Routed[F]): F[Option[CharSequence]] =
-    routed.customSegment(pattern, groupId)
+  def customSegment[F[_], A](pattern: Regex, groupId: Int, fa: Option[CharSequence] => F[A])(implicit routed: Routed[F]): F[A] =
+    routed.customSegment(pattern, groupId, fa)
 
-  def segment[F[_]](implicit routed: Routed[F]): F[Option[CharSequence]] = routed.segment
+  def segment[F[_], A](f: Option[CharSequence] => F[A])(implicit routed: Routed[F]): F[A] = routed.segment(f)
 
-  def prefix[F[_]](pref: CharSequence)(implicit routed: Routed[F]): F[Unit] = routed.checkPrefix(pref)
+  def prefix[F[_], A](pref: CharSequence, fa: F[A])(implicit routed: Routed[F]): F[A] = routed.checkPrefix(pref, fa)
 
   private[Routed] def commonPathPrefix(path: CharSequence, pref: CharSequence): Int =
     if (pref.length() <= path.length() && path.subSequence(0, pref.length()) == pref) pref.length()
@@ -102,7 +97,25 @@ object Routed {
 }
 
 trait Runnable[F[_], G[_]] extends FunctionK[G, F] {
-  def run(fresp: F[http.Response]): G[Service[http.Request, http.Response]]
+  def run(fresp: F[Response]): G[Service[Request, Response]]
+}
+
+object Runnable {
+  def run[G[_]] = new Run[G]
+
+  class Run[G[_]] {
+    def apply[F[_]](resp: F[Response])(implicit runnable: Runnable[F, G]): G[Service[Request, Response]] = runnable.run(resp)
+    def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(
+        implicit runnable: Runnable[F, G],
+        G: Monad[G]
+    ): G[Service[Request, Response]] =
+      resps
+        .foldM[G, HttpMuxer](HttpMuxer) {
+          case (mux, (name, svc)) => runnable.run(svc).map(s => mux withHandler Route(name, s))
+        }
+        .widen
+  }
+
 }
 
 trait ParseBody[F[_], A] {
@@ -110,7 +123,14 @@ trait ParseBody[F[_], A] {
 }
 
 trait Complete[F[_], A] {
-  def complete(a: A): F[http.Response]
+  def complete(a: A): F[Response]
+}
+
+object Complete {
+  implicit def contravariant[F[_]]: Contravariant[Complete[F, ?]] =
+    new Contravariant[Complete[F, ?]] {
+      def contramap[A, B](fa: Complete[F, A])(f: B => A): Complete[F, B] = b => fa.complete(f(b))
+    }
 }
 
 final case class Rejection(
@@ -162,13 +182,12 @@ object Rejection {
         case i => i
     }
 
-  type Handler = Rejection => http.Response
+  type Handler = Rejection => Response
 
-  val defaultHandler: Handler = rej =>
-    http.Response(
-      Version.Http10,
-      rej.status,
-      io.Reader.fromBuf(rej.messages.headOption.fold(Buf.Empty)(Buf.Utf8(_)))
-  )
+  val defaultHandler: Handler = rej => {
+    val response = http.Response(rej.status)
+    rej.messages.headOption.foreach(response.setContentString)
+    response
+  }
 
 }

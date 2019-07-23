@@ -27,28 +27,28 @@ object zioInstance {
   type ZIOHttp[-R, +E, +A] = ZIO[ZioRouting[R], Fail[E], A]
   type ZIORoute[+A]        = ZIOHttp[Any, Nothing, A]
 
-  def zioRouted[R, E]: RoutedPlus[ZIOHttp[R, E, ?]] =
-    new RoutedPlus[ZIOHttp[R, E, ?]] {
-      val FMonad: Monad[ZIOHttp[R, E, ?]] = zio.interop.catz.ioInstances
+  def zioRouted[R, E]: RoutedPlus[ZIOHttp[R, E, *]] =
+    new RoutedPlus[ZIOHttp[R, E, *]] {
+      private type F[a] = ZIOHttp[R, E, a]
+      implicit private[this] val self: RoutedPlus[F] = this
+      implicit private[this] val monad: Monad[F]     = zio.interop.catz.ioInstances
 
       def matched: ZIORoute[Int] = ZIO.access(_.matched)
 
       def withMatched[A](m: Int, fa: ZIOHttp[R, E, A]): ZIOHttp[R, E, A] = fa.provideSome(_.copy(matched = m))
 
-      override def addMatched[A](i: Int, fa: ZIOHttp[R, E, A]): ZIOHttp[R, E, A] =
-        fa.provideSome(r => r.copy(matched = r.matched + i))
       def path: ZIORoute[CharSequence]    = ZIO.access(_.path)
       def request: ZIORoute[http.Request] = ZIO.access(_.request)
       def reject[A](rejection: Rejection): ZIOHttp[R, E, A] =
-        unmatchedPath.flatMap(path => throwRej(rejection withPath path.toString))
+        Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
       def combineK[A](x: ZIOHttp[R, E, A], y: ZIOHttp[R, E, A]): ZIOHttp[R, E, A] =
         catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
     }
 
   def zioRunnable[R, E <: Throwable](
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] =
-    new Runnable[ZIOHttp[R, E, ?], ZIO[R, E, ?]] {
+      rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[ZIOHttp[R, E, *], ZIO[R, E, *]] =
+    new Runnable[ZIOHttp[R, E, *], ZIO[R, E, *]] {
       def run(zioResponse: ZIOHttp[R, E, Response]): ZIO[R, E, Service[Request, Response]] =
         ZIO.runtime[R].flatMap(runtime => ZIO.effectTotal(execResponse(runtime, rejectionHandler, zioResponse, _)))
 

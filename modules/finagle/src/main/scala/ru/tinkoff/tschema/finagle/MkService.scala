@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.finagle
 import cats.syntax.semigroupk._
-import cats.{FlatMap, SemigroupK}
+import cats.{FlatMap, Monad, SemigroupK}
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.macros.MakerMacro
 import ru.tinkoff.tschema.typeDSL.DSLDef
@@ -33,7 +33,7 @@ object MkService {
     }
 
     class RoutePA[Res](res: => Res) {
-      def apply[F[_]: Routed, In, Out](in: In)(implicit complete: Complete[F, Res]): F[Response] =
+      def apply[F[_]: Routed: Monad, In, Out](in: In)(implicit complete: Complete[F, Res]): F[Response] =
         Routed.checkPathEnd(complete.complete(res))
     }
 

@@ -49,7 +49,7 @@ object ForAllTypes {
 
 trait ParamSpecLow[S >: All <: ParamSource] {
   val byColon = "\\,".r
-  implicit def listParam[A: SingleParam[S, ?]]: SingleParam[S, List[A]] = {
+  implicit def listParam[A: SingleParam[S, *]]: SingleParam[S, List[A]] = {
     Param.separated[S, A](byColon)
   }
 }
@@ -57,13 +57,13 @@ trait ParamSpecLow[S >: All <: ParamSource] {
 abstract class ParamSpec[S >: All <: ParamSource]
     extends PropSpec with GeneratorDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
   val bySemicolon                                                            = ";".r
-  implicit def listList[A: SingleParam[S, ?]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](bySemicolon)
+  implicit def listList[A: SingleParam[S, *]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](bySemicolon)
   def fromParam[T](s: String)(implicit f: SingleParam[S, T])                 = f.applyOpt(Some(s))
 }
 
 class FromFormParamSpec extends ParamSpec[ParamSource.Form] {
   ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.Form] {
-    def check[T: SingleParam[Form, ?]: Arbitrary: TypeTag: Equality]: Unit = {
+    def check[T: SingleParam[Form, *]: Arbitrary: TypeTag: Equality]: Unit = {
       val name = typeTag[T].tpe.toString
 
       property(s"$name should be parsed as itself") {
@@ -83,7 +83,7 @@ class FromFormParamSpec extends ParamSpec[ParamSource.Form] {
 
 class FromQueryParamSpec extends ParamSpec[ParamSource.Query] {
   ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.Query] {
-    def check[T: SingleParam[Query, ?]: Arbitrary: TypeTag: Equality]: Unit = {
+    def check[T: SingleParam[Query, *]: Arbitrary: TypeTag: Equality]: Unit = {
       val name = typeTag[T].tpe.toString
 
       property(s"$name should be parsed as itself") {
@@ -103,7 +103,7 @@ class FromQueryParamSpec extends ParamSpec[ParamSource.Query] {
 
 class FromCookieParamSpec extends ParamSpec[ParamSource.Cookie] {
   ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.Cookie] {
-    def check[T: SingleParam[Cookie, ?]: Arbitrary: TypeTag: Equality]: Unit = {
+    def check[T: SingleParam[Cookie, *]: Arbitrary: TypeTag: Equality]: Unit = {
       val name = typeTag[T].tpe.toString
 
       property(s"$name should be parsed as itself") {

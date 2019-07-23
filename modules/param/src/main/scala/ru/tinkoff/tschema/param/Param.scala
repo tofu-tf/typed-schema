@@ -217,7 +217,7 @@ trait LowPriorParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]]
 }
 
 trait ParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]]
-    extends LowPriorParamInstances[P] with PrimitiveParamInstances[P[All, ?]] {
+    extends LowPriorParamInstances[P] with PrimitiveParamInstances[P[All, *]] {
 
   implicit def optSingleParam[S >: All <: ParamSource, A](implicit param: SingleParam[S, A]): SingleParam[S, Option[A]] =
     param.optional

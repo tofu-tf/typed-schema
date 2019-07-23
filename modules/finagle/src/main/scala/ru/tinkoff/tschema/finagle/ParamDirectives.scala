@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema
 package finagle
 
-import Routed.implicits._
+import cats.Monad
 import cats.instances.list._
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
@@ -10,7 +10,7 @@ import ru.tinkoff.tschema.param._
 
 trait ParamDirectives[S <: ParamSource] {
   def source: S
-  def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => F[A]): F[A]
+  def getByName[F[_]: Routed: Monad, A](name: String, fa: Option[CharSequence] => F[A]): F[A]
 
   def notFound(name: String): Rejection                 = Rejection.missingParam(name, source)
   def malformed(name: String, error: String): Rejection = Rejection.malformedParam(name, error, source)
@@ -25,17 +25,17 @@ trait ParamDirectives[S <: ParamSource] {
     error match {
       case single: SingleParamError => routed.reject(singleRejection(name, single))
       case MultiParamError(vals) =>
-        routed.rejectMany(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
+        Routed.rejectMany(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
     }
 
-  def provideOrReject[F[_]: Routed, A](name: String, result: Param.Result[A]): F[A] =
+  def provideOrReject[F[_]: Routed: Monad, A](name: String, result: Param.Result[A]): F[A] =
     result.fold(errorReject[F, A](name, _), _.pure[F])
 }
 
 abstract class ParamDirectivesSimple[S <: ParamSource](val source: S) extends ParamDirectives[S] {
   def getFromRequest(name: String)(req: Request): Option[CharSequence]
 
-  def getByName[F[_], A](name: String, f: Option[CharSequence] => F[A])(implicit F: Routed[F]): F[A] =
+  def getByName[F[_]: Routed: Monad, A](name: String, f: Option[CharSequence] => F[A]): F[A] =
     Routed.request.flatMap(req => f(getFromRequest(name)(req)))
 }
 
@@ -55,7 +55,7 @@ object ParamDirectives {
   }
 
   implicit val pathParamDirectives: TC[ParamSource.Path] = new TC[ParamSource.Path] {
-    def getByName[F[_]: Routed, A](name: String, fa: Option[CharSequence] => F[A]): F[A] = Routed.segment(fa)
+    def getByName[F[_]: Routed: Monad, A](name: String, fa: Option[CharSequence] => F[A]): F[A] = Routed.segment(fa)
     def source                                                                           = ParamSource.Path
   }
 

@@ -29,7 +29,8 @@ object TestServer {
     FormFieldsModule,
     Authorize,
     CustomAuth,
-    MultiParameters
+    MultiParameters,
+    ProxyModule
   ).combineAll
 
   private[this] implicit val printer: Printer =

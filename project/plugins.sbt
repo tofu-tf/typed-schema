@@ -10,3 +10,10 @@ addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
+
+
+// Docs
+addSbtPlugin("com.eed3si9n"     % "sbt-unidoc"     % "0.4.2")
+addSbtPlugin("com.47deg"        % "sbt-microsites" % "0.9.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages"    % "0.6.3")
+addSbtPlugin("org.tpolecat"     % "tut-plugin"     % "0.6.11")

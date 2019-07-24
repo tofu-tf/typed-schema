@@ -171,6 +171,14 @@ lazy val swaggerUI =
       buildInfoPackage := "ru.tinkoff.tschema.swagger"
     )
 
+lazy val docs = project.in(file("modules/docs"))
+  .enablePlugins(ScalaUnidocPlugin)
+  .settings(Seq(
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
+  ))
+  .dependsOn(kernel, macros, main, akkaHttp)
+  .settings(commonSettings)
+
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
@@ -185,4 +193,5 @@ lazy val typedschema =
                finagleZio,
                finagleCirce,
                finagleTethys,
-               swaggerUI)
+               swaggerUI,
+               docs)

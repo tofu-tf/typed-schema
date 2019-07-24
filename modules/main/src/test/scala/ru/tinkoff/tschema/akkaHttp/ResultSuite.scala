@@ -22,9 +22,15 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
     def testAsync: Future[String] = {
       Future.successful("Hello, async world!")
     }
+
+    def testCapture(name: String, age: Int): String = {
+      testCalled = true
+      s"$name, age $age"
+    }
   }
 
-  def helloApi = (keyPrefix('test) |> get[String]) <> (keyPrefix('testAsync) |> get[String])
+  def helloApi = (keyPrefix('test) |> get[String]) <> (keyPrefix('testAsync) |> get[String]) <>
+      (keyPrefix('testCapture) |> get |> capture[String]('name) |> capture[Int]('age) |> $$[String])
 
   val helloRoute = MkRoute(helloApi)(hello)
 
@@ -42,6 +48,14 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
       Get("/testAsync") ~> helloRoute ~> check {
         responseAs[String] shouldEqual "Hello, async world!"
         hello.testCalled shouldBe false
+      }
+    }
+
+    "serve capture" in {
+      hello.testCalled = false
+      Get("/testCapture/Bilbo/131") ~> helloRoute ~> check {
+        responseAs[String] shouldEqual "Bilbo, age 131"
+        hello.testCalled shouldBe true
       }
     }
 

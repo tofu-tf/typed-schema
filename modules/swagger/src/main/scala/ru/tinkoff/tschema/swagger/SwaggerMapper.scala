@@ -160,6 +160,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
     derivedParam[name, T, Cookie](In.cookie)
 
+  implicit def deriveAllQuery[x]: SwaggerMapper[AllQuery[x, Map[String, String]]] = SwaggerMapper.empty
+
   implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
     derivedParam[name, T, Capture](In.path).map(PathSpec.path.modify(s"{$name}" +: _))
 

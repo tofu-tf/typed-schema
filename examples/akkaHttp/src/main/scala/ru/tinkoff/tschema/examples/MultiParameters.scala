@@ -1,9 +1,11 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema
+package examples
 import akka.http.scaladsl.server.Route
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
 import ru.tinkoff.tschema.swagger._
+import scalaz.deriving
 import syntax._
 
 object MultiParameters extends ExampleModule {
@@ -23,7 +25,7 @@ object MultiParameters extends ExampleModule {
 
 
   def route: Route = MkRoute(api)(handler)
-  def swag: SwaggerBuilder = MkSwagger(api)(())
+  def swag: SwaggerBuilder = MkSwagger(api)
 
 
 

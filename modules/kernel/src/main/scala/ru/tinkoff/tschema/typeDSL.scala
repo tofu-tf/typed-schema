@@ -8,8 +8,6 @@ object typeDSL {
   trait CanHoldApiKey
   trait DSLAtomAuth extends DSLAtom
 
-
-
   /**
     * Any path component that is subtype of Meta will be ignored
     * by `Serve` but could support additional information like swagger tags or descriptions
@@ -17,14 +15,18 @@ object typeDSL {
   trait Meta extends DSLAtom
 
   /**
-   * tagging symbol for route
-   */
+    * tagging symbol for route
+    */
   class Tag[tag] extends Meta
 
   /**
     * naming symbol of single route in complex route
     */
   class Key[key] extends DSLAtom
+
+  /**
+    * naming intermediate group of methods */
+  class Group[key]
 
   /**
     * indicates result of element of type `x`

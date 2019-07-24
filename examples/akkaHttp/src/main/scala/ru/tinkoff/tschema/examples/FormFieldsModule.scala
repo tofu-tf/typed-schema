@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema
+package examples
 
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
@@ -24,5 +25,5 @@ object FormFieldsModule extends ExampleModule {
   }
 
   val route   = MkRoute(api)(handler)
-  val swag = MkSwagger(api)(())
+  val swag = MkSwagger(api)
 }

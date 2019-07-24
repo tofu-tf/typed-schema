@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema
+package examples
 
 import akka.http.scaladsl.server.{Directive, Rejection}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
@@ -33,7 +34,7 @@ object version {
 
   case class WrongVersionRejection(shouldBe: String, passed: String) extends Rejection
 
-  def apply[v <: Symbol](v: Witness.Lt[v]): version[v] :> Key[v] = new version[v] :> key(v)
+  def apply[v <: Symbol](v: Witness.Aux[v]): version[v] :> Key[v] = new version[v] :> key(v)
 
   implicit def versionServe[v <: Symbol, In <: HList](implicit w: Witness.Aux[v]): Serve.Aux[version[v], In, In] = Serve.serveCheck {
     Directive { f =>

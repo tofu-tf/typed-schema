@@ -12,7 +12,7 @@ import monocle.function.all._
 import monocle.macros.Lenses
 import monocle.std.option.some
 import ru.tinkoff.tschema.common.Name
-import ru.tinkoff.tschema.macros.MakerMacro
+import ru.tinkoff.tschema.macros._
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.swagger.OpenApiParam.In
 import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
@@ -172,7 +172,6 @@ trait MkSwagger[T] extends SwaggerBuilder {
 }
 
 object MkSwagger {
-  import MakerMacro.Skip
 
   def apply[Def <: DSLDef](definition: => Def): SwaggerBuilder =
     macro MakerMacro.makeRouteHNilUnit[Skip, macroInterface.type, Def, SwaggerBuilder]

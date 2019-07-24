@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema
+package examples
 
 import akka.http.scaladsl.server.Directives
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._

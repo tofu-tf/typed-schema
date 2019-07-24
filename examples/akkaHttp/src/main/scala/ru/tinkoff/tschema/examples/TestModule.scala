@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema
+package examples
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -6,26 +7,23 @@ import io.circe.derivation.renaming.snakeCase
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
 import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.ParamSource
-import ru.tinkoff.tschema.akkaHttp.{MkRoute, ParamSource}
+import ru.tinkoff.tschema.akkaHttp.MkRoute
 import ru.tinkoff.tschema.param.{Param, ParamSource}
 import ru.tinkoff.tschema.swagger._
-import syntax._
+import ru.tinkoff.tschema.syntax._
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 
 import scala.concurrent.Future
 
 object definitions {
 
-
   @derive(encoder(snakeCase), decoder(snakeCase), swagger)
   case class StatsRes(theMean: BigDecimal,
-                      disperse: BigDecimal,
+                      disperse: BigDecimal,Y
                       median: BigDecimal)
 
   @derive(encoder, decoder, swagger)
   case class Combine(source: CombSource, res: CombRes)
-
-
   @derive(encoder, decoder, swagger)
   case class CombSource(x: Int, y: Int)
 
@@ -38,17 +36,23 @@ object definitions {
     operation('concat) |> queryParam[String]('left)
       .as('l) |> queryParam[String]('right).as('r) |> get |> complete[String]
 
-  def combine = get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
+  def combine =
+    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
 
   def sum = get |> operation('sum) |> capture[Int]('y) |> $$[Int]
 
-  def stats = post |> operation('stats) |> reqBody[Seq[BigDecimal]] |> $$[StatsRes]
+  def stats =
+    post |> operation('stats) |> reqBody[Seq[BigDecimal]] |> $$[StatsRes]
 
-  def statsq = get |> operation('statsq) |> queryParams[BigDecimal]('num) |> $$[StatsRes]
+  def statsq =
+    get |> operation('statsq) |> queryParams[BigDecimal]('num) |> $$[StatsRes]
 
   def intops = queryParam[Client]('x) |> (combine ~ sum)
 
-  def dist = operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[Double]
+  def dist =
+    operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[
+      Double
+    ]
 
   def api = tagPrefix('test) |> (concat <> intops <> stats <> statsq <> dist)
 }
@@ -59,7 +63,8 @@ object TestModule extends ExampleModule {
 
   import definitions._
 
-  implicit lazy val clientFromParam: Param[ParamSource.All, Client] = Param.intParam.map(Client)
+  implicit lazy val clientFromParam: Param[ParamSource.All, Client] =
+    Param.intParam.map(Client)
   implicit val clientSwagger: SwaggerTypeable[Client] =
     SwaggerTypeable.swaggerTypeableInteger.as[Client]
 
@@ -73,12 +78,14 @@ object TestModule extends ExampleModule {
   object handler extends Mutate {
 
     def combine(x: Client, y: Int) =
-      Combine(CombSource(x.value, y),
-              CombRes(mul = x.value * y, sum = x.value + y))
+      Combine(
+        CombSource(x.value, y),
+        CombRes(mul = x.value * y, sum = x.value + y)
+      )
 
     def sum(x: Client, y: Int): Future[Int] = Future(x.value + y)
 
-    def sqrtMean(a: Double, b: Double): Double = Math.sqrt((a*a +  b*b) / 2)
+    def sqrtMean(a: Double, b: Double): Double = Math.sqrt((a * a + b * b) / 2)
 
     def stats(body: Seq[BigDecimal]) = {
       val mean = body.sum / body.size
@@ -92,7 +99,7 @@ object TestModule extends ExampleModule {
     def statsq(num: Seq[BigDecimal]) = stats(num)
   }
 
-  val swag = MkSwagger(api)(())
+  val swag = MkSwagger(api)
 
   val route = MkRoute(api)(handler)
 }

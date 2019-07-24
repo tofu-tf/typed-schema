@@ -2,11 +2,11 @@ package ru.tinkoff.tschema
 
 import org.scalacheck.Arbitrary
 import org.scalactic.Equality
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import ru.tinkoff.tschema.ForAllTypes.Checker
-import ru.tinkoff.tschema.param._, ParamSource._
-import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam}
+import ru.tinkoff.tschema.param.ParamSource._
+import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam, _}
 import shapeless._
 
 import scala.reflect.runtime.universe._
@@ -55,7 +55,7 @@ trait ParamSpecLow[S >: All <: ParamSource] {
 }
 
 abstract class ParamSpec[S >: All <: ParamSource]
-    extends PropSpec with GeneratorDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
+    extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
   val bySemicolon                                                            = ";".r
   implicit def listList[A: SingleParam[S, *]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](bySemicolon)
   def fromParam[T](s: String)(implicit f: SingleParam[S, T])                 = f.applyOpt(Some(s))

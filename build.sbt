@@ -29,11 +29,11 @@ val derevo          = "org.manatki"          %% "derevo-cats"       % Version.de
 val swaggerUILib    = "org.webjars.npm"      % "swagger-ui-dist"    % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"          %% "scalatags"         % Version.scalaTags
 
-val monocle = List("core", "macro").map(module => "com.github.julien-truffaut"             %% s"monocle-$module" % Version.monocle)
-val circe   = List("core", "parser", "generic", "generic-extras").map(module => "io.circe" %% s"circe-$module"   % Version.circe)
-val akka    = List("actor", "stream").map(module => "com.typesafe.akka"                    %% s"akka-$module"    % Version.akka)
-val zio     = List("zio", "zio-interop-cats").map(module => "org.scalaz"                   %% s"scalaz-$module"  % Version.zio)
-val tethys  = List("core", "jackson").map(module => "com.tethys-json"                      %% s"tethys-$module"  % Version.tethys)
+val monocle = List("core", "macro").map(module => "com.github.julien-truffaut" %% s"monocle-$module" % Version.monocle)
+val circe   = List("core", "parser", "generic", "generic-extras").map(module => "io.circe" %% s"circe-$module" % Version.circe)
+val akka    = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
+val zio     = List("dev.zio" %% "zio" % Version.zio, "dev.zio" %% "zio-interop-cats" % Version.zioCats)
+val tethys  = List("core", "jackson").map(module => "com.tethys-json" %% s"tethys-$module" % Version.tethys)
 
 val reflect  = libraryDependencies += scalaOrganization.value % "scala-reflect"  % scalaVersion.value
 val compiler = libraryDependencies += scalaOrganization.value % "scala-compiler" % scalaVersion.value
@@ -51,7 +51,7 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
 lazy val testLibs = libraryDependencies ++= scalacheck :: scalatest :: Nil
 
-lazy val commonSettings = testLibs :: compilerPlugins 
+lazy val commonSettings = testLibs :: compilerPlugins
 
 lazy val kernel = project
   .in(file("modules/kernel"))
@@ -139,7 +139,7 @@ lazy val main = project
   .settings(
     commonSettings,
     moduleName := "typed-schema",
-    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit  :: magnolia :: akka
+    libraryDependencies ++= akkaHttpCirce :: akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: magnolia :: akka
   )
 
 lazy val scalaz = project
@@ -164,7 +164,8 @@ lazy val swaggerUI =
       swaggerUIVersion := {
         libraryDependencies.value
           .find(_.name == "swagger-ui-dist")
-          .map(_.revision).get
+          .map(_.revision)
+          .get
       },
       buildInfoKeys := swaggerUIVersion :: Nil,
       buildInfoPackage := "ru.tinkoff.tschema.swagger"

@@ -1,14 +1,11 @@
 package ru.tinkoff.tschema.finagle
 import cats.Monad
-import cats.data.NonEmptyMap
-import cats.instances.string._
 import cats.syntax.semigroup._
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.utils.SubString
-import scalaz.zio
-import scalaz.zio.{Exit, Ref, ZIO}
+import zio.{Exit, ZIO}
 
 object zioInstance {
 

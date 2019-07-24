@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema
+package examples
 
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import org.manatki.derevo.circeDerivation.{decoder, encoder}

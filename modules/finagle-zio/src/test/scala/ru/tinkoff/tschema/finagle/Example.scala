@@ -6,10 +6,10 @@ import ru.tinkoff.tschema.finagle.Example.Http
 import typeDSL._
 import shapeless.{HNil, Witness}
 import ru.tinkoff.tschema.finagle.zioInstance.{ZIOHttp, zioRouted, zioRunnable}
-import scalaz.zio.ZIO
+import zio.ZIO
 final case class Example(trackingId: String)
 import syntax._
-import scalaz.zio.interop.catz._
+import zio.interop.catz._
 import showInstances._
 import cats.instances.string._
 

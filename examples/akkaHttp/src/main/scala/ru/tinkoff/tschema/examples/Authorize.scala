@@ -9,7 +9,7 @@ import org.manatki.derevo.tschemaInstances._
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
-import syntax._
+import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL.QueryParam
 import shapeless.{HNil, Witness}
 
@@ -19,7 +19,7 @@ object Authorize extends ExampleModule {
 //  Serve.queryParamServe[Witness.`'sessionId`.T, Option[String], HNil]
   Serve.queryParamServe[Witness.`'sessionId`.T, String, HNil]
   override def route: Route         = MkRoute(api)(handler)
-  override def swag: SwaggerBuilder = MkSwagger(api)(())
+  override def swag: SwaggerBuilder = MkSwagger(api)
 
   final case class User(name: String, roles: List[String])
 

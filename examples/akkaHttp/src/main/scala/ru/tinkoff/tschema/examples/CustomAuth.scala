@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema
+package examples
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Route}
 import akka.http.scaladsl.server.directives.Credentials
@@ -18,7 +19,7 @@ import scala.collection.concurrent.TrieMap
 
 object CustomAuth extends ExampleModule {
   override def route: Route         = MkRoute(api)(handler)
-  override def swag: SwaggerBuilder = MkSwagger(api)(())
+  override def swag: SwaggerBuilder = MkSwagger(api)
 
   implicit val auth = AuthMap(Map("kriwda" -> (true, "admin"), "oleg" -> (false, "notadmin")))
 

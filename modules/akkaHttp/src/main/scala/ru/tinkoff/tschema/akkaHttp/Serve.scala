@@ -16,10 +16,20 @@ import cats.syntax.traverse._
 import cats.instances.list._
 import cats.instances.option._
 import cats.instances.either._
-import ru.tinkoff.tschema.akkaHttp.Param.{MultiResult, SingleResult}
-import ru.tinkoff.tschema.akkaHttp.ParamSource.All
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.common.Name
+import ru.tinkoff.tschema.param.ParamSource.All
+import ru.tinkoff.tschema.param.{
+  MissingParamError,
+  MultiParam,
+  MultiParamError,
+  Param,
+  ParamError,
+  ParamSource,
+  ParseParamError,
+  SingleParam,
+  SingleParamError
+}
 import shapeless.ops.record.Selector
 
 import scala.annotation.implicitNotFound
@@ -43,7 +53,9 @@ private[akkaHttp] trait ServeTypes {
 
   type Check[T, In <: HList]           = Serve[T, In] { type Out = In }
   type Add[T, In <: HList, key, value] = Serve[T, In] { type Out = FieldType[key, value] :: In }
+  type Push[T, In <: HList, value]     = Serve[T, In] { type Out = value :: In }
   class key[name] protected[akkaHttp] ()
+  class group[name] protected[akkaHttp] ()
 }
 
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
@@ -61,6 +73,11 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
   def serveAdd[T, In <: HList, A, key](dir: Directive1[A]): Add[T, In, key, A] = new Serve[T, In] {
     type Out = FieldType[key, A] :: In
     def directive(in: In): Directive1[FieldType[key, A] :: In] = dir.map(field[key](_) :: in)
+  }
+
+  def servePush[T, In <: HList, A](dir: Directive1[A]): Push[T, In, A] = new Serve[T, In] {
+    type Out = A :: In
+    def directive(in: In): Directive1[A :: In] = dir.map(_ :: in)
   }
 
   def serveReadAdd[T, param, Value, In <: HList, A, key](dir: Value => Directive1[A])(
@@ -143,8 +160,8 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def queryParamServe[name: Name, x: Param.PQuery, In <: HList] =
     serveAdd[QueryParam[name, x], In, x, name](resolveParam[ParamSource.Query, name, x])
 
-  implicit def queryFlagServe[name <: Symbol: Witness.Aux, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
-    parameterMap.map(_.contains(name[name]))
+  implicit def queryFlagServe[name: Name: Witness.Aux, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
+    parameterMap.map(_.contains(Name[name].string))
   )
 
   implicit def captureServe[name: Name, x: Param.PPath, In <: HList] =
@@ -171,11 +188,11 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
 
-  implicit def keyServe[name <: Symbol, In <: HList](implicit w: Witness.Aux[name]): Aux[Key[name], In, key[name] :: In] =
-    new Serve[Key[name], In] {
-      type Out = key[name] :: In
-      def directive(in: In): Directive1[key[name] :: In] = provide(in).map(new key[name] :: _)
-    }
+  implicit def keyServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Key[name], In, key[name]] =
+    servePush(provide(new key[name]))
+
+  implicit def groupServe[name , In <: HList](implicit w: Witness.Aux[name]): Push[Group[name], In, group[name]] =
+    servePush(provide(new group[name]))
 }
 
 final case class MethodCheck[T](method: HttpMethod)
@@ -299,6 +316,4 @@ object ParamDirectives {
     def malformed(name: String, error: String): Rejection   = MalformedHeaderRejection(name, error)
   }
 
-  final case class NotFoundPathRejection(name: String)                       extends Rejection
-  final case class MalformedPathRejection(name: String, formatError: String) extends Rejection
 }

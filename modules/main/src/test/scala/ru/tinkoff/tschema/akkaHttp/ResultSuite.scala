@@ -1,11 +1,11 @@
-package ru.tinkoff.tschema.akkaHttp
+package ru.tinkoff.tschema
+package akkaHttp
 
 import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToResponseMarshaller}
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
 import akka.http.scaladsl.server.MethodRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{AsyncWordSpec, Matchers}
-import ru.tinkoff.tschema.syntax
 import ru.tinkoff.tschema.syntax._
 
 import scala.concurrent.Future

@@ -15,9 +15,18 @@ object typeDSL {
   trait Meta extends DSLAtom
 
   /**
+    * tagging symbol for route
+    */
+  class Tag[tag] extends Meta
+
+  /**
     * naming symbol of single route in complex route
     */
   class Key[key] extends DSLAtom
+
+  /**
+    * naming intermediate group of methods */
+  class Group[key]
 
   /**
     * return query params as Map[String, String]

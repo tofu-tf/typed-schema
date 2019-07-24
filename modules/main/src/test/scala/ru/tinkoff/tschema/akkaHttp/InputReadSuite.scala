@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.akkaHttp
+package ru.tinkoff.tschema
+package akkaHttp
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{FlatSpec, Matchers}
 import shapeless.{HList, HNil, Witness}
@@ -30,7 +31,7 @@ object magicParam {
 
 object InputReadSuite {
   import ru.tinkoff.tschema.typeDSL._
-  import ru.tinkoff.tschema.syntax._
+  import syntax._
   def api = get |> operation('magic) |> magicParam('hello) |> $$[String]
   object handler {
     def magic(hello: MagicalInput) = s"Hello, ${hello.value}!"

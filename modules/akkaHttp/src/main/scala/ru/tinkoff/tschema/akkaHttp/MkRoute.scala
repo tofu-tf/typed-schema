@@ -4,32 +4,32 @@ import akka.http.scaladsl.server.{Directive0, Directive1, Route}
 import ru.tinkoff.tschema.typeDSL.DSLDef
 import shapeless.HList
 import akka.http.scaladsl.server.Directives._
-import ru.tinkoff.tschema.macros.MakerMacro
+import ru.tinkoff.tschema.macros._
 
 import language.experimental.macros
 
 object MkRoute {
+
   def apply[Def <: DSLDef, Impl](definition: => Def)(impl: Impl): Route =
-    macro MakerMacro.makeRouteHNil[macroInterface.type, Def, Impl, Route]
+    macro MakerMacro.makeRouteHNil[Skip, macroInterface.type, Def, Impl, Route]
 
   def of[Def <: DSLDef, Impl, In <: HList](definition: => Def)(impl: Impl)(input: In): Route =
-    macro MakerMacro.makeRoute[macroInterface.type, Def, Impl, Route, In]
+    macro MakerMacro.makeRoute[Skip, macroInterface.type, Def, Impl, Route, In]
 
   object macroInterface {
     class ResultPA1[Out] {
       def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String): Route =
-        macro MakerMacro.makeResult[In, Out, Impl, Route]
+        macro MakerMacro.makeResult[Skip, In, Out, Impl, Route]
     }
-    def makeResult[Out]: ResultPA1[Out]          = new ResultPA1[Out]
+    def makeResult[F[_], Out]: ResultPA1[Out]    = new ResultPA1[Out]
     def concatResults(x: Route, y: Route): Route = x ~ y
 
-
-    def serve[T] = new ServePA[T]
+    def serve[F[_], T] = new ServePA[T]
 
     def route[Res](res: => Res) = new RoutePA(res)
 
-    class RoutePA[Res](res: => Res){
-      def apply[In, Out](in: In)(implicit routable: RoutableIn[In, Res, Out]): Route = pathEnd(routable.route(in, res))
+    class RoutePA[Res](res: => Res) {
+      def apply[F[_], In, Out](in: In)(implicit routable: RoutableIn[In, Res, Out]): Route = pathEnd(routable.route(in, res))
     }
 
     class ServePA[T] {

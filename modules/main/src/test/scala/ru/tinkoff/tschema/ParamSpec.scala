@@ -2,11 +2,11 @@ package ru.tinkoff.tschema
 
 import org.scalacheck.Arbitrary
 import org.scalactic.Equality
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import ru.tinkoff.tschema.ForAllTypes.Checker
-import ru.tinkoff.tschema.akkaHttp.ParamSource.{All, Cookie, Form, Query}
-import ru.tinkoff.tschema.akkaHttp.{Param, ParamSource, SingleParam}
+import ru.tinkoff.tschema.param.ParamSource._
+import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam, _}
 import shapeless._
 
 import scala.reflect.runtime.universe._
@@ -48,20 +48,22 @@ object ForAllTypes {
 }
 
 trait ParamSpecLow[S >: All <: ParamSource] {
-  implicit def listParam[A: SingleParam[S, ?]]: SingleParam[S, List[A]] = {
-    Param.separated[S, A](",")
+  val byColon = "\\,".r
+  implicit def listParam[A: SingleParam[S, *]]: SingleParam[S, List[A]] = {
+    Param.separated[S, A](byColon)
   }
 }
 
 abstract class ParamSpec[S >: All <: ParamSource]
-    extends PropSpec with GeneratorDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
-  implicit def listList[A: SingleParam[S, ?]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](";")
+    extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
+  val bySemicolon                                                            = ";".r
+  implicit def listList[A: SingleParam[S, *]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](bySemicolon)
   def fromParam[T](s: String)(implicit f: SingleParam[S, T])                 = f.applyOpt(Some(s))
 }
 
 class FromFormParamSpec extends ParamSpec[ParamSource.Form] {
   ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.Form] {
-    def check[T: SingleParam[Form, ?]: Arbitrary: TypeTag: Equality]: Unit = {
+    def check[T: SingleParam[Form, *]: Arbitrary: TypeTag: Equality]: Unit = {
       val name = typeTag[T].tpe.toString
 
       property(s"$name should be parsed as itself") {
@@ -81,7 +83,7 @@ class FromFormParamSpec extends ParamSpec[ParamSource.Form] {
 
 class FromQueryParamSpec extends ParamSpec[ParamSource.Query] {
   ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.Query] {
-    def check[T: SingleParam[Query, ?]: Arbitrary: TypeTag: Equality]: Unit = {
+    def check[T: SingleParam[Query, *]: Arbitrary: TypeTag: Equality]: Unit = {
       val name = typeTag[T].tpe.toString
 
       property(s"$name should be parsed as itself") {
@@ -101,7 +103,7 @@ class FromQueryParamSpec extends ParamSpec[ParamSource.Query] {
 
 class FromCookieParamSpec extends ParamSpec[ParamSource.Cookie] {
   ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.Cookie] {
-    def check[T: SingleParam[Cookie, ?]: Arbitrary: TypeTag: Equality]: Unit = {
+    def check[T: SingleParam[Cookie, *]: Arbitrary: TypeTag: Equality]: Unit = {
       val name = typeTag[T].tpe.toString
 
       property(s"$name should be parsed as itself") {

@@ -24,7 +24,7 @@ val commonSettings = List(
   addCompilerPlugin(
     "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch
   ),
-  addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0")
+  addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 )
 
 lazy val akkaHttp = project

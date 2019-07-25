@@ -1,5 +1,5 @@
 package ru.tinkoff.tschema.finagle
-import cats.{Applicative, Monad}
+import cats.{Applicative, Functor, Monad}
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Printer}
@@ -10,7 +10,8 @@ object circeInstances {
   implicit def circeEncodeComplete[F[_]: Applicative, A: Encoder](implicit printer: Printer): Complete[F, A] =
     jsonComplete(_.asJson.pretty(printer))
 
-  implicit def circeEncodeCompleteF[F[_]: Applicative, A: Encoder](implicit printer: Printer): Complete[F, F[A]] =
+  implicit def circeEncodeCompleteF[F[_], G[_]: Functor, A: Encoder](implicit runnable: Runnable[F, G],
+                                                                     printer: Printer): Complete[F, G[A]] =
     message.fjsonComplete(_.asJson.pretty(printer))
 
   implicit def circeDecodeParseBody[F[_]: Routed: Monad, A: Decoder]: ParseBody[F, A] =

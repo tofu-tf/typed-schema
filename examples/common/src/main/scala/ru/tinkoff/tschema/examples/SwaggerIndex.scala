@@ -1,12 +1,10 @@
-package ru.tinkoff.tschema
-package examples
-
+package ru.tinkoff.tschema.examples
 import scalatags.Text.all._
 
 object SwaggerIndex {
   def cssref(s: String) = link(href := s, rel := "stylesheet")
   def js(s: String) = script(src := s)
-  val version = BuildInfo.swaggerUIVersion.getOrElse("undefined is not a function")
+  val version = BuildInfo.swaggerUIVersion
   def webjar(s: String) = s"/webjars/swagger-ui-dist/$version/$s"
   val index = html(
     meta(charset := "UTF-8"),

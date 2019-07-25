@@ -1,5 +1,4 @@
-package ru.tinkoff.tschema
-package examples
+package ru.tinkoff.tschema.example
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -7,27 +6,34 @@ import io.circe.derivation.renaming.snakeCase
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
 import org.manatki.derevo.tschemaInstances._
+import org.manatki.derevo.tethysInstances._
 import ru.tinkoff.tschema.akkaHttp.MkRoute
 import ru.tinkoff.tschema.param.{Param, ParamSource}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import ru.tinkoff.tschema.finagle
+import ru.tinkoff.tschema.finagle.{Complete, MkService, RoutedPlus, Serve}
+import ru.tinkoff.tschema.typeDSL.{As, Prefix, QueryParam}
+import shapeless.{HNil, Witness}
+import shapeless.record._
+import ru.tinkoff.tschema.finagle.tethysInstances._
+import zio.ZIO
 
 import scala.concurrent.Future
 
 object definitions {
 
-  @derive(encoder(snakeCase), decoder(snakeCase), swagger)
+  @derive(tethysReader, tethysWriter, swagger)
   case class StatsRes(theMean: BigDecimal,
                       disperse: BigDecimal,
                       median: BigDecimal)
 
-  @derive(encoder, decoder, swagger)
+  @derive(tethysReader, tethysWriter, swagger)
   case class Combine(source: CombSource, res: CombRes)
-  @derive(encoder, decoder, swagger)
+  @derive(tethysReader, tethysWriter, swagger)
   case class CombSource(x: Int, y: Int)
 
-  @derive(encoder, decoder, swagger)
+  @derive(tethysReader, tethysWriter, swagger)
   case class CombRes(mul: Int, sum: Int)
 
   case class Client(value: Int)
@@ -36,8 +42,8 @@ object definitions {
     operation('concat) |> queryParam[String]('left)
       .as('l) |> queryParam[String]('right).as('r) |> get |> complete[String]
 
-  def combine =
-    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
+//  def combine =
+//    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
 
   def sum = get |> operation('sum) |> capture[Int]('y) |> $$[Int]
 
@@ -47,7 +53,7 @@ object definitions {
   def statsq =
     get |> operation('statsq) |> queryParams[BigDecimal]('num) |> $$[StatsRes]
 
-  def intops = queryParam[Client]('x) |> (combine ~ sum)
+  def intops = queryParam[Client]('x) |> sum // (combine ~ sum)
 
   def dist =
     operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[
@@ -58,8 +64,6 @@ object definitions {
 }
 
 object TestModule extends ExampleModule {
-  implicit val system = ActorSystem("swagger-test")
-  implicit val mat = ActorMaterializer()
 
   import definitions._
 
@@ -83,7 +87,7 @@ object TestModule extends ExampleModule {
         CombRes(mul = x.value * y, sum = x.value + y)
       )
 
-    def sum(x: Client, y: Int): Future[Int] = Future(x.value + y)
+    def sum(x: Client, y: Int): Example[Int] = ZIO.succeed(x.value + y)
 
     def sqrtMean(a: Double, b: Double): Double = Math.sqrt((a * a + b * b) / 2)
 
@@ -101,5 +105,5 @@ object TestModule extends ExampleModule {
 
   val swag = MkSwagger(api)
 
-  val route = MkRoute(api)(handler)
+  val route = MkService[Http](api)(handler)
 }

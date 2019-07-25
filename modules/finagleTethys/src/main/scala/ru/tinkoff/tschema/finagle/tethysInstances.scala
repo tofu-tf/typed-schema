@@ -1,5 +1,5 @@
 package ru.tinkoff.tschema.finagle
-import cats.{Applicative, Monad}
+import cats.{Applicative, Functor, Monad}
 import ru.tinkoff.tschema.finagle.util.message
 import ru.tinkoff.tschema.finagle.util.message.{jsonBodyParse, jsonComplete}
 import tethys._
@@ -11,8 +11,9 @@ object tethysInstances {
       implicit producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, A] =
     jsonComplete(_.asJson)
 
-  implicit def tethysEncodeCompleteF[F[_]: Applicative, A: JsonWriter](
-      implicit producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, F[A]] =
+  implicit def tethysEncodeCompleteF[F[_], G[_]: Functor, A: JsonWriter](
+      implicit runnable: Runnable[F, G],
+      producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, G[A]] =
     message.fjsonComplete(_.asJson)
 
   implicit def tethysDecodeParseBody[F[_]: Routed: Monad, A: JsonReader](

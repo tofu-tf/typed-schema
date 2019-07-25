@@ -1,6 +1,7 @@
 package ru.tinkoff.tschema.finagle
 import cats.Monad
 import cats.syntax.semigroup._
+import com.twitter
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
@@ -41,6 +42,18 @@ object zioInstance {
 
       def combineK[A](x: ZIOHttp[R, E, A], y: ZIOHttp[R, E, A]): ZIOHttp[R, E, A] =
         catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
+
+    }
+
+  def zioConvertService[R, E](f: Throwable => Fail[E]): ConvertService[ZIOHttp[R, E, *]] =
+    new ConvertService[ZIOHttp[R, E, *]] {
+      def convertService[A](svc: Service[http.Request, A]): ZIOHttp[R, E, A] =
+        ZIO.accessM(r =>
+          ZIO.effectAsync(cb =>
+            svc(r.request).respond {
+              case twitter.util.Return(a) => cb(ZIO.succeed(a))
+              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
+          }))
     }
 
   def zioRunnable[R, E <: Throwable](
@@ -49,7 +62,7 @@ object zioInstance {
       def run(zioResponse: ZIOHttp[R, E, Response]): ZIO[R, E, Service[Request, Response]] =
         ZIO.runtime[R].flatMap(runtime => ZIO.effectTotal(execResponse(runtime, rejectionHandler, zioResponse, _)))
 
-      def apply[A](fa: ZIO[R, E, A]): ZIOHttp[R, E, A] = fa.mapError(OtherFail(_)).provideSome(_.embedded)
+      def lift[A](fa: ZIO[R, E, A]): ZIOHttp[R, E, A] = fa.mapError(OtherFail(_)).provideSome(_.embedded)
     }
 
   @inline private[this] def catchRej[R, E, A](z: ZIOHttp[R, E, A])(f: Rejection => ZIOHttp[R, E, A]): ZIOHttp[R, E, A] =

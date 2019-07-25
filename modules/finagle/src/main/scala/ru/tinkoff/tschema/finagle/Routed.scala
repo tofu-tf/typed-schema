@@ -6,7 +6,7 @@ import cats.syntax.flatMap._
 import cats.syntax.foldable._
 import cats.syntax.functor._
 import cats.syntax.order._
-import cats.{Apply, Contravariant, Foldable, Monad, Monoid, Order, SemigroupK}
+import cats.{Apply, Contravariant, Foldable, Monad, Monoid, MonoidK, Order, SemigroupK}
 import com.twitter.finagle.http.Status._
 import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route}
 import com.twitter.finagle.{Service, http}
@@ -30,7 +30,9 @@ trait Routed[F[_]] {
   def reject[A](rejection: Rejection): F[A]
 }
 
-trait RoutedPlus[F[_]] extends Routed[F] with SemigroupK[F]
+trait RoutedPlus[F[_]] extends Routed[F] with MonoidK[F]{
+  def empty[A]: F[A] = reject(Rejection.notFound)
+}
 
 object Routed {
   def apply[F[_]](implicit instance: Routed[F]): Routed[F] = instance
@@ -55,10 +57,10 @@ object Routed {
       res  <- if (i < 0) reject[F, A](notFound) else if (i > 0) addMatched(i, fa) else fa
     } yield res
 
-  def checkPath[F[_]: Monad: Routed, A](path: CharSequence, fa: F[A]): F[A] =
+  def checkPath[F[_]: Monad: Routed, A](full: CharSequence, fa: F[A]): F[A] =
     for {
       path <- unmatchedPath[F]
-      i    = Routed.commonPathPrefix(path, path)
+      i    = Routed.commonPathPrefix(path, full)
       res  <- if (i == path.length()) addMatched(i, fa) else reject[F, A](notFound)
     } yield res
 
@@ -81,8 +83,13 @@ object Routed {
 
 }
 
-trait Runnable[F[_], G[_]] extends FunctionK[G, F] {
+trait Runnable[F[_], G[_]]  {
+  def lift[A](fa: G[A]): F[A]
   def run(fresp: F[Response]): G[Service[Request, Response]]
+
+  def funK: FunctionK[G, F] = new FunctionK[G, F] {
+    def apply[A](fa: G[A]): F[A] = lift(fa)
+  }
 }
 
 object Runnable {
@@ -174,5 +181,8 @@ object Rejection {
     rej.messages.headOption.foreach(response.setContentString)
     response
   }
+}
 
+trait ConvertService[F[_]]{
+  def convertService[A](svc: Service[http.Request, A]): F[A]
 }

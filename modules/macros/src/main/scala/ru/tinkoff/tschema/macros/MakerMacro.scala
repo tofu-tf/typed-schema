@@ -4,6 +4,7 @@ import java.time.Instant
 
 import cats.kernel.Monoid
 import cats.syntax.monoid._
+import cats.syntax.option._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, HNil}
 
@@ -16,20 +17,34 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   import c.universe._
   type WTTF[F[_]] = WeakTypeTag[F[Unit]]
 
-  def makeRouteHNilUnit[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Res: WeakTypeTag](definition: c.Expr[Def]): c.Expr[Res] =
-    makeRouteHNil[F, If, Def, Unit, Res](definition)(c.Expr(q"()"))
+  def makeRouteHNilNoImpl[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Res: WeakTypeTag](
+      definition: c.Expr[Def]): c.Expr[Res] =
+    makeRouteImpl[F, If, Def, Unit, Res, HNil](definition)(none)(c.Expr(q"(HNil : HNil)"))
 
   def makeRouteHNil[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
       definition: c.Expr[Def]
   )(
       impl: c.Expr[Impl]
   ): c.Expr[Res] =
-    makeRoute[F, If, Def, Impl, Res, HNil](definition)(impl)(c.Expr(q"(HNil : HNil)"))
+    makeRouteImpl[F, If, Def, Impl, Res, HNil](definition)(impl.tree.some)(c.Expr(q"(HNil : HNil)"))
 
   def makeRoute[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag, In: WeakTypeTag](
       definition: c.Expr[Def]
   )(
       impl: c.Expr[Impl]
+  )(
+      input: c.Expr[In]
+  ): c.Expr[Res] = makeRouteImpl[F, If, Def, Impl, Res, In](definition)(impl.tree.some)(input)
+
+  private def makeRouteImpl[F[_]: WTTF,
+                            If: WeakTypeTag,
+                            Def: WeakTypeTag,
+                            Impl: WeakTypeTag,
+                            Res: WeakTypeTag,
+                            In: WeakTypeTag](
+      definition: c.Expr[Def]
+  )(
+      impl: Option[Tree]
   )(
       input: c.Expr[In]
   ): c.Expr[Res] = {
@@ -38,7 +53,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     val implT     = weakTypeOf[Impl]
     val ft        = weakTypeOf[F[Unit]].typeConstructor
     val dsl       = constructDslTree(defT, Monoid.empty[PrefixInfo[Type]])
-    val wholeTree = new RouteTreeMaker(impl.tree).makeRouteTree(ft, dsl, input.tree)
+    val wholeTree = new RouteTreeMaker(impl).makeRouteTree(ft, dsl, input.tree)
 
     infoTime(s"route $implT")
 
@@ -66,20 +81,18 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   )(
       impl: c.Expr[Impl]
   )(
-      key: c.Expr[String]
+      key: c.Expr[String],
+      groups: c.Expr[String]*
   ): c.Expr[Res] = {
-    val implT = weakTypeOf[Impl].dealias
-    val inT   = weakTypeOf[In].dealias
-    val outT  = weakTypeOf[Out].dealias
-    val ft    = weakTypeOf[F[Unit]].typeConstructor
-    val fullKey: String = key.tree match {
-      case Literal(Constant(s: String)) => s
-      case _                            => abort("inproper use of `makeResult` key should be a string constant")
-    }
+    val implT      = weakTypeOf[Impl].dealias
+    val inT        = weakTypeOf[In].dealias
+    val outT       = weakTypeOf[Out].dealias
+    val ft         = weakTypeOf[F[Unit]].typeConstructor
+    val methName   = unpackString("key")(key)
+    val groupNames = groups.toVector.map(unpackString("group"))
+    val fullKey    = (groupNames :+ methName).mkString
 
-    val groups :+ methName = fullKey.split("\\.").toVector.map(NameTransformer.encode)
-
-    val meth = findMeth(implT, groups, TermName(methName)) getOrElse abort(s"method $fullKey is not implemented")
+    val meth = findMeth(implT, groupNames, TermName(methName)) getOrElse abort(s"method $fullKey is not implemented")
 
     val rec  = extractRecord(inT)
     val syms = rec.flatten.map { case (paramName, _) => paramName -> freshName(paramName) }.toMap
@@ -95,7 +108,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
       case (Some((name, _)), pat) => pq"(${syms(name)} @ _) :: $pat"
     }
 
-    val accessor = groups.map(TermName(_)).foldLeft[Tree](impl.tree)((a, gr) => q"$a.$gr")
+    val accessor = groupNames.map(TermName(_)).foldLeft[Tree](impl.tree)((a, gr) => q"$a.$gr")
 
     c.Expr(c.typecheck(q""" $in match { case $recpat =>
         def res = $accessor.$meth(...$params)
@@ -111,19 +124,26 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   val groupC    = typeOf[Group[_]].typeConstructor
   val interface = TermName("macroInterface")
 
-  private class RouteTreeMaker(impl: Tree) {
+  private class RouteTreeMaker(impl: Option[Tree]) {
     type DSL = DSLTree[Type]
     def makeRouteTree(ft: Type, dsl: DSL, input: Tree): Tree = dsl match {
-      case DSLLeaf(resTyp, key) =>
-        q"""{
-          $interface.makeResult[$ft, $resTyp]($input)($impl)($key)
+      case DSLLeaf(resTyp, groups, key) =>
+        impl match {
+          case None       => q"""{
+              $interface.makeResult[$ft, $resTyp]($input)($key, ..$groups)
+             }"""
+          case Some(impl) => q"""{
+            $interface.makeResult[$ft, $resTyp]($input)($impl)($key, ..$groups)
           }"""
+        }
+
       case DSLBranch(pref +: next, dsls) =>
         val identName = freshName("input")
         val tpt       = tq""
         val ident     = q"val $identName: $tpt"
         val rest      = makeRouteTree(ft, DSLBranch(next, dsls), Ident(identName))
         q"""$interface.serve[$ft, $pref]($input).apply(($ident) => $rest)"""
+
       case DSLBranch(_, dsls) => makeRouteSumTree(ft, dsls, input)
     }
 
@@ -159,6 +179,12 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
       case Vector() => extractMeth(typ, name)
     }
 
+  private def unpackString(name: String)(sExpr: c.Expr[String]): String =
+    sExpr.tree match {
+      case Literal(Constant(s: String)) => NameTransformer.encode(s)
+      case x                            => abort(s"inproper use of `makeResult` $name should be a string constant, got $x")
+    }
+
   class CombMatcher(constr: Type) {
     def unapplySeq(t: Type): Option[List[Type]] = t baseType constr.typeSymbol match {
       case TypeRef(_, sym, xs) if sym.asType.toType.typeConstructor =:= constr => Some(xs)
@@ -184,7 +210,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   def constructDslTree(t: Type, prefix: PrefixInfo[Type]): DSLTree[Type] = t match {
     case Complete(res) =>
       prefix.key match {
-        case Some(str) => DSLLeaf(res, (prefix.groups :+ str).mkString("."))
+        case Some(str) => DSLLeaf(res, prefix.groups, str)
         case None =>
           val typLine = (prefix.prefix :+ t).map(showType).mkString(" :> ")
           abort(s"method key for $typLine is not defined")

@@ -10,16 +10,20 @@ import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.traverse._
+import cats.syntax.applicative._
 import cats.{Applicative, Apply, Defer, FlatMap, Functor, Monad, StackSafeMonad}
+import com.twitter.finagle.http
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.finagle.Rejection.missingParam
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
-import ru.tinkoff.tschema.typeDSL.QueryParams
+import ru.tinkoff.tschema.typeDSL.{Delete, Get, Head, Options, Post, Put, QueryParams}
 import ru.tinkoff.tschema.utils.cont
 import shapeless._
 import shapeless.labelled.{FieldType, field}
+
+import scala.tools.nsc.ast.parser.Patch
 
 trait Serve[T, F[_], In, Out] {
   def process(in: In, k: Out => F[Response]): F[Response]
@@ -27,7 +31,8 @@ trait Serve[T, F[_], In, Out] {
   def as[U]: Serve[U, F, In, Out] = this.asInstanceOf[Serve[U, F, In, Out]]
 }
 
-object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunctions with ServeCatsInstance {
+object Serve
+    extends ServeAuthInstances with ServeParamsInstances with ServeFunctions with ServeCatsInstance with ServeMethodInstances {
   import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
   type Add[T, F[_], In <: HList, name, V] = Serve[T, F, In, FieldType[name, V] :: In]
@@ -57,16 +62,20 @@ object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunc
     : Add[QueryParam[name, x], F, In, name, x] =
     add[QueryParam[name, x], F, In, x, name](resolveParam[F, ParamSource.Query, name, x])
 
-  implicit def queryFlagServe[F[_]: Routed: Monad, name <: Symbol: Name, x, In <: HList]: Add[QueryFlag[name], F, In, name, Boolean] =
+  implicit def queryFlagServe[F[_]: Routed: Monad, name <: Symbol: Name, x, In <: HList]
+    : Add[QueryFlag[name], F, In, name, Boolean] =
     add[QueryFlag[name], F, In, Boolean, name](Routed.request[F].map(_.params.contains(Name[name].string)))
 
-  implicit def captureServe[F[_]: Routed: Monad, name: Name, x: Param.PPath, In <: HList]: Add[Capture[name, x], F, In, name, x] =
+  implicit def captureServe[F[_]: Routed: Monad, name: Name, x: Param.PPath, In <: HList]
+    : Add[Capture[name, x], F, In, name, x] =
     add[Capture[name, x], F, In, x, name](resolveParam[F, ParamSource.Path, name, x])
 
-  implicit def headerServe[F[_]: Routed: Monad, name: Name, x: Param.PHeader, In <: HList]: Add[Header[name, x], F, In, name, x] =
+  implicit def headerServe[F[_]: Routed: Monad, name: Name, x: Param.PHeader, In <: HList]
+    : Add[Header[name, x], F, In, name, x] =
     add[Header[name, x], F, In, x, name](resolveParam[F, ParamSource.Header, name, x])
 
-  implicit def cookieServe[F[_]: Routed: Monad, name: Name, x: Param.PCookie, In <: HList]: Add[Cookie[name, x], F, In, name, x] =
+  implicit def cookieServe[F[_]: Routed: Monad, name: Name, x: Param.PCookie, In <: HList]
+    : Add[Cookie[name, x], F, In, name, x] =
     add[Cookie[name, x], F, In, x, name](resolveParam[F, ParamSource.Cookie, name, x])
 
   implicit def formFieldServe[F[_]: Routed: Monad, name <: Symbol: Witness.Aux, x: Param.PForm, In <: HList]
@@ -80,7 +89,14 @@ object Serve extends ServeAuthInstances with ServeParamsInstances with ServeFunc
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))
 
-  implicit def serveKey[F[_]: Applicative, key, In]: Filter[Key[key], F, In] = ignore
+  implicit def serveKey[F[_], key, In]: Filter[Key[key], F, In]     = ignore
+  implicit def serveGroup[F[_], key, In]: Filter[Group[key], F, In] = ignore
+  implicit def serveMeta[F[_], U <: Meta, In]: Filter[U, F, In]     = ignore
+
+  implicit def asServe[x, name, F[_], In <: HList, Head, old, Rest <: HList](
+      implicit serveInner: Serve[x, F, In, FieldType[old, Head] :: Rest])
+    : Serve[As[x, name], F, In, FieldType[name, Head] :: Rest] =
+    serveInner.asInstanceOf[Serve[As[x, name], F, In, FieldType[name, Head] :: Rest]]
 }
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>
@@ -144,4 +160,16 @@ private[finagle] trait ServeCatsInstance {
       def first[A, B, C](fa: Serve[T, F, A, B]): Serve[T, F, (A, C), (B, C)] =
         (ac, kbc) => FD.defer(fa.process(ac._1, b => kbc((b, ac._2))))
     }
+}
+trait ServeMethodInstances { self: Serve.type =>
+  private[this] def checkMethod[T, F[_]: Routed: Monad, In](method: http.Method): Filter[T, F, In] =
+    check(Routed.request.flatMap(r => Routed.reject(Rejection.wrongMethod(r.method.name)).whenA(r.method != method)))
+
+  implicit def serveMethodGet[F[_]: Routed: Monad, In]: Filter[Get, F, In]         = checkMethod(http.Method.Get)
+  implicit def serveMethodPost[F[_]: Routed: Monad, In]: Filter[Post, F, In]       = checkMethod(http.Method.Post)
+  implicit def serveMethodPut[F[_]: Routed: Monad, In]: Filter[Put, F, In]         = checkMethod(http.Method.Put)
+  implicit def serveMethodDelete[F[_]: Routed: Monad, In]: Filter[Delete, F, In]   = checkMethod(http.Method.Delete)
+  implicit def serveMethodHead[F[_]: Routed: Monad, In]: Filter[Head, F, In]       = checkMethod(http.Method.Head)
+  implicit def serveMethodOptions[F[_]: Routed: Monad, In]: Filter[Options, F, In] = checkMethod(http.Method.Options)
+  implicit def serveMethodPatch[F[_]: Routed: Monad, In]: Filter[Patch, F, In]     = checkMethod(http.Method.Patch)
 }

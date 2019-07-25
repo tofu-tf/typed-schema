@@ -1,26 +1,23 @@
 package ru.tinkoff.tschema.finagle.util
-import com.twitter.finagle.http.{Response, Status, Version}
+import com.twitter.finagle.http.{Message, Response, Status, Version}
 import com.twitter.io.{Buf, Reader}
-import ru.tinkoff.tschema.finagle.{Complete, ParseBody, Rejection, Routed}
+import ru.tinkoff.tschema.finagle.{Complete, ParseBody, Rejection, Routed, Runnable}
 import cats.{Applicative, Functor, Monad}
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 
 object message {
-  def stringResponse(s: String): Response = {
+
+  def response(s: String, contentType: String): Response = {
     val resp = Response()
-    resp.setContentType("text/plain")
+    resp.setContentType(contentType)
     resp.setContentString(s)
     resp
   }
 
-  def jsonResponse(s: String): Response = {
-    val resp = Response()
-    resp.setContentTypeJson()
-    resp.setContentString(s)
-    resp
-  }
+  def stringResponse(s: String): Response = response(s, "text/plain")
+  def jsonResponse(s: String): Response   = response(s, Message.ContentTypeJson)
 
   def parseRequest[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): F[A] =
     Routed.request.flatMap(req =>
@@ -29,14 +26,14 @@ object message {
   def stringComplete[F[_]: Applicative, A](f: A => String): Complete[F, A] =
     a => stringResponse(f(a)).pure[F]
 
-  def fstringComplete[F[_]: Functor, A](f: A => String): Complete[F, F[A]] =
-    fa => fa.map(a => stringResponse(f(a)))
+  def fstringComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, G[A]] =
+    fa => runnable.lift(fa.map(a => stringResponse(f(a))))
 
   def jsonComplete[F[_]: Applicative, A](f: A => String): Complete[F, A] =
     a => jsonResponse(f(a)).pure[F]
 
-  def fjsonComplete[F[_]: Functor, A](f: A => String): Complete[F, F[A]] =
-    fa => fa.map(a => jsonResponse(f(a)))
+  def fjsonComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, G[A]] =
+    fa => runnable.lift(fa.map(a => jsonResponse(f(a))))
 
   def jsonBodyParse[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): ParseBody[F, A] =
     () => parseRequest(f)

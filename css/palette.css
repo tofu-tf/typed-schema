@@ -1,6 +1,6 @@
 @import url(https://fonts.googleapis.com/css?family=Lato:400,300,700);
 .technologies {
-  background: #FFDD2D; }
+  background: #5a4c08; }
 
 #site-header .navbar-wrapper a {
   color: #fff; }
@@ -17,13 +17,13 @@
   color: #FFFFFF; }
 
 .jumbotron {
-  background-color: #FFDD2D; }
+  background-color: #5a4c08; }
   .jumbotron .btn-outline-inverse {
     border: 2px solid #FFFFFF;
     color: #FFFFFF; }
     .jumbotron .btn-outline-inverse:hover, .jumbotron .btn-outline-inverse:focus {
       background: #FFFFFF;
-      color: #FFDD2D; }
+      color: #5a4c08; }
 
 pre {
   background: rgba(244, 243, 244, 0.6); }
@@ -41,7 +41,7 @@ body.docs {
   background-color: #F4F3F4; }
 
 #sidebar-wrapper {
-  background: #FFDD2D; }
+  background: #5a4c08; }
 
 #page-content-wrapper .nav a {
   color: #424F67; }

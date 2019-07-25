@@ -217,7 +217,7 @@
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/TinkoffCreditSystems/typed-schema/tree/master/modules/main/src/main/scala/ru/tinkoff/tschema/syntax.scala" target="_blank">syntax.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/TinkoffCreditSystems/typed-schema/tree/master/modules/kernel/src/main/scala/ru/tinkoff/tschema/syntax.scala" target="_blank">syntax.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -486,9 +486,9 @@
       
       
     </li><li name="ru.tinkoff.tschema.syntax#apiKeyAuth" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apiKeyAuth[realm,Param&lt;:ru.tinkoff.tschema.typeDSL.CanHoldApiKey](realm:shapeless.Witness.Lt[realm],param:Param):ru.tinkoff.tschema.typeDSL.ApiKeyAuth[realm,Param]"></a><a id="apiKeyAuth[realm,Param&lt;:CanHoldApiKey](Lt[realm],Param):ApiKeyAuth[realm,Param]"></a>
+      <a id="apiKeyAuth[realm,Param&lt;:ru.tinkoff.tschema.typeDSL.CanHoldApiKey](realm:shapeless.Witness.Aux[realm],param:Param):ru.tinkoff.tschema.typeDSL.ApiKeyAuth[realm,Param]"></a><a id="apiKeyAuth[realm,Param&lt;:CanHoldApiKey](Aux[realm],Param):ApiKeyAuth[realm,Param]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#apiKeyAuth[realm,Param&lt;:ru.tinkoff.tschema.typeDSL.CanHoldApiKey](realm:shapeless.Witness.Lt[realm],param:Param):ru.tinkoff.tschema.typeDSL.ApiKeyAuth[realm,Param]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#apiKeyAuth[realm,Param&lt;:ru.tinkoff.tschema.typeDSL.CanHoldApiKey](realm:shapeless.Witness.Aux[realm],param:Param):ru.tinkoff.tschema.typeDSL.ApiKeyAuth[realm,Param]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -497,7 +497,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apiKeyAuth</span><span class="tparams">[<span name="realm">realm</span>, <span name="Param">Param &lt;: <a href="typeDSL$$CanHoldApiKey.html" class="extype" name="ru.tinkoff.tschema.typeDSL.CanHoldApiKey">CanHoldApiKey</a></span>]</span><span class="params">(<span name="realm">realm: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.realm">realm</span>]</span>, <span name="param">param: <span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.Param">Param</span></span>)</span><span class="result">: <a href="typeDSL$$ApiKeyAuth.html" class="extype" name="ru.tinkoff.tschema.typeDSL.ApiKeyAuth">ApiKeyAuth</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.realm">realm</span>, <span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.Param">Param</span>]</span>
+        <span class="name">apiKeyAuth</span><span class="tparams">[<span name="realm">realm</span>, <span name="Param">Param &lt;: <a href="typeDSL$$CanHoldApiKey.html" class="extype" name="ru.tinkoff.tschema.typeDSL.CanHoldApiKey">CanHoldApiKey</a></span>]</span><span class="params">(<span name="realm">realm: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.realm">realm</span>]</span>, <span name="param">param: <span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.Param">Param</span></span>)</span><span class="result">: <a href="typeDSL$$ApiKeyAuth.html" class="extype" name="ru.tinkoff.tschema.typeDSL.ApiKeyAuth">ApiKeyAuth</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.realm">realm</span>, <span class="extype" name="ru.tinkoff.tschema.syntax.apiKeyAuth.Param">Param</span>]</span>
       </span>
       
       
@@ -740,6 +740,38 @@
                 <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="ru.tinkoff.tschema.syntax#group" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="group[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Group[s]"></a><a id="group[s](Aux[s]):Group[s]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#group[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Group[s]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">group</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.group.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$Group.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Group">Group</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.group.s">s</span>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#groupPrefix" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="groupPrefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Group[s]"></a><a id="groupPrefix[s](Aux[s])::&gt;[Prefix[s],Group[s]]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#groupPrefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Group[s]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">groupPrefix</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.groupPrefix.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.groupPrefix.s">s</span>], <a href="typeDSL$$Group.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Group">Group</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.groupPrefix.s">s</span>]]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
@@ -810,9 +842,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="ru.tinkoff.tschema.syntax#key" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="key[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Key[s]"></a><a id="key[s&lt;:Symbol](Lt[s]):Key[s]"></a>
+      <a id="key[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Key[s]"></a><a id="key[s](Aux[s]):Key[s]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#key[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Key[s]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#key[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Key[s]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -821,14 +853,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">key</span><span class="tparams">[<span name="s">s &lt;: <span class="extype" name="scala.Symbol">Symbol</span></span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.key.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.key.s">s</span>]</span>
+        <span class="name">key</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.key.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.key.s">s</span>]</span>
       </span>
       
       
     </li><li name="ru.tinkoff.tschema.syntax#keyPrefix" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="keyPrefix[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]"></a><a id="keyPrefix[s&lt;:Symbol](Lt[s])::&gt;[Prefix[s],Key[s]]"></a>
+      <a id="keyPrefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]"></a><a id="keyPrefix[s](Aux[s])::&gt;[Prefix[s],Key[s]]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#keyPrefix[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#keyPrefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -837,7 +869,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">keyPrefix</span><span class="tparams">[<span name="s">s &lt;: <span class="extype" name="scala.Symbol">Symbol</span></span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.keyPrefix.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.keyPrefix.s">s</span>], <a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.keyPrefix.s">s</span>]]</span>
+        <span class="name">keyPrefix</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.keyPrefix.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.keyPrefix.s">s</span>], <a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.keyPrefix.s">s</span>]]</span>
       </span>
       
       
@@ -899,10 +931,10 @@
                 <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="ru.tinkoff.tschema.syntax#operation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="operation[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]"></a><a id="operation[s&lt;:Symbol](Lt[s])::&gt;[Prefix[s],Key[s]]"></a>
+    </li><li name="ru.tinkoff.tschema.syntax#opDelete" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opDelete:ru.tinkoff.tschema.typeDSL.Key[String(&quot;delete&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Delete"></a><a id="opDelete::&gt;[Key[String(&quot;delete&quot;)],Delete]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#operation[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#opDelete:ru.tinkoff.tschema.typeDSL.Key[String(&quot;delete&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Delete" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -911,7 +943,119 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">operation</span><span class="tparams">[<span name="s">s &lt;: <span class="extype" name="scala.Symbol">Symbol</span></span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.operation.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.operation.s">s</span>], <a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.operation.s">s</span>]]</span>
+        <span class="name">opDelete</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[String(&quot;delete&quot;)], <a href="typeDSL$$Delete.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Delete">Delete</a>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#opGet" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opGet:ru.tinkoff.tschema.typeDSL.Key[String(&quot;get&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Get"></a><a id="opGet::&gt;[Key[String(&quot;get&quot;)],Get]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#opGet:ru.tinkoff.tschema.typeDSL.Key[String(&quot;get&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Get" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opGet</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[String(&quot;get&quot;)], <a href="typeDSL$$Get.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Get">Get</a>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#opHead" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opHead:ru.tinkoff.tschema.typeDSL.Key[String(&quot;head&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Head"></a><a id="opHead::&gt;[Key[String(&quot;head&quot;)],Head]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#opHead:ru.tinkoff.tschema.typeDSL.Key[String(&quot;head&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Head" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opHead</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[String(&quot;head&quot;)], <a href="typeDSL$$Head.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Head">Head</a>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#opOptions" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opOptions:ru.tinkoff.tschema.typeDSL.Key[String(&quot;options&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Options"></a><a id="opOptions::&gt;[Key[String(&quot;options&quot;)],Options]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#opOptions:ru.tinkoff.tschema.typeDSL.Key[String(&quot;options&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Options" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opOptions</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[String(&quot;options&quot;)], <a href="typeDSL$$Options.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Options">Options</a>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#opPatch" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opPatch:ru.tinkoff.tschema.typeDSL.Key[String(&quot;patch&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Patch"></a><a id="opPatch::&gt;[Key[String(&quot;patch&quot;)],Patch]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#opPatch:ru.tinkoff.tschema.typeDSL.Key[String(&quot;patch&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Patch" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opPatch</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[String(&quot;patch&quot;)], <a href="typeDSL$$Patch.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Patch">Patch</a>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#opPost" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opPost:ru.tinkoff.tschema.typeDSL.Key[String(&quot;post&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Post"></a><a id="opPost::&gt;[Key[String(&quot;post&quot;)],Post]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#opPost:ru.tinkoff.tschema.typeDSL.Key[String(&quot;post&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Post" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opPost</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[String(&quot;post&quot;)], <a href="typeDSL$$Post.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Post">Post</a>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#opPut" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opPut:ru.tinkoff.tschema.typeDSL.Key[String(&quot;put&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Put"></a><a id="opPut::&gt;[Key[String(&quot;put&quot;)],Put]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#opPut:ru.tinkoff.tschema.typeDSL.Key[String(&quot;put&quot;)]:&gt;ru.tinkoff.tschema.typeDSL.Put" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opPut</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[String(&quot;put&quot;)], <a href="typeDSL$$Put.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Put">Put</a>]</span>
+      </span>
+      
+      
+    </li><li name="ru.tinkoff.tschema.syntax#operation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="operation[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]"></a><a id="operation[s](Aux[s])::&gt;[Prefix[s],Key[s]]"></a>
+      <span class="permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#operation[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Key[s]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">operation</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.operation.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.operation.s">s</span>], <a href="typeDSL$$Key.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Key">Key</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.operation.s">s</span>]]</span>
       </span>
       
       
@@ -964,9 +1108,9 @@
       
       
     </li><li name="ru.tinkoff.tschema.syntax#prefix" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="prefix[s](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]"></a><a id="prefix[s](Lt[s]):Prefix[s]"></a>
+      <a id="prefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]"></a><a id="prefix[s](Aux[s]):Prefix[s]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#prefix[s](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#prefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -975,7 +1119,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">prefix</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.prefix.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.prefix.s">s</span>]</span>
+        <span class="name">prefix</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.prefix.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.prefix.s">s</span>]</span>
       </span>
       
       
@@ -996,9 +1140,9 @@
       
       
     </li><li name="ru.tinkoff.tschema.syntax#queryFlag" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="queryFlag[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.QueryFlag[s]"></a><a id="queryFlag[s&lt;:Symbol](Lt[s]):QueryFlag[s]"></a>
+      <a id="queryFlag[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.QueryFlag[s]"></a><a id="queryFlag[s](Aux[s]):QueryFlag[s]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#queryFlag[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.QueryFlag[s]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#queryFlag[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.QueryFlag[s]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1007,7 +1151,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">queryFlag</span><span class="tparams">[<span name="s">s &lt;: <span class="extype" name="scala.Symbol">Symbol</span></span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.queryFlag.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$QueryFlag.html" class="extype" name="ru.tinkoff.tschema.typeDSL.QueryFlag">QueryFlag</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.queryFlag.s">s</span>]</span>
+        <span class="name">queryFlag</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.queryFlag.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$QueryFlag.html" class="extype" name="ru.tinkoff.tschema.typeDSL.QueryFlag">QueryFlag</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.queryFlag.s">s</span>]</span>
       </span>
       
       
@@ -1076,9 +1220,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="ru.tinkoff.tschema.syntax#tag" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tag[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.swagger.Tag[s]"></a><a id="tag[s&lt;:Symbol](Lt[s]):Tag[s]"></a>
+      <a id="tag[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Tag[s]"></a><a id="tag[s](Aux[s]):Tag[s]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#tag[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.swagger.Tag[s]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#tag[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Tag[s]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1087,14 +1231,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">tag</span><span class="tparams">[<span name="s">s &lt;: <span class="extype" name="scala.Symbol">Symbol</span></span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.tag.s">s</span>]</span>)</span><span class="result">: <a href="swagger/Tag.html" class="extype" name="ru.tinkoff.tschema.swagger.Tag">Tag</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.tag.s">s</span>]</span>
+        <span class="name">tag</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.tag.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$Tag.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Tag">Tag</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.tag.s">s</span>]</span>
       </span>
       
       
     </li><li name="ru.tinkoff.tschema.syntax#tagPrefix" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tagPrefix[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.swagger.Tag[s]"></a><a id="tagPrefix[s&lt;:Symbol](Lt[s])::&gt;[Prefix[s],Tag[s]]"></a>
+      <a id="tagPrefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Tag[s]"></a><a id="tagPrefix[s](Aux[s])::&gt;[Prefix[s],Tag[s]]"></a>
       <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#tagPrefix[s&lt;:Symbol](witness:shapeless.Witness.Lt[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.swagger.Tag[s]" title="Permalink">
+      <a href="../../../ru/tinkoff/tschema/syntax$.html#tagPrefix[s](witness:shapeless.Witness.Aux[s]):ru.tinkoff.tschema.typeDSL.Prefix[s]:&gt;ru.tinkoff.tschema.typeDSL.Tag[s]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1103,7 +1247,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">tagPrefix</span><span class="tparams">[<span name="s">s &lt;: <span class="extype" name="scala.Symbol">Symbol</span></span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Lt">Lt</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.tagPrefix.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.tagPrefix.s">s</span>], <a href="swagger/Tag.html" class="extype" name="ru.tinkoff.tschema.swagger.Tag">Tag</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.tagPrefix.s">s</span>]]</span>
+        <span class="name">tagPrefix</span><span class="tparams">[<span name="s">s</span>]</span><span class="params">(<span name="witness">witness: <span class="extype" name="shapeless.Witness.Aux">Aux</span>[<span class="extype" name="ru.tinkoff.tschema.syntax.tagPrefix.s">s</span>]</span>)</span><span class="result">: <a href="typeDSL$$$colon$greater.html" class="extype" name="ru.tinkoff.tschema.typeDSL.:&gt;">:&gt;</a>[<a href="typeDSL$$Prefix.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Prefix">Prefix</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.tagPrefix.s">s</span>], <a href="typeDSL$$Tag.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Tag">Tag</a>[<span class="extype" name="ru.tinkoff.tschema.syntax.tagPrefix.s">s</span>]]</span>
       </span>
       
       
@@ -1191,70 +1335,6 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="ru.tinkoff.tschema.syntax.form" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="form"></a><a id="form:form"></a>
-      <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#form" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="syntax$$form$.html"><span class="name">form</span></a><span class="result"> extends <span class="extype" name="ru.tinkoff.tschema.macros.ParamMaker">ParamMaker</span>[<a href="typeDSL$$FormField.html" class="extype" name="ru.tinkoff.tschema.typeDSL.FormField">FormField</a>]</span>
-      </span>
-      
-      
-    </li><li name="ru.tinkoff.tschema.syntax.headers" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="headers"></a><a id="headers:headers"></a>
-      <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#headers" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="syntax$$headers$.html"><span class="name">headers</span></a><span class="result"> extends <span class="extype" name="ru.tinkoff.tschema.macros.ParamMaker">ParamMaker</span>[<a href="typeDSL$$Header.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Header">Header</a>]</span>
-      </span>
-      
-      
-    </li><li name="ru.tinkoff.tschema.syntax.path" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="path"></a><a id="path:path"></a>
-      <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#path" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="syntax$$path$.html"><span class="name">path</span></a><span class="result"> extends <span class="extype" name="ru.tinkoff.tschema.macros.ParamMaker">ParamMaker</span>[<a href="typeDSL$$Capture.html" class="extype" name="ru.tinkoff.tschema.typeDSL.Capture">Capture</a>]</span>
-      </span>
-      
-      
-    </li><li name="ru.tinkoff.tschema.syntax.query" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="query"></a><a id="query:query"></a>
-      <span class="permalink">
-      <a href="../../../ru/tinkoff/tschema/syntax$.html#query" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="syntax$$query$.html"><span class="name">query</span></a><span class="result"> extends <span class="extype" name="ru.tinkoff.tschema.macros.ParamMaker">ParamMaker</span>[<a href="typeDSL$$QueryParam.html" class="extype" name="ru.tinkoff.tschema.typeDSL.QueryParam">QueryParam</a>]</span>
-      </span>
-      
-      
     </li>
               </ol>
             </div>

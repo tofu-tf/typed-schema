@@ -15,7 +15,7 @@ micrositeGithubOwner := "TinkoffCreditSystems"
 micrositeGithubRepo := "typed-schema"
 micrositePalette := Map(
   "brand-primary"     -> "#51839A",
-  "brand-secondary"   -> "#FFDD2D",
+  "brand-secondary"   -> "#5A4C08",
   "brand-tertiary"    -> "#D1D4D8",
   "gray-dark"         -> "#192946",
   "gray"              -> "#424F67",

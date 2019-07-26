@@ -1,32 +1,19 @@
 package ru.tinkoff.tschema.example
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import io.circe.derivation.renaming.snakeCase
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
-import org.manatki.derevo.tschemaInstances._
 import org.manatki.derevo.tethysInstances._
-import ru.tinkoff.tschema.akkaHttp.MkRoute
+import org.manatki.derevo.tschemaInstances._
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.finagle.tethysInstances._
 import ru.tinkoff.tschema.param.{Param, ParamSource}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
-import ru.tinkoff.tschema.finagle
-import ru.tinkoff.tschema.finagle.{Complete, MkService, RoutedPlus, Serve}
-import ru.tinkoff.tschema.typeDSL.{As, Prefix, QueryParam}
-import shapeless.{HNil, Witness}
-import shapeless.record._
-import ru.tinkoff.tschema.finagle.tethysInstances._
 import zio.ZIO
-
-import scala.concurrent.Future
 
 object definitions {
 
   @derive(tethysReader, tethysWriter, swagger)
-  case class StatsRes(theMean: BigDecimal,
-                      disperse: BigDecimal,
-                      median: BigDecimal)
+  case class StatsRes(theMean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
   @derive(tethysReader, tethysWriter, swagger)
   case class Combine(source: CombSource, res: CombRes)
@@ -40,26 +27,22 @@ object definitions {
   case class Client(value: Int)
 
   def concat =
-    operation('concat) |> queryParam[String]('left)
-      .as('l) |> queryParam[String]('right).as('r) |> get |> complete[String]
+    operation('concat) |>
+      queryParam[String]('left).as('l) |>
+      queryParam[String]('right).as('r) |>
+      get |> complete[String]
 
-  def combine =
-    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
+  def combine = get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
 
   def sum = operation('sum) |> capture[Int]('y) |> get |> $$[Int]
 
-  def stats =
-    operation('stats) |> reqBody[Seq[BigDecimal]] |> post |> $$[StatsRes]
+  def stats = operation('stats) |> reqBody[Seq[BigDecimal]] |> post |> $$[StatsRes]
 
-  def statsq =
-    operation('statsq) |> queryParams[BigDecimal]('num) |> get |> $$[StatsRes]
+  def statsq = operation('statsq) |> queryParams[BigDecimal]('num) |> get |> $$[StatsRes]
 
   def intops = queryParam[Client]('x) |> (combine ~ sum)
 
-  def dist =
-    operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[
-      Double
-    ]
+  def dist = operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[Double]
 
   def api = tagPrefix('test) |> (concat <> intops <> stats <> statsq <> dist)
 }
@@ -73,10 +56,8 @@ object TestModule extends ExampleModule {
   implicit val clientSwagger: SwaggerTypeable[Client] =
     SwaggerTypeable.swaggerTypeableInteger.as[Client]
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   trait Mutate {
-    def mutate(value: Long) = java.lang.Long.toBinaryString(value)
+    def mutate(value: Long)          = java.lang.Long.toBinaryString(value)
     def concat(l: String, r: String) = l + r
   }
 
@@ -94,7 +75,7 @@ object TestModule extends ExampleModule {
 
     def stats(body: Seq[BigDecimal]) = {
       val mean = body.sum / body.size
-      val mid = body.size / 2
+      val mid  = body.size / 2
       val median =
         if (body.size % 2 == 1) body(mid) else (body(mid) + body(mid - 1)) / 2
       val std = body.view.map(x => x * x).sum / body.size - mean * mean

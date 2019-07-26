@@ -18,7 +18,7 @@ object Version {
   val zioCats         = "2.0.0.0-RC1"
   val finagle         = "19.7.0"
   val derevo          = "0.6.0"
-  val swaggerUI       = "3.22.3"
+  val swaggerUI       = "3.23.1"
   val scalaTags       = "0.6.8"
 
   val scalaTest  = "3.0.8"

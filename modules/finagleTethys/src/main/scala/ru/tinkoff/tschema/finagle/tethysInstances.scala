@@ -8,12 +8,12 @@ import tethys.writers.tokens.TokenWriterProducer
 
 object tethysInstances {
   implicit def tethysEncodeComplete[F[_]: Applicative, A: JsonWriter](
-      implicit producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, A] =
+      implicit producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, A, A] =
     jsonComplete(_.asJson)
 
   implicit def tethysEncodeCompleteF[F[_], G[_]: Functor, A: JsonWriter](
       implicit runnable: Runnable[F, G],
-      producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, G[A]] =
+      producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, A, G[A]] =
     message.fjsonComplete(_.asJson)
 
   implicit def tethysDecodeParseBody[F[_]: Routed: Monad, A: JsonReader](

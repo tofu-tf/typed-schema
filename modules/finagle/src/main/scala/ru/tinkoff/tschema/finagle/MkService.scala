@@ -32,8 +32,8 @@ object MkService {
     }
 
     class RoutePA[Res](res: => Res) {
-      def apply[F[_]: Routed: Monad, In, Out](in: In)(implicit complete: Complete[F, Res]): F[Response] =
-        Routed.checkPathEnd(complete.complete(res))
+      def apply[F[_]: Routed: Monad, In, Out](in: In)(implicit complete: CompleteIn[F, In, Out, Res]): F[Response] =
+        Routed.checkPathEnd(complete.completeIn(res, in))
     }
 
     class ServePA[F[_], T] {

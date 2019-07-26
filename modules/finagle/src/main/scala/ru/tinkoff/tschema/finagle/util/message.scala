@@ -1,11 +1,10 @@
 package ru.tinkoff.tschema.finagle.util
-import com.twitter.finagle.http.{Message, Response, Status, Version}
-import com.twitter.io.{Buf, Reader}
-import ru.tinkoff.tschema.finagle.{Complete, ParseBody, Rejection, Routed, Runnable}
-import cats.{Applicative, Functor, Monad}
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
+import cats.{Applicative, Functor, Monad}
+import com.twitter.finagle.http.{Message, Response}
+import ru.tinkoff.tschema.finagle.{Complete, ParseBody, Rejection, Routed, Runnable}
 
 object message {
 
@@ -23,16 +22,16 @@ object message {
     Routed.request.flatMap(req =>
       f(req.contentString).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.pure[F]))
 
-  def stringComplete[F[_]: Applicative, A](f: A => String): Complete[F, A] =
+  def stringComplete[F[_]: Applicative, A](f: A => String): Complete[F, A, A] =
     a => stringResponse(f(a)).pure[F]
 
-  def fstringComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, G[A]] =
+  def fstringComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, A, G[A]] =
     fa => runnable.lift(fa.map(a => stringResponse(f(a))))
 
-  def jsonComplete[F[_]: Applicative, A](f: A => String): Complete[F, A] =
+  def jsonComplete[F[_]: Applicative, A](f: A => String): Complete[F, A, A] =
     a => jsonResponse(f(a)).pure[F]
 
-  def fjsonComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, G[A]] =
+  def fjsonComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, A, G[A]] =
     fa => runnable.lift(fa.map(a => jsonResponse(f(a))))
 
   def jsonBodyParse[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): ParseBody[F, A] =

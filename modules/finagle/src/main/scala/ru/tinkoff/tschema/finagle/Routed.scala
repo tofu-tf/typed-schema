@@ -114,14 +114,20 @@ trait ParseBody[F[_], A] {
   def parse(): F[A]
 }
 
-trait Complete[F[_], A] {
+trait CompleteIn[F[_], -In, Out, A] {
+  def completeIn(a: A, in: In): F[Response]
+}
+
+trait Complete[F[_], R, A] extends CompleteIn[F, Any, R, A] {
   def complete(a: A): F[Response]
+
+  def completeIn(a: A, in: Any): F[Response] = complete(a)
 }
 
 object Complete {
-  implicit def contravariant[F[_]]: Contravariant[Complete[F, *]] =
-    new Contravariant[Complete[F, *]] {
-      def contramap[A, B](fa: Complete[F, A])(f: B => A): Complete[F, B] = b => fa.complete(f(b))
+  implicit def contravariant[F[_], R]: Contravariant[Complete[F, R, *]] =
+    new Contravariant[Complete[F, R, *]] {
+      def contramap[A, B](fa: Complete[F, R, A])(f: B => A): Complete[F, R, B] = b => fa.complete(f(b))
     }
 }
 

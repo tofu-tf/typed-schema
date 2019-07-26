@@ -30,6 +30,7 @@ object definitions {
 
   @derive(tethysReader, tethysWriter, swagger)
   case class Combine(source: CombSource, res: CombRes)
+
   @derive(tethysReader, tethysWriter, swagger)
   case class CombSource(x: Int, y: Int)
 
@@ -42,8 +43,8 @@ object definitions {
     operation('concat) |> queryParam[String]('left)
       .as('l) |> queryParam[String]('right).as('r) |> get |> complete[String]
 
-//  def combine =
-//    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
+  def combine =
+    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
 
   def sum = operation('sum) |> capture[Int]('y) |> get |> $$[Int]
 
@@ -53,7 +54,7 @@ object definitions {
   def statsq =
     operation('statsq) |> queryParams[BigDecimal]('num) |> get |> $$[StatsRes]
 
-  def intops = queryParam[Client]('x) |> sum // (combine ~ sum)
+  def intops = queryParam[Client]('x) |> (combine ~ sum)
 
   def dist =
     operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[

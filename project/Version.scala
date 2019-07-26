@@ -35,9 +35,9 @@ object Version {
 
   val finagle         = "19.7.0"
 
-  val derevo          = "0.6.0"
+  val derevo          = "0.8.1"
 
-  val swaggerUI       = "3.22.0"
+  val swaggerUI       = "3.22.3"
 
   val scalaTags       = "0.6.8"
 

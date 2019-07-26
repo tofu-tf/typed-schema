@@ -112,7 +112,7 @@ You generally will need following instances:
 When you need to create OpenApi 3.0 object, you can just apply `MkSwagger(api)(())`
 
 This will create `SwaggerBuilder` object.
-These builders could be concatenated with `++` to collect definitions from several modules
+These builders could be concatenated with `++` to collect definitions from several modules.  
 To successfully run you'll need following implicits:
 * `SwaggerTypeable` for any mentioned type
 * `SwaggerMapper` for any custom directive

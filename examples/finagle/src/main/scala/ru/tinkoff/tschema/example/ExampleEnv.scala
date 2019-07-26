@@ -16,9 +16,9 @@ object ExampleEnv {
 
   val incrementAlohas: Example[Int] = ZIO.accessM(_.alohas.update(_ + 1))
 
-  implicit val exampleMonad: Monad[Example] = zio.interop.catz.ioInstances
+  final implicit val exampleMonad: Monad[Example] = zio.interop.catz.ioInstances
 
   final implicit val httpRouted: RoutedPlus[Http] = zioRouted
 
-  implicit val httpMonad: Monad[Http] = zio.interop.catz.ioInstances
+  final implicit val httpMonad: Monad[Http] = zio.interop.catz.ioInstances
 }

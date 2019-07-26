@@ -43,24 +43,23 @@ object Serve
 
   }
 
-  protected def resolveParam[F[_]: Routed: Monad, S >: All <: ParamSource, name, A](
+  protected def resolveParam[F[_]: Routed: Monad, S >: All <: ParamSource, name, A, D, In <: HList](
       implicit param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S],
-  ): F[A] = param match {
-    case single: SingleParam[S, A] =>
-      directives
-        .getByName[F, A](w.string, s => directives.provideOrReject[F, A](w.string, single.applyOpt(s)))
-    case multi: MultiParam[S, A] =>
-      cont.traverseCont[String, Option[CharSequence], A, F](multi.names)(directives.getByName)(
-        ls => directives.provideOrReject(w.string, multi.applyOpt(ls))
-      )
-
-  }
+  ): Add[D, F, In, name, A] =
+    param match {
+      case single: SingleParam[S, A] =>
+        (in, k) =>
+          directives.getByName[F, Response](w.string, s => directives.direct(w.string, single.applyOpt(s), in, k))
+      case multi: MultiParam[S, A] =>
+        (in, k) =>
+          cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
+            directives.direct(w.string, multi.applyOpt(ls), in, k))
+    }
 
   implicit def queryParamServe[F[_]: Routed: Monad, name: Name, x: Param.PQuery, In <: HList]
-    : Add[QueryParam[name, x], F, In, name, x] =
-    add[QueryParam[name, x], F, In, x, name](resolveParam[F, ParamSource.Query, name, x])
+    : Add[QueryParam[name, x], F, In, name, x] = resolveParam[F, ParamSource.Query, name, x, QueryParam[name, x], In]
 
   implicit def queryFlagServe[F[_]: Routed: Monad, name <: Symbol: Name, x, In <: HList]
     : Add[QueryFlag[name], F, In, name, Boolean] =
@@ -68,19 +67,19 @@ object Serve
 
   implicit def captureServe[F[_]: Routed: Monad, name: Name, x: Param.PPath, In <: HList]
     : Add[Capture[name, x], F, In, name, x] =
-    add[Capture[name, x], F, In, x, name](resolveParam[F, ParamSource.Path, name, x])
+    resolveParam[F, ParamSource.Path, name, x, Capture[name, x], In]
 
   implicit def headerServe[F[_]: Routed: Monad, name: Name, x: Param.PHeader, In <: HList]
     : Add[Header[name, x], F, In, name, x] =
-    add[Header[name, x], F, In, x, name](resolveParam[F, ParamSource.Header, name, x])
+    resolveParam[F, ParamSource.Header, name, x, Header[name, x], In]
 
   implicit def cookieServe[F[_]: Routed: Monad, name: Name, x: Param.PCookie, In <: HList]
     : Add[Cookie[name, x], F, In, name, x] =
-    add[Cookie[name, x], F, In, x, name](resolveParam[F, ParamSource.Cookie, name, x])
+    resolveParam[F, ParamSource.Cookie, name, x, Cookie[name, x], In]
 
   implicit def formFieldServe[F[_]: Routed: Monad, name <: Symbol: Witness.Aux, x: Param.PForm, In <: HList]
     : Add[FormField[name, x], F, In, name, x] =
-    add[FormField[name, x], F, In, x, name](resolveParam[F, ParamSource.Form, name, x])
+    resolveParam[F, ParamSource.Form, name, x, FormField[name, x], In]
 
   implicit def bodyServe[F[_]: FlatMap, name <: Symbol: Witness.Aux, A, In <: HList](
       implicit A: ParseBody[F, A]): Add[ReqBody[name, A], F, In, name, A] =
@@ -171,5 +170,5 @@ trait ServeMethodInstances { self: Serve.type =>
   implicit def serveMethodDelete[F[_]: Routed: Monad, In]: Filter[Delete, F, In]   = checkMethod(http.Method.Delete)
   implicit def serveMethodHead[F[_]: Routed: Monad, In]: Filter[Head, F, In]       = checkMethod(http.Method.Head)
   implicit def serveMethodOptions[F[_]: Routed: Monad, In]: Filter[Options, F, In] = checkMethod(http.Method.Options)
-  implicit def serveMethodPatch[F[_]: Routed: Monad, In]: Filter[Patch, F, In];     = checkMethod(http.Method.Patch)
+  implicit def serveMethodPatch[F[_]: Routed: Monad, In]: Filter[Patch, F, In]     = checkMethod(http.Method.Patch)
 }

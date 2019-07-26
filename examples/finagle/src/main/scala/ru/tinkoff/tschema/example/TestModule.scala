@@ -45,13 +45,13 @@ object definitions {
 //  def combine =
 //    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
 
-  def sum = get |> operation('sum) |> capture[Int]('y) |> $$[Int]
+  def sum = operation('sum) |> capture[Int]('y) |> get |> $$[Int]
 
   def stats =
-    post |> operation('stats) |> reqBody[Seq[BigDecimal]] |> $$[StatsRes]
+    operation('stats) |> reqBody[Seq[BigDecimal]] |> post |> $$[StatsRes]
 
   def statsq =
-    get |> operation('statsq) |> queryParams[BigDecimal]('num) |> $$[StatsRes]
+    operation('statsq) |> queryParams[BigDecimal]('num) |> get |> $$[StatsRes]
 
   def intops = queryParam[Client]('x) |> sum // (combine ~ sum)
 

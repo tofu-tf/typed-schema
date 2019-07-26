@@ -5,8 +5,10 @@ import cats.Monad
 import cats.instances.list._
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
-import com.twitter.finagle.http.Request
+import com.twitter.finagle.http.{Request, Response}
 import ru.tinkoff.tschema.param._
+import shapeless._
+import shapeless.labelled.{FieldType, field}
 
 trait ParamDirectives[S <: ParamSource] {
   def source: S
@@ -27,6 +29,12 @@ trait ParamDirectives[S <: ParamSource] {
       case MultiParamError(vals) =>
         Routed.rejectMany(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
     }
+
+  def direct[F[_]: Routed: Monad, A, name, In <: HList](name: String,
+                                                                 result: Param.Result[A],
+                                                                 in: In,
+                                                                 k: (FieldType[name, A] :: In) => F[Response]): F[Response] =
+    result.fold(errorReject[F, Response](name, _), a => k(field[name](a) :: in))
 
   def provideOrReject[F[_]: Routed: Monad, A](name: String, result: Param.Result[A]): F[A] =
     result.fold(errorReject[F, A](name, _), _.pure[F])

@@ -138,13 +138,13 @@ final case class Rejection(
   def withPath(p: String): Rejection   = copy(path = p)
   def addMessage(s: String): Rejection = copy(messages = s :: messages)
   def message: String = messages.headOption.getOrElse {
-    Iterator(s"at $path") ++
+    (Iterator(s"at $path") ++
       Iterator(
         "incorrect methods"    -> wrongMethod,
         "missing parameters"   -> missing.map(p => s"${p.name} in ${p.source}"),
         "malformed parameters" -> malformed.map(p => s"${p.name} in ${p.source} with ${p.error}"),
       ).collect { case (m, ms) if ms.nonEmpty => ms.mkString(m, ",", "") } ++
-      Iterator("unauthorized").filter(_ => unauthorized)
+      Iterator("unauthorized").filter(_ => unauthorized)).mkString("\n")
   }
 }
 
@@ -179,7 +179,7 @@ object Rejection {
   implicit val order: Order[Rejection] =
     (x, y) =>
       x.priority compare y.priority match {
-        case 0 => x.paths.headOption compare y.paths.length
+        case 0 => x.path.length compare y.path.length
         case i => i
     }
 
@@ -187,7 +187,7 @@ object Rejection {
 
   val defaultHandler: Handler = rej => {
     val response = http.Response(rej.status)
-    rej.messages.headOption.foreach(response.setContentString)
+    response.setContentString(rej.message)
     response
   }
 }

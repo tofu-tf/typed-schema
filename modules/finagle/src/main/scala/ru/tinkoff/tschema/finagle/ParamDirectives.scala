@@ -56,7 +56,7 @@ object ParamDirectives {
 
   implicit val pathParamDirectives: TC[ParamSource.Path] = new TC[ParamSource.Path] {
     def getByName[F[_]: Routed: Monad, A](name: String, fa: Option[CharSequence] => F[A]): F[A] = Routed.segment(fa)
-    def source                                                                           = ParamSource.Path
+    def source                                                                                  = ParamSource.Path
   }
 
   implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {

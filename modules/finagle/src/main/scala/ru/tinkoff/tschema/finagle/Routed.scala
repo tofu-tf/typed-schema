@@ -30,7 +30,7 @@ trait Routed[F[_]] {
   def reject[A](rejection: Rejection): F[A]
 }
 
-trait RoutedPlus[F[_]] extends Routed[F] with MonoidK[F]{
+trait RoutedPlus[F[_]] extends Routed[F] with MonoidK[F] {
   def empty[A]: F[A] = reject(Rejection.notFound)
 }
 
@@ -83,7 +83,7 @@ object Routed {
 
 }
 
-trait Runnable[F[_], G[_]]  {
+trait Runnable[F[_], G[_]] {
   def lift[A](fa: G[A]): F[A]
   def run(fresp: F[Response]): G[Service[Request, Response]]
 
@@ -137,6 +137,15 @@ final case class Rejection(
 ) {
   def withPath(p: String): Rejection   = copy(path = p)
   def addMessage(s: String): Rejection = copy(messages = s :: messages)
+  def message: String = messages.headOption.getOrElse {
+    Iterator(s"at $path") ++
+      Iterator(
+        "incorrect methods"    -> wrongMethod,
+        "missing parameters"   -> missing.map(p => s"${p.name} in ${p.source}"),
+        "malformed parameters" -> malformed.map(p => s"${p.name} in ${p.source} with ${p.error}"),
+      ).collect { case (m, ms) if ms.nonEmpty => ms.mkString(m, ",", "") } ++
+      Iterator("unauthorized").filter(_ => unauthorized)
+  }
 }
 
 object Rejection {
@@ -170,7 +179,7 @@ object Rejection {
   implicit val order: Order[Rejection] =
     (x, y) =>
       x.priority compare y.priority match {
-        case 0 => x.path.length compare y.path.length
+        case 0 => x.paths.headOption compare y.paths.length
         case i => i
     }
 
@@ -183,6 +192,6 @@ object Rejection {
   }
 }
 
-trait ConvertService[F[_]]{
+trait ConvertService[F[_]] {
   def convertService[A](svc: Service[http.Request, A]): F[A]
 }

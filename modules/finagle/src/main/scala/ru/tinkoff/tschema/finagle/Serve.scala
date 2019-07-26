@@ -171,5 +171,5 @@ trait ServeMethodInstances { self: Serve.type =>
   implicit def serveMethodDelete[F[_]: Routed: Monad, In]: Filter[Delete, F, In]   = checkMethod(http.Method.Delete)
   implicit def serveMethodHead[F[_]: Routed: Monad, In]: Filter[Head, F, In]       = checkMethod(http.Method.Head)
   implicit def serveMethodOptions[F[_]: Routed: Monad, In]: Filter[Options, F, In] = checkMethod(http.Method.Options)
-  implicit def serveMethodPatch[F[_]: Routed: Monad, In]: Filter[Patch, F, In]     = checkMethod(http.Method.Patch)
+  implicit def serveMethodPatch[F[_]: Routed: Monad, In]: Filter[Patch, F, In];     = checkMethod(http.Method.Patch)
 }

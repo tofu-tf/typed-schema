@@ -5,11 +5,14 @@ import cats.syntax.applicative._
 import cats.syntax.apply._
 import cats.syntax.traverse._
 import cats.syntax.flatMap._
+import com.twitter.util.Base64StringEncoder
 import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
 import ru.tinkoff.tschema.typeDSL.{ApiKeyAuth, BasicAuth, BearerAuth, CanHoldApiKey}
 import shapeless.HList
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.finagle.Rejection.unauthorized
+
+import scala.annotation.tailrec
 
 trait Authorization[K <: Kind, F[_], A] {
   def apply(s: Option[String]): F[A]
@@ -61,4 +64,31 @@ private[finagle] trait ServeAuthInstances { self: Serve.type =>
 
   implicit def bearerAuthServe[F[_]: Routed: Monad, realm, name <: Symbol: Name, x: Authorization[Bearer, F, *], In <: HList]
     : Add[BearerAuth[realm, name, x], F, In, name, x] = authServe[F, realm, name, x, In, Bearer, BearerAuth[realm, name, x]]
+}
+
+object Credentials {
+  private[this] val UsrAndPasswd = "(.*):(.*)".r
+
+  def apply(username: String, password: String): String =
+    Base64StringEncoder.encode(s"$username:$password".getBytes("UTF-8"))
+
+  def unapply(s: String): Option[(String, String)] =
+    new String(Base64StringEncoder.decode(s), "UTF-8") match {
+      case UsrAndPasswd(u, p) => Some(u -> p)
+      case _                  => None
+    }
+
+  def secure_equals(that: CharSequence, other: CharSequence): Boolean = {
+    @tailrec def xor(ix: Int = 0, result: Int = 0): Int =
+      if (ix < that.length) xor(ix + 1, result | (that.charAt(ix) ^ other.charAt(ix))) else result
+
+    other.length == that.length && xor() == 0
+  }
+}
+
+object SimpleAuth {
+  def apply[K <: Kind, F[_]: Routed: Applicative, A](f: PartialFunction[String, A]): Authorization[K, F, A] = {
+    case Some(s) if f.isDefinedAt(s) => f(s).pure[F]
+    case _                           => Routed.reject(Rejection.unauthorized)
+  }
 }

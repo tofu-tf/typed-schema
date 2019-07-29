@@ -85,7 +85,7 @@ lazy val swagger = project
   .settings(
     commonSettings,
     moduleName := "typed-schema-swagger",
-    libraryDependencies ++= akka ::: akkaHttpLib :: enumeratum :: enumeratumCirce :: circeDerivation :: circe
+    libraryDependencies ++= enumeratum :: enumeratumCirce :: circeDerivation :: circe
   )
 
 lazy val akkaHttp = project

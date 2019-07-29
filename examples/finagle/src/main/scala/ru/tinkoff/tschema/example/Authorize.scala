@@ -1,38 +1,49 @@
-package ru.tinkoff.tschema.examples
+package ru.tinkoff.tschema.example
 
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.Credentials
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport.marshaller
+import cats.Applicative
+import com.twitter.finagle.http.Response
+import com.twitter.util.Base64StringEncoder
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
+import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
 import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
-import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
+
+import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
+import ru.tinkoff.tschema.finagle.{Authorization, Credentials, MkService, Rejection, Routed, SimpleAuth}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
 import ru.tinkoff.tschema.syntax._
-import ru.tinkoff.tschema.typeDSL.QueryParam
 import shapeless.{HNil, Witness}
+import cats.syntax.applicative._
+import ru.tinkoff.tschema.finagle.Credentials.secure_equals
+import ru.tinkoff.tschema.finagle.util.Unapply
+
+import scala.annotation.tailrec
+import ru.tinkoff.tschema.finagle.tethysInstances._
 
 object Authorize extends ExampleModule {
 
-  override def route: Route         = MkRoute(api)(handler)
-  override def swag: SwaggerBuilder = MkSwagger(api)
+  override def route: Http[Response] = MkService[Http](api)(handler)
+  override def swag: SwaggerBuilder  = MkSwagger(api)
 
   final case class User(name: String, roles: List[String])
 
-  @derive(encoder, decoder, swagger)
+  @derive(tethysWriter, tethysReader, swagger)
   final case class Client(name: String, products: List[String])
 
   val anonClient = Client("anon", List.empty)
 
-  val users = Map(
-    "admin" -> ("adminadmin", List("admin")),
-    "guest" -> ("guest", List())
-  )
+  val users = Unapply(
+    Map(
+      "admin" -> ("adminadmin", List("admin")),
+      "guest" -> ("guest", List())
+    ))
 
-  val clients = Map(
-    "123456" -> Client("client", List("diamond card", "premium subscription"))
-  )
+  val clients = Unapply(
+    Map(
+      "123456" -> Client("client", List("diamond card", "premium subscription"))
+    ))
 
   val sessions = Map(
     "x123" -> List(1, 2, 3),
@@ -40,15 +51,12 @@ object Authorize extends ExampleModule {
     "y"    -> List.empty
   )
 
-  implicit val userAuth: BasicAuthenticator[User] = BasicAuthenticator.of {
-    case Credentials.Missing => None
-    case cred @ Credentials.Provided(id) =>
-      for ((pass, roles) <- users.get(id) if cred.verify(pass)) yield User(id, roles)
+  implicit val userAuth: Authorization[Basic, Http, User] = SimpleAuth {
+    case Credentials(id @ users(pass, roles), pwd) if secure_equals(pass, pwd) => User(id, roles)
   }
 
-  implicit val clientAuth: BearerAuthenticator[Client] = BearerAuthenticator.of {
-    case Credentials.Missing             => None
-    case cred @ Credentials.Provided(id) => clients.get(id)
+  implicit val clientAuth: Authorization[Bearer, Http, Client] = SimpleAuth {
+    case clients(client) => client
   }
 
   def api =

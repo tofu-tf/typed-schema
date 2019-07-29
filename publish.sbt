@@ -11,7 +11,7 @@ publishTo in ThisBuild := Some(
     Opts.resolver.sonatypeStaging
 )
 
-val pubVersion = "0.11.0-beta9"
+val pubVersion = "0.11.0-beta10"
 
 credentials in ThisBuild += Credentials(Path.userHome / ".sbt" / ".ossrh-credentials")
 

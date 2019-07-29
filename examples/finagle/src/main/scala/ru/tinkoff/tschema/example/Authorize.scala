@@ -7,9 +7,8 @@ import org.manatki.derevo.circeDerivation.{decoder, encoder}
 import org.manatki.derevo.derive
 import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
 import org.manatki.derevo.tschemaInstances._
-
 import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
-import ru.tinkoff.tschema.finagle.{Authorization, Credentials, MkService, Rejection, Routed, SimpleAuth}
+import ru.tinkoff.tschema.finagle.{Authorization, Credentials, MkService, Rejection, Routed, SimpleAuth, BearerToken}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
 import ru.tinkoff.tschema.syntax._
 import shapeless.{HNil, Witness}
@@ -54,7 +53,7 @@ object Authorize extends ExampleModule {
   }
 
   implicit val clientAuth: Authorization[Bearer, Http, Client] = SimpleAuth {
-    case clients(client) => client
+    case BearerToken(clients(client)) => client
   }
 
   def api =

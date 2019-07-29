@@ -1,5 +1,5 @@
 object Version {
-  val circe           = "0.11.1"
+  val circe           = "0.12.0-M3"
   val tethys          = "0.10.0"
   val circeDerivation = "0.12.0-M1"
   val akka            = "2.5.23"
@@ -17,7 +17,7 @@ object Version {
   val zio             = "1.0.0-RC10-1"
   val zioCats         = "2.0.0.0-RC1"
   val finagle         = "19.7.0"
-  val derevo          = "0.6.0"
+  val derevo          = "0.8.1"
   val swaggerUI       = "3.22.3"
   val scalaTags       = "0.6.8"
 

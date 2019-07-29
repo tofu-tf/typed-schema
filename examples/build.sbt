@@ -20,6 +20,7 @@ val commonSettings = List(
   libraryDependencies += "com.lihaoyi"     %% "scalatags"            % Version.scalaTags,
   libraryDependencies += "org.typelevel"   %% "cats-core"            % Version.catsCore,
   libraryDependencies += "org.manatki"     %% "derevo-tschema"       % Version.derevo,
+  libraryDependencies += "org.manatki"     %% "derevo-cats"          % Version.derevo,
   libraryDependencies += "org.manatki"     %% "derevo-circe"         % Version.derevo,
   libraryDependencies += "org.manatki"     %% "derevo-tethys"        % Version.derevo,
   libraryDependencies += "ru.tinkoff"      %% "typed-schema-swagger" % Version.typedSchema,

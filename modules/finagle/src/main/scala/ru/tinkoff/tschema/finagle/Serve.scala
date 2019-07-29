@@ -61,6 +61,9 @@ object Serve
   implicit def queryParamServe[F[_]: Routed: Monad, name: Name, x: Param.PQuery, In <: HList]
     : Add[QueryParam[name, x], F, In, name, x] = resolveParam[F, ParamSource.Query, name, x, QueryParam[name, x], In]
 
+  implicit def allQueryServe[F[_]: Routed: Monad, name, In <: HList]: Add[AllQuery[name], F, In, name, Map[String, String]] =
+    add(Routed.request[F].map(_.params))
+
   implicit def queryFlagServe[F[_]: Routed: Monad, name <: Symbol: Name, x, In <: HList]
     : Add[QueryFlag[name], F, In, name, Boolean] =
     add[QueryFlag[name], F, In, Boolean, name](Routed.request[F].map(_.params.contains(Name[name].string)))

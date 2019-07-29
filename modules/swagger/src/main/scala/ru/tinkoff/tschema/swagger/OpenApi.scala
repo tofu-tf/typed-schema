@@ -226,10 +226,10 @@ object SwaggerValue {
     case object multi extends CollectionFormat
   }
 
-  private lazy val derivedEncoder: ObjectEncoder[SwaggerValue] = deriveEncoder[SwaggerValue].mapJsonObject { obj =>
+  private lazy val derivedEncoder: Encoder.AsObject[SwaggerValue] = deriveEncoder[SwaggerValue].mapJsonObject { obj =>
     obj(obj.keys.head).flatMap(_.asObject).getOrElse(JsonObject.empty)
   }
-  implicit lazy val encodeSwaggerValue: ObjectEncoder[SwaggerValue] = derivedEncoder.mapObjWithSrc { (x, obj) =>
+  implicit lazy val encodeSwaggerValue: Encoder.AsObject[SwaggerValue] = derivedEncoder.mapObjWithSrc { (x, obj) =>
     obj.add("type", Json.fromString(x.typeName))
 
   }
@@ -296,7 +296,7 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            security: Vector[Map[String, Vector[String]]] = Vector.empty)
 
 object OpenApiOp {
-  implicit lazy val swaggerOpEncoder: ObjectEncoder[OpenApiOp] = deriveEncoder
+  implicit lazy val swaggerOpEncoder: Encoder.AsObject[OpenApiOp] = deriveEncoder
 }
 
 @Lenses
@@ -307,7 +307,7 @@ object OpenApiResponses {
 
   val mapEnc = Encoder.encodeMapLike[StatusCode, OpenApiResponse, Map]
 
-  implicit lazy val responsesEncoder: ObjectEncoder[OpenApiResponses] = ObjectEncoder.instance[OpenApiResponses] { resps =>
+  implicit lazy val responsesEncoder: Encoder.AsObject[OpenApiResponses] = Encoder.AsObject.instance[OpenApiResponses] { resps =>
     val codesObj = mapEnc.encodeObject(resps.codes)
     resps.default match {
       case None          => codesObj

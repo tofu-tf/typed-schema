@@ -182,8 +182,8 @@ final case class DescribedType(
 )
 
 object DescribedType {
-  private val additional: ObjectEncoder[DescribedType] = deriveEncoder.mapJsonObject(_.remove("typ"))
-  implicit val encoder: ObjectEncoder[DescribedType] = ObjectEncoder.instance { dt =>
+  private val additional: Encoder.AsObject[DescribedType] = deriveEncoder.mapJsonObject(_.remove("typ"))
+  implicit val encoder: Encoder.AsObject[DescribedType] = Encoder.AsObject.instance { dt =>
     additional.encodeObject(dt).toIterable.foldRight(dt.typ.asJsonObject) { _ +: _ }
   }
 }
@@ -214,7 +214,7 @@ object SwaggerType {
 
   val setObj: Setter[SwaggerType, SwaggerObject] = objOpt.asSetter
 
-  implicit val encodeSwaggerType: ObjectEncoder[SwaggerType] = new ObjectEncoder[SwaggerType] {
+  implicit val encodeSwaggerType: Encoder.AsObject[SwaggerType] = new Encoder.AsObject[SwaggerType] {
     def encode(a: SwaggerType): Eval[JsonObject] = a match {
       case pt: SwaggerPrimitive[_] =>
         val typeJson = (pt.typ: SwaggerValue).asJsonObject
@@ -352,6 +352,6 @@ case class SwaggerXMLOptions(
 )
 
 object SwaggerXMLOptions {
-  implicit val encoder: ObjectEncoder[SwaggerXMLOptions] = io.circe.derivation.deriveEncoder
+  implicit val encoder: Encoder.AsObject[SwaggerXMLOptions] = io.circe.derivation.deriveEncoder
   implicit val decoder: Decoder[SwaggerXMLOptions]       = io.circe.derivation.deriveDecoder
 }

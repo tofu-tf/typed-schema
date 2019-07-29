@@ -1,17 +1,23 @@
 package ru.tinkoff.tschema.example
 
+import Swagger._
+import cats.instances.list._
+import cats.syntax.foldable._
+import cats.syntax.semigroupk._
 import com.twitter.finagle.Http
+import com.twitter.finagle.http.Response
 import com.twitter.util.{Await, Duration}
 import ru.tinkoff.tschema.finagle.Runnable
-import zio._
 import zio.console._
-import ru.tinkoff.tschema.finagle.zioInstance._
+import zio.{blocking => _, _}
 
 object Server extends App {
-  implicit val runnable: Runnable[Http, Example] = zioRunnable()
+  val modules: List[ExampleModule] = List(Greeting, TestModule, FiltersModule)
+
+  val svc: Http[Response] = modules.foldMapK(_.route) <+> Swagger.route
 
   val server = for {
-    srv <- Runnable.run[Example](Greeting.svc)
+    srv <- Runnable.run[Example](svc)
     list <- ZIO.effect(Http.serve("0.0.0.0:9191", srv))
     _ <- putStr(s"started at ${list.boundAddress}")
     _ <- ZIO.effect(Await.ready(list, Duration.Top)).fork

@@ -57,7 +57,7 @@ trait SwaggerBuilder {
     )
   }
 
-  def map(f: PathSpec => PathSpec): SwaggerBuilder           = new SwaggerBuilder.SMap(this, f)
+  def map(f: PathSpec => PathSpec): SwaggerBuilder = new SwaggerBuilder.SMap(this, f)
   def describe(descriptions: DescriptionMap): SwaggerBuilder =
     new SwaggerBuilder.Describe(this, descriptions)
 }
@@ -96,12 +96,13 @@ object SwaggerBuilder {
         import PathDescription.MethodTarget
         val method: MethodTarget => Option[SwaggerDescription] = {
           val paths = opTags.map(tag => descriptions.method(s"$tag.$key")) :+ descriptions.method(key)
-          target: PathDescription.MethodTarget => paths.foldLeft(Option.empty[SwaggerDescription]) { (result, path) =>
-            (result, path(target)) match {
-              case (None, desc@Some(_)) => desc
-              case (res, _)             => res
+          target: PathDescription.MethodTarget =>
+            paths.foldLeft(Option.empty[SwaggerDescription]) { (result, path) =>
+              (result, path(target)) match {
+                case (None, desc @ Some(_)) => desc
+                case (res, _)               => res
+              }
             }
-          }
         }
 
         PathSpec.op.modify(
@@ -174,14 +175,13 @@ trait MkSwagger[T] extends SwaggerBuilder {
 object MkSwagger {
 
   def apply[Def <: DSLDef](definition: => Def): SwaggerBuilder =
-    macro MakerMacro.makeRouteHNilUnit[Skip, macroInterface.type, Def, SwaggerBuilder]
+    macro MakerMacro.makeRouteHNilNoImpl[Skip, macroInterface.type, Def, SwaggerBuilder]
 
   object macroInterface {
     class ResultPA1[Out] {
-      def apply(in: Unit)(impl: Unit)(key: String)(implicit swagger: MkSwagger[Complete[Out]]): SwaggerBuilder =
-        swagger
+      def apply(in: Unit)(key: String, groups: String*)(implicit swagger: MkSwagger[Complete[Out]]): SwaggerBuilder = swagger
     }
-    def makeResult[F[_], Out]: ResultPA1[Out]                                     = new ResultPA1[Out]
+    def makeResult[F[_], Out]: ResultPA1[Out]                               = new ResultPA1[Out]
     def concatResults(x: SwaggerBuilder, y: SwaggerBuilder): SwaggerBuilder = x ++ y
 
     def serve[F[_], T](in: Unit) = new ServePA[T](in)

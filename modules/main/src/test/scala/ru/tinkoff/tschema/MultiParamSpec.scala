@@ -70,8 +70,8 @@ object MultiParamSpec {
 
   val api = {
     import syntax._
-    (operation('required) |> queryParam[Page]('page) |> complete[String]) <|>
-      (operation('optional) |> queryParam[Option[Page]]('page) |> complete[String])
+    (operation("required") |> queryParam[Page]('page) |> complete[String]) <|>
+      (operation('optional) |> queryParam[Option[Page]]("page") |> complete[String])
   }
   val route = MkRoute(api)(new {
     def required(page: Page): String         = page.toString

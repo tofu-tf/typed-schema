@@ -5,7 +5,7 @@ import Vector.{empty => vnil}
 
 sealed trait DSLTree[T]
 case class DSLBranch[T](pref: Vector[T], children: Vector[DSLTree[T]]) extends DSLTree[T]
-case class DSLLeaf[T](res: T, key: String)                             extends DSLTree[T]
+case class DSLLeaf[T](res: T, groups: Vector[String], key: String)                             extends DSLTree[T]
 
 final case class PrefixInfo[T](key: Option[String], groups: Vector[String], prefix: Vector[T])
 

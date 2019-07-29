@@ -20,21 +20,20 @@ object MkService {
   object macroInterface {
     def makeResult[F[_], Out]: ResultPA1[F, Out] = new ResultPA1[F, Out]
 
-    def concatResults[F[_]: SemigroupK](x: F[Response], y: F[Response]): F[Response] =
-      x combineK y
+    def concatResults[F[_]: RoutedPlus](x: F[Response], y: F[Response]): F[Response] = x <+> y
 
     def serve[F[_], T] = new ServePA[F, T]
 
     def route[Res](res: => Res) = new RoutePA[Res](res)
 
     class ResultPA1[F[_], Out] {
-      def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String): F[Response] =
+      def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String, groups: String*): F[Response] =
         macro MakerMacro.makeResult[F, In, Out, Impl, F[Response]]
     }
 
     class RoutePA[Res](res: => Res) {
-      def apply[F[_]: Routed: Monad, In, Out](in: In)(implicit complete: Complete[F, Res]): F[Response] =
-        Routed.checkPathEnd(complete.complete(res))
+      def apply[F[_]: Routed: Monad, In, Out](in: In)(implicit complete: CompleteIn[F, In, Out, Res]): F[Response] =
+        Routed.checkPathEnd(complete.completeIn(res, in))
     }
 
     class ServePA[F[_], T] {

@@ -4,6 +4,9 @@
 - updated magnolia to 0.10
 - added posibility to specify custom MediaType for SwaggerTypeable
 - MkRoute can now consume custom HList as input that could be usable in Serve instances
+- added support for effect-parameterized finagle building, supporting:
+    * ZIO
+- added method grouping
 
 ## Version 0.10.7
 

@@ -29,11 +29,11 @@ object ParamSource {
 
   trait All extends Query with Path with Header with Form with Cookie
 
-  object Query  extends Query
-  object Path   extends Path
-  object Header extends Header
-  object Form   extends Form
-  object Cookie extends Cookie
+  case object Query  extends Query
+  case object Path   extends Path
+  case object Header extends Header
+  case object Form   extends Form
+  case object Cookie extends Cookie
 }
 
 sealed trait Param[+S >: All <: ParamSource, A] { self =>

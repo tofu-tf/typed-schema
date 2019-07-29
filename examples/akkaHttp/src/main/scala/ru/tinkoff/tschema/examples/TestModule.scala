@@ -19,7 +19,7 @@ object definitions {
 
   @derive(encoder(snakeCase), decoder(snakeCase), swagger)
   case class StatsRes(theMean: BigDecimal,
-                      disperse: BigDecimal,Y
+                      disperse: BigDecimal,
                       median: BigDecimal)
 
   @derive(encoder, decoder, swagger)

@@ -18,7 +18,7 @@ object MkRoute {
 
   object macroInterface {
     class ResultPA1[Out] {
-      def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String): Route =
+      def apply[In <: HList, Impl](in: In)(impl: Impl)(key: String, groups: String*): Route =
         macro MakerMacro.makeResult[Skip, In, Out, Impl, Route]
     }
     def makeResult[F[_], Out]: ResultPA1[Out]    = new ResultPA1[Out]

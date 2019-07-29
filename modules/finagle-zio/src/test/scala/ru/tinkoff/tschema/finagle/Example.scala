@@ -2,7 +2,7 @@ package ru.tinkoff.tschema
 package finagle
 
 import com.twitter.finagle.http.Response
-import ru.tinkoff.tschema.finagle.Example.Http
+import ru.tinkoff.tschema.finagle.Example.{Exec, Http}
 import typeDSL._
 import shapeless.{HNil, Witness}
 import ru.tinkoff.tschema.finagle.zioInstance.{ZIOHttp, zioRouted, zioRunnable}
@@ -25,7 +25,7 @@ case object Greeting {
     operation('hello) |> $$[String]
 
   object handler {
-    def hello: Http[String] = ZIO.succeed("Hello")
+    def hello: Exec[String] = ZIO.succeed("Hello")
   }
 
   implicitly[Serve[Prefix[Witness.`'hello`.T], Http, HNil, HNil]]

@@ -14,10 +14,7 @@ import ru.tinkoff.tschema.typeDSL.QueryParam
 import shapeless.{HNil, Witness}
 
 object Authorize extends ExampleModule {
-//  implicitly[Serve[QueryParam[Witness.`'sessionId`.T, Option[String]], HNil]]
 
-//  Serve.queryParamServe[Witness.`'sessionId`.T, Option[String], HNil]
-  Serve.queryParamServe[Witness.`'sessionId`.T, String, HNil]
   override def route: Route         = MkRoute(api)(handler)
   override def swag: SwaggerBuilder = MkSwagger(api)
 

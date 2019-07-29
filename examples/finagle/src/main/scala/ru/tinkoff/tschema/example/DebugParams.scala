@@ -1,6 +1,7 @@
 package ru.tinkoff.tschema.example
 
 import io.circe.Encoder
+import org.manatki.derevo
 import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
 //import io.circe.syntax._
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
@@ -20,12 +21,14 @@ import tethys.jackson._
 final case class DebugParams[T](value: T, params: Map[String, String])
 
 object DebugParams {
+
+
   implicit def routable[In <: HList, T: JsonWriter, L <: HList](
       implicit
       im: Mapper.Aux[InputParamMap.type, In, L],
       tl: ToList[L, (String, String)]
-  ): CompleteIn[Http, In, DebugParams[T], T] =
-    (res, in) => message.jsonResponse(DebugParams(res, im(in).toList.toMap).asJson).pure[Http]
+  ): CompleteIn[Http, In, DebugParams[T], T] = ???
+//    (res, in) => message.jsonResponse(DebugParams(res, im(in).toList.toMap).asJson).pure[Http]
 }
 
 trait InputParamMap[L <: HList] {

@@ -152,10 +152,7 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
     serveCheck[method, In](method(check.method))
 
-  implicit def queryMap[name <: Symbol, x, In <: HList] =
-    serveAdd[AllQuery[name, x], In, Map[String, String], name] {
-      parameterMap
-    }
+  implicit def queryMap[name <: Symbol, x, In <: HList] = serveAdd[AllQuery[name], In, Map[String, String], name](parameterMap)
 
   implicit def queryParamServe[name: Name, x: Param.PQuery, In <: HList] =
     serveAdd[QueryParam[name, x], In, x, name](resolveParam[ParamSource.Query, name, x])
@@ -191,7 +188,7 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def keyServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Key[name], In, key[name]] =
     servePush(provide(new key[name]))
 
-  implicit def groupServe[name , In <: HList](implicit w: Witness.Aux[name]): Push[Group[name], In, group[name]] =
+  implicit def groupServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Group[name], In, group[name]] =
     servePush(provide(new group[name]))
 }
 

@@ -12,23 +12,23 @@ import zio.console._
 import zio.{blocking => _, _}
 
 object Server extends App {
-  val modules: List[ExampleModule] = List(Greeting, TestModule, FiltersModule)
+  val modules: List[ExampleModule] = List(Greeting, TestModule, FiltersModule, FormFieldsModule, MultiParameters)
 
   val svc: Http[Response] = modules.foldMapK(_.route) <+> Swagger.route
 
   val server = for {
-    srv <- Runnable.run[Example](svc)
+    srv  <- Runnable.run[Example](svc)
     list <- ZIO.effect(Http.serve("0.0.0.0:9191", srv))
-    _ <- putStr(s"started at ${list.boundAddress}")
-    _ <- ZIO.effect(Await.ready(list, Duration.Top)).fork
-    res <- ZIO.never
+    _    <- putStr(s"started at ${list.boundAddress}")
+    _    <- ZIO.effect(Await.ready(list, Duration.Top)).fork
+    res  <- ZIO.never
   } yield res
 
   def run(args: List[String]): ZIO[Environment, Nothing, Int] =
     for {
       ref <- Ref.make(0)
       _ <- server
-        .catchAll(ex => putStr(ex.getMessage))
-        .provide(ExampleEnv("lol", ref))
+            .catchAll(ex => putStr(ex.getMessage))
+            .provide(ExampleEnv("lol", ref))
     } yield 0
 }

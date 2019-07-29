@@ -31,7 +31,7 @@ object typeDSL {
   /**
     * return query params as Map[String, String]
     */
-  final class AllQuery[name, x] extends DSLAtom
+  final class AllQuery[name] extends DSLAtom
 
   /**
     * indicates result of element of type `x`

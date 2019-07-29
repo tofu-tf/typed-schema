@@ -1,7 +1,5 @@
 package ru.tinkoff.tschema.example
 
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.directives.Credentials
 import cats.Applicative
 import com.twitter.finagle.http.Response
 import com.twitter.util.Base64StringEncoder

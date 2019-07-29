@@ -144,7 +144,7 @@ lazy val main = project
 
 lazy val scalaz = project
   .in(file("modules/scalaz"))
-  .dependsOn(main)
+  .dependsOn(swagger, param)
   .settings(
     commonSettings,
     moduleName := "typed-schema-scalaz",

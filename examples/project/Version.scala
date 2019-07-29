@@ -9,7 +9,7 @@ object Version {
 
   val catsCore = "2.0.0-M4"
 
-  val typedSchema = "0.11.0-beta10-ffinagle-SNAPSHOT"
+  val typedSchema = "0.11.0-beta11-ffinagle-SNAPSHOT"
 
   val scalazDeriving = "1.0.0"
 }

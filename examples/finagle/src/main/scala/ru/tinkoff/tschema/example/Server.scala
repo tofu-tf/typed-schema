@@ -12,7 +12,7 @@ import zio.console._
 import zio.{blocking => _, _}
 
 object Server extends App {
-  val modules: List[ExampleModule] = List(Greeting, TestModule)
+  val modules: List[ExampleModule] = List(Greeting, TestModule, FiltersModule)
 
   val svc: Http[Response] = modules.foldMapK(_.route) <+> Swagger.route
 

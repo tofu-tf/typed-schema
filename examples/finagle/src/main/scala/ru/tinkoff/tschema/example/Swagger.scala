@@ -14,8 +14,11 @@ import io.circe.syntax._
 import cats.instances.list._
 import cats.syntax.foldable._
 import cats.syntax.semigroupk._
+import io.circe.Printer
 
 object Swagger {
+  private implicit val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
+
   private val swaggerHttp: Http[Response] = {
     val response = message.stringResponse(SwaggerIndex.index.render)
     response.setContentType("text/html(UTF-8)")
@@ -53,7 +56,7 @@ object Swagger {
     val swagger = modules.foldMap(_.swag)
     val descriptions =
       PathDescription.utf8I18n("swagger", Locale.forLanguageTag("ru"))
-    val json = swagger.describe(descriptions).make(OpenApiInfo()).asJson.spaces2
+    val json = swagger.describe(descriptions).make(OpenApiInfo()).asJson.pretty(printer)
     val response = message.jsonResponse(json)
     Routed.checkPath[Http, Response]("/swagger", ZIO.succeed(response))
   }

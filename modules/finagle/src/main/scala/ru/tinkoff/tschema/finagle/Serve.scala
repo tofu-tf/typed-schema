@@ -46,7 +46,7 @@ object Serve
   protected def resolveParam[F[_]: Routed: Monad, S >: All <: ParamSource, name, A, D, In <: HList](
       implicit param: Param[S, A],
       w: Name[name],
-      directives: ParamDirectives[S],
+      directives: ParamDirectives[S]
   ): Add[D, F, In, name, A] =
     param match {
       case single: SingleParam[S, A] =>

@@ -67,15 +67,20 @@ private[finagle] trait ServeAuthInstances { self: Serve.type =>
 }
 
 object Credentials {
+  private[this] val Token        = "Basic (.*)".r
   private[this] val UsrAndPasswd = "(.*):(.*)".r
 
   def apply(username: String, password: String): String =
-    Base64StringEncoder.encode(s"$username:$password".getBytes("UTF-8"))
+    s"Basic ${Base64StringEncoder.encode(s"$username:$password".getBytes("UTF-8"))}"
 
   def unapply(s: String): Option[(String, String)] =
-    new String(Base64StringEncoder.decode(s), "UTF-8") match {
-      case UsrAndPasswd(u, p) => Some(u -> p)
-      case _                  => None
+    s match {
+      case Token(t) =>
+        new String(Base64StringEncoder.decode(t), "UTF-8") match {
+          case UsrAndPasswd(u, p) => Some(u -> p)
+          case _                  => None
+        }
+      case _ => None
     }
 
   def secure_equals(that: CharSequence, other: CharSequence): Boolean = {
@@ -83,6 +88,17 @@ object Credentials {
       if (ix < that.length) xor(ix + 1, result | (that.charAt(ix) ^ other.charAt(ix))) else result
 
     other.length == that.length && xor() == 0
+  }
+}
+
+object BearerToken {
+  private[this] val Token = "Bearer (.*)".r
+
+  def apply(token: String): String = s"Bearer $token"
+
+  def unapply(s: String): Option[String] = s match {
+    case Token(t) => Some(t)
+    case _        => None
   }
 }
 

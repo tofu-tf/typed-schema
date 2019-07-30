@@ -1,9 +1,8 @@
 package ru.tinkoff.tschema.example
 
-import cats.Monad
 import cats.effect.concurrent.Ref
 import monix.eval.Task
-import ru.tinkoff.tschema.finagle.EnvRouting
+import ru.tinkoff.tschema.finagle.routing._
 import tofu.env.EnvSpecializedFunctions
 
 final case class ExampleEnv(trackingId: String, alohas: Ref[Task, Int])

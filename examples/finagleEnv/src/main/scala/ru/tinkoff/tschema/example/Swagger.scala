@@ -7,7 +7,7 @@ import ru.tinkoff.tschema.example.Server.{getClass, modules}
 import ru.tinkoff.tschema.examples.SwaggerIndex
 import ru.tinkoff.tschema.finagle.{Rejection, Routed}
 import ru.tinkoff.tschema.finagle.util.message
-import ru.tinkoff.tschema.finagle.EnvRouting.Rejected
+import ru.tinkoff.tschema.finagle.routing.Rejected
 import ru.tinkoff.tschema.swagger.{OpenApiInfo, PathDescription}
 import io.circe.syntax._
 import cats.instances.list._

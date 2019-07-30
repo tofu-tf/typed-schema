@@ -47,8 +47,6 @@ object TaskRouting extends TaskInstanceDecl {
 
 private[finagle] class TaskInstanceDecl {
 
-  final case class Rejected(rej: Rejection) extends Throwable
-
   protected class TaskRoutedConvert extends RoutedPlus[TaskHttp] with ConvertService[TaskHttp] with LiftHttp[TaskHttp, Task] {
     private type F[a] = TaskHttp[a]
     implicit private[this] val self: RoutedPlus[F] = this

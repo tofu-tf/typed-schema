@@ -51,7 +51,6 @@ object EnvRouting extends EnvInstanceDecl {
 
 private[finagle] class EnvInstanceDecl {
 
-  final case class Rejected(rej: Rejection) extends Throwable
 
   protected trait EnvRoutedConvert[R]
       extends RoutedPlus[EnvHttp[R, *]] with ConvertService[EnvHttp[R, *]] with LiftHttp[EnvHttp[R, *], Env[R, *]] {

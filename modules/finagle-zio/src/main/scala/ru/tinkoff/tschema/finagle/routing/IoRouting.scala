@@ -45,8 +45,8 @@ object IoRouting extends IoRoutedImpl {
     val promise = Promise[Response]
     runtime.unsafeRunAsync(
       zioResponse.provide(IoRouting(request, SubString(request.path), 0)).catchAll {
-        case Rejected(rejection) => ZIO.succeed(handler(rejection))
-        case OtherFail(e)        => ZIO.fail(e)
+        case Fail.Rejected(rejection) => ZIO.succeed(handler(rejection))
+        case Fail.Other(e)            => ZIO.fail(e)
       }
     ) {
       case Exit.Success(resp) => promise.setValue(resp)
@@ -77,12 +77,12 @@ private[finagle] class IoRoutedImpl {
     def combineK[A](x: F[A], y: F[A]): F[A] =
       catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
 
-    def apply[A](fa: IO[E, A]): F[A] = fa.mapError(OtherFail(_))
+    def apply[A](fa: IO[E, A]): F[A] = fa.mapError(Fail.Other(_))
 
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
-      z.catchSome { case Rejected(xrs) => f(xrs) }
+      z.catchSome { case Fail.Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Rejected(map))
+    @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
   }
 
   protected[this] object ioRoutedAny extends IoRoutedInstance[Nothing]

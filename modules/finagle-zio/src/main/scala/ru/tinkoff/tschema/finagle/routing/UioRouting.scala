@@ -6,11 +6,10 @@ import com.twitter
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
-import ru.tinkoff.tschema.finagle.routing.IoRouting.IOHttp
 import ru.tinkoff.tschema.finagle.routing.UioRouting.UIOHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
-import zio.{Exit, IO, UIO, ZIO}
+import zio.{Exit, UIO, ZIO}
 
 final case class UioRouting(
     request: http.Request,

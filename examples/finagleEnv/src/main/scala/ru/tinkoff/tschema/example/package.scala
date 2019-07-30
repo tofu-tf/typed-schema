@@ -1,11 +1,11 @@
 package ru.tinkoff.tschema
 
 import monix.execution.Scheduler
-import ru.tinkoff.tschema.finagle.EnvRouting.EnvHttp
+import ru.tinkoff.tschema.finagle.routing._
 import tofu.env.Env
 
 package object example {
-  type Http[+A]    = EnvHttp[ExampleEnv, A]
+  type Http[+A]    = EnvRouting.EnvHttp[ExampleEnv, A]
   type Example[+A] = Env[ExampleEnv, A]
 
   val resources = Scheduler.io()

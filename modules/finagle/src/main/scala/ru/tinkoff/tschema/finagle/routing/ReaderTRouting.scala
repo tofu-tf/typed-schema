@@ -1,18 +1,17 @@
-package ru.tinkoff.tschema.finagle
+package ru.tinkoff.tschema.finagle.routing
 
-import cats.{Applicative, ApplicativeError, Monad}
 import cats.data.ReaderT
-import cats.effect.{Async, Effect, IO, Sync}
-import cats.syntax.semigroup._
-import cats.syntax.applicative._
-import cats.syntax.flatMap._
 import cats.effect.syntax.effect._
+import cats.effect.{Async, Effect, IO, Sync}
+import cats.syntax.applicative._
 import cats.syntax.applicativeError._
+import cats.syntax.semigroup._
 import com.twitter
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
-import ru.tinkoff.tschema.finagle.ReaderTRouting.ReaderHttp
+import ru.tinkoff.tschema.finagle.routing.ReaderTRouting.ReaderHttp
+import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
 
 final case class ReaderTRouting[+R](
@@ -22,17 +21,17 @@ final case class ReaderTRouting[+R](
     embedded: R
 )
 
-object ReaderTRouting extends EnvInstanceDecl {
+object ReaderTRouting extends ReaderTInstanceDecl {
 
   type ReaderHttp[F[_], R, A] = ReaderT[F, ReaderTRouting[R], A]
 
-  implicit def zioRouted[F[_]: Async, R, E]: RoutedPlus[ReaderHttp[F, R, *]]
+  implicit def readerTRouted[F[_]: Async, R]: RoutedPlus[ReaderHttp[F, R, *]]
     with ConvertService[ReaderHttp[F, R, *]] with LiftHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
     new ReaderTRoutedConvert[F, R]
 
   implicit def envRunnable[F[_]: Effect, R](implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler)
     : Runnable[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
-    zioResponse => ReaderT(r => Sync[F].delay(execResponse(r, zioResponse, _)))
+    response => ReaderT(r => Sync[F].delay(execResponse(r, response, _)))
 
   private[this] def execResponse[F[_]: Effect, R](r: R, envResponse: ReaderHttp[F, R, Response], request: Request)(
       implicit handler: Rejection.Handler): Future[Response] = {
@@ -53,15 +52,18 @@ object ReaderTRouting extends EnvInstanceDecl {
   }
 }
 
-private[finagle] class EnvInstanceDecl {
+private[finagle] class ReaderTInstanceDecl {
 
   final case class Rejected(rej: Rejection) extends Throwable
+
+  private def cachedMonadInstance[G[_]: Async, R] = Async[ReaderHttp[G, R, *]]
 
   protected class ReaderTRoutedConvert[G[_]: Async, R]
       extends RoutedPlus[ReaderHttp[G, R, *]] with ConvertService[ReaderHttp[G, R, *]]
       with LiftHttp[ReaderHttp[G, R, *], ReaderT[G, R, *]] {
     private type F[a] = ReaderHttp[G, R, a]
     implicit private[this] val self: RoutedPlus[F] = this
+    implicit private[this] val cached: Async[F]    = cachedMonadInstance
 
     def matched: F[Int] = ReaderT(_.matched.pure[G])
 
@@ -84,13 +86,12 @@ private[finagle] class EnvInstanceDecl {
         }))
 
     def apply[A](fa: ReaderT[G, R, A]): F[A] = ReaderT(routing => fa.run(routing.embedded))
+
+    @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
+      z.recoverWith { case Rejected(xrs) => f(xrs) }
+
+    @inline private[this] def throwRej[A](map: Rejection): F[A] =
+      cached.raiseError(Rejected(map))
   }
-
-  @inline private[this] def catchRej[F[_]: Sync, R, A](z: ReaderHttp[F, R, A])(
-      f: Rejection => ReaderHttp[F, R, A]): ReaderHttp[F, R, A] =
-    z.recoverWith { case Rejected(xrs) => f(xrs) }
-
-  @inline private[this] def throwRej[F[_]: Sync, R, A](map: Rejection): ReaderHttp[F, R, A] =
-    Sync[ReaderHttp[F, R, *]].raiseError(Rejected(map))
 
 }

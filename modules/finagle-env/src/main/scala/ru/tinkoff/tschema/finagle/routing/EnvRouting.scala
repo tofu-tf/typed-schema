@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.finagle
+package ru.tinkoff.tschema.finagle.routing
 
 import cats.syntax.semigroup._
 import com.twitter
@@ -7,8 +7,8 @@ import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import monix.eval.Task
 import monix.execution.Scheduler
-import ru.tinkoff.tschema.finagle.EnvRouting.EnvHttp
-import ru.tinkoff.tschema.finagle.ReaderTRouting.ReaderHttp
+import ru.tinkoff.tschema.finagle.routing.EnvRouting.EnvHttp
+import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
 import tofu.env.Env
 
@@ -21,21 +21,21 @@ final case class EnvRouting[+R](
 
 object EnvRouting extends EnvInstanceDecl {
 
-  type EnvHttp[R, +A] = Env[ReaderTRouting[R], A]
+  type EnvHttp[R, +A] = Env[EnvRouting[R], A]
 
-  implicit def zioRouted[R, E]
+  implicit def taskRouted[R]
     : RoutedPlus[EnvHttp[R, *]] with ConvertService[EnvHttp[R, *]] with LiftHttp[EnvHttp[R, *], Env[R, *]] =
     envRoutedAny.asInstanceOf[EnvRoutedConvert[R]]
 
   implicit def envRunnable[R](
       implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[EnvHttp[R, *], Env[R, *]] =
-    zioResponse => Env(r => Task.deferAction(implicit sched => Task.delay(execResponse(r, zioResponse, _))))
+    response => Env(r => Task.deferAction(implicit sched => Task.delay(execResponse(r, response, _))))
 
   private[this] def execResponse[R](r: R, envResponse: EnvHttp[R, Response], request: Request)(
       implicit sc: Scheduler,
       handler: Rejection.Handler): Future[Response] = {
     val promise = Promise[Response]
-    val routing = ReaderTRouting(request, SubString(request.path), 0, r)
+    val routing = EnvRouting(request, SubString(request.path), 0, r)
 
     envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
       case Right(res) => promise.setValue(res)
@@ -79,13 +79,13 @@ private[finagle] class EnvInstanceDecl {
         }))
 
     def apply[A](fa: Env[R, A]): EnvHttp[R, A] = fa.localP(_.embedded)
+
+
+    @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
+      z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
+
+    @inline private[this] def throwRej[A](map: Rejection): F[A] = Env.raiseError(Rejected(map))
   }
 
   protected object envRoutedAny extends EnvRoutedConvert[Any]
-
-  @inline private[this] def catchRej[R, A](z: EnvHttp[R, A])(f: Rejection => EnvHttp[R, A]): EnvHttp[R, A] =
-    z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
-
-  @inline private[this] def throwRej[R, A](map: Rejection): EnvHttp[R, A] = Env.raiseError(Rejected(map))
-
 }

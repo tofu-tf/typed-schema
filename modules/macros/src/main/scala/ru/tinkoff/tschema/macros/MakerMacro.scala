@@ -67,11 +67,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
         }
         """
 
-    val checkedTree = try {
-      c.typecheck(tree)
-    } catch {
-      case typecheck: TypecheckException => abort(typecheck.getMessage)
-    }
+    val checkedTree = c.typecheck(tree)
 
     c.Expr(checkedTree)
   }

@@ -12,7 +12,7 @@ object tethysInstances {
     jsonComplete(_.asJson)
 
   implicit def tethysEncodeCompleteF[F[_], G[_]: Functor, A: JsonWriter](
-      implicit runnable: Runnable[F, G],
+      implicit lift: LiftHttp[F, G],
       producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer): Complete[F, A, G[A]] =
     message.fjsonComplete(_.asJson)
 

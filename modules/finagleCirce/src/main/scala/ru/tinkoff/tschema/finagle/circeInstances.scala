@@ -10,7 +10,7 @@ object circeInstances {
   implicit def circeEncodeComplete[F[_]: Applicative, A: Encoder](implicit printer: Printer): Complete[F, A, A] =
     jsonComplete(_.asJson.pretty(printer))
 
-  implicit def circeEncodeCompleteF[F[_], G[_]: Functor, A: Encoder](implicit runnable: Runnable[F, G],
+  implicit def circeEncodeCompleteF[F[_], G[_]: Functor, A: Encoder](implicit runnable: LiftHttp[F, G],
                                                                      printer: Printer): Complete[F, A, G[A]] =
     message.fjsonComplete(_.asJson.pretty(printer))
 

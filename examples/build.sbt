@@ -44,7 +44,7 @@ lazy val akkaHttp = project
     )
   )
 
-lazy val finagle = project
+lazy val finagleZio = project
   .dependsOn(common)
   .settings(commonSettings)
   .settings(
@@ -53,4 +53,13 @@ lazy val finagle = project
     libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-circe"  % Version.typedSchema
   )
 
-lazy val example = project.in(file(".")).aggregate(common, akkaHttp, finagle)
+lazy val finagleEnv = project
+  .dependsOn(common)
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-env"    % Version.typedSchema,
+    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-tethys" % Version.typedSchema,
+    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-circe"  % Version.typedSchema
+  )
+
+lazy val example = project.in(file(".")).aggregate(common, akkaHttp, finagleZio, finagleEnv)

@@ -28,6 +28,7 @@ val scalazDMacro    = "org.scalaz"           %% "deriving-macro"    % Version.sc
 val derevo          = "org.manatki"          %% "derevo-cats"       % Version.derevo
 val swaggerUILib    = "org.webjars.npm"      % "swagger-ui-dist"    % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"          %% "scalatags"         % Version.scalaTags
+val env             = "ru.tinkoff"           %% "tofu-env"          % Version.tofu
 
 val monocle = List("core", "macro").map(module => "com.github.julien-truffaut" %% s"monocle-$module" % Version.monocle)
 val circe   = List("core", "parser", "generic", "generic-extras").map(module => "io.circe" %% s"circe-$module" % Version.circe)
@@ -133,6 +134,16 @@ lazy val finagleZio = project
     libraryDependencies ++= catsEffect :: zio
   )
 
+lazy val finagleEnv = project
+  .in(file("modules/finagle-env"))
+  .dependsOn(finagle)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-finagle-env",
+    libraryDependencies ++= catsEffect :: env :: Nil
+  )
+
+
 lazy val main = project
   .in(file("modules/main"))
   .dependsOn(kernel, macros, swagger, akkaHttp)
@@ -171,11 +182,13 @@ lazy val swaggerUI =
       buildInfoPackage := "ru.tinkoff.tschema.swagger"
     )
 
-lazy val docs = project.in(file("modules/docs"))
+lazy val docs = project
+  .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
-  .settings(Seq(
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
-  ))
+  .settings(
+    Seq(
+      unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
+    ))
   .dependsOn(kernel, macros, main, akkaHttp)
   .settings(commonSettings)
 
@@ -191,6 +204,7 @@ lazy val typedschema =
                scalaz,
                finagle,
                finagleZio,
+               finagleEnv,
                finagleCirce,
                finagleTethys,
                swaggerUI,

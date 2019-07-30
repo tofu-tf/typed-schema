@@ -70,18 +70,12 @@ object Runnable {
 }
 
 @implicitNotFound(
-  """Could not parse body ${A} in ${F}.
-    |Make sure you have appropriate deserializing instance and imported complete implementation
-    |from tethysIntances, circeInstances, etc.""".stripMargin)
+  "Could not parse body ${A} in ${F}. Make sure you have appropriate deserializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
 trait ParseBody[F[_], A] {
   def parse(): F[A]
 }
-
-
 @implicitNotFound(
-  """Could not complete ${Res} knowing that result should be ${Out} using ${In} in ${F}.
-    |Make sure you have appropriate serializing instance and imported complete implementation
-    |from tethysIntances, circeInstances, etc.""".stripMargin)
+  "Could not complete ${A} knowing that result should be ${Out} using ${In} in ${F}. Make sure you have appropriate serializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
 trait CompleteIn[F[_], -In, Out, A] {
   def completeIn(a: A, in: In): F[Response]
 }

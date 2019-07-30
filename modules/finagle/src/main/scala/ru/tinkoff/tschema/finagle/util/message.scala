@@ -4,7 +4,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.{Applicative, Functor, Monad}
 import com.twitter.finagle.http.{Message, Response}
-import ru.tinkoff.tschema.finagle.{Complete, ParseBody, Rejection, Routed, Runnable}
+import ru.tinkoff.tschema.finagle.{Complete, LiftHttp, ParseBody, Rejection, Routed, Runnable}
 
 object message {
 
@@ -25,14 +25,14 @@ object message {
   def stringComplete[F[_]: Applicative, A](f: A => String): Complete[F, A, A] =
     a => stringResponse(f(a)).pure[F]
 
-  def fstringComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, A, G[A]] =
-    fa => runnable.lift(fa.map(a => stringResponse(f(a))))
+  def fstringComplete[F[_], G[_]: Functor, A](f: A => String)(implicit lift: LiftHttp[F, G]): Complete[F, A, G[A]] =
+    fa => lift(fa.map(a => stringResponse(f(a))))
 
   def jsonComplete[F[_]: Applicative, A](f: A => String): Complete[F, A, A] =
     a => jsonResponse(f(a)).pure[F]
 
-  def fjsonComplete[F[_], G[_]: Functor, A](f: A => String)(implicit runnable: Runnable[F, G]): Complete[F, A, G[A]] =
-    fa => runnable.lift(fa.map(a => jsonResponse(f(a))))
+  def fjsonComplete[F[_], G[_]: Functor, A](f: A => String)(implicit lift: LiftHttp[F, G]): Complete[F, A, G[A]] =
+    fa => lift(fa.map(a => jsonResponse(f(a))))
 
   def jsonBodyParse[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): ParseBody[F, A] =
     () => parseRequest(f)

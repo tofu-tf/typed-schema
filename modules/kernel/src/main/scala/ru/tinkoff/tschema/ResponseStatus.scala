@@ -57,12 +57,15 @@ object Decompose {
   type Arb
   type Arb1
 
-  type OptInst[A] = Cons[Option[A], None.type, Cons[Option[A], A, Last[Option[A]]]]
-  private val optionArb: OptInst[Arb]        = Decompose.make[Option[Arb]] { case Some(a) => a } { case None => None } result
+  type OptInst[A] = Cons[Option[A], NotFound.type, Cons[Option[A], A, Last[Option[A]]]]
+  private val optionArb: OptInst[Arb]        = Decompose.make[Option[Arb]] { case Some(a) => a } { case None => NotFound } result
   implicit def optionInstance[A]: OptInst[A] = optionArb.asInstanceOf[OptInst[A]]
 
   type EitherInst[A, B] = Cons[Either[A, B], Left[A, B], Cons[Either[A, B], B, Last[Either[A, B]]]]
   private val eitherArb: EitherInst[Arb, Arb1] =
     Decompose.make[Either[Arb, Arb1]] { case Right(x) => x } { case l @ Left(_) => l } result
   implicit def eitherInstance[A, B]: EitherInst[A, B] = eitherArb.asInstanceOf[EitherInst[A, B]]
+
+
+  case object NotFound
 }

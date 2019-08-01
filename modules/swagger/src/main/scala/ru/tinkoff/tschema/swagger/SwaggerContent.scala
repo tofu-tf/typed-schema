@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
-import ru.tinkoff.tschema.Decompose.{Cons, Last}
+import ru.tinkoff.tschema.Decompose.{Cons, Last, NotFound}
 import ru.tinkoff.tschema.{Composite, Decompose, ResponseStatus}
 import shapeless.Lazy
 import cats.syntax.option._
@@ -29,7 +29,7 @@ object SwaggerContent extends CompositeInstances {
                                          s: ResponseStatus[T] = ResponseStatus.default[T]): SwaggerContent[T] =
     SwaggerContent(List(s.status -> t.typ.some))
 
-  final implicit val notFoundContent: SwaggerContent[None.type] = SwaggerContent(List(404 -> None))
+  final implicit val notFoundContent: SwaggerContent[NotFound.type] = SwaggerContent(List(404 -> None))
 }
 
 class CompositeInstances {

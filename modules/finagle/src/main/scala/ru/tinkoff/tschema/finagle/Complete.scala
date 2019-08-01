@@ -4,19 +4,22 @@ import cats.syntax.flatMap._
 import cats.{Applicative, Contravariant, Functor, Monad, MonoidK}
 import com.twitter.finagle.http.{Response, Status}
 import ru.tinkoff.tschema.Decompose
-import ru.tinkoff.tschema.Decompose.{Cons, Last}
+import ru.tinkoff.tschema.Decompose.{Cons, Last, NotFound}
 import ru.tinkoff.tschema.finagle.util.message
 import shapeless.Lazy
+import cats.syntax.applicative._
+import cats.syntax.apply._
 
 import scala.annotation.implicitNotFound
 
 @implicitNotFound(
-  "Could not complete ${A} knowing that result should be ${Out} using ${In} in ${F}. Make sure you have appropriate serializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
+  "Could not complete ${A} knowing that result should be ${Out} using ${In} in ${F}. Make sure you have appropriate serializing instance and imported complete implementation from tethysIntances, circeInstances, etc."
+)
 trait CompleteIn[F[_], -In, Out, A] {
   def completeIn(a: A, in: In): F[Response]
 }
 
-object CompleteIn extends CompositeCompleteInInstances
+object CompleteIn extends CompositeCompleteInInstances with DefaultCompleteInInstances
 
 trait Complete[F[_], R, A] extends CompleteIn[F, Any, R, A] {
   def complete(a: A): F[Response]
@@ -63,5 +66,19 @@ object CompositeComplete {
   ): CompositeComplete[F, In, A, Cons[A, H, T]] =
     (a, d, in) => d.tryHead(a).fold(tail.complete(a, d.next, in))(head.completeIn(_, in))
 }
+trait DefaultCompleteInInstances {
+  final implicit def notFoundCompleteInstance[F[_]: Applicative, G[_]]: Complete[F, NotFound.type, NotFound.type] =
+    message.emptyComplete(Status.NotFound)
 
+  final implicit def notFoundCompleteFInstance[F[_]: Applicative, G[_]](
+      implicit lift: LiftHttp[F, G]
+  ): Complete[F, NotFound.type, G[NotFound.type]] =
+    in => lift(in) *> Response(Status.NotFound).pure[F]
 
+  final implicit def unitCompleteInstance[F[_]: Applicative, G[_]]: Complete[F, Unit, Unit] = message.emptyComplete()
+
+  final implicit def unitCompleteFInstance[F[_]: Applicative, G[_]](
+      implicit lift: LiftHttp[F, G]
+  ): Complete[F, Unit, G[Unit]] =
+    in => lift(in) *> Response(Status.Ok).pure[F]
+}

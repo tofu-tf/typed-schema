@@ -1,9 +1,9 @@
 package ru.tinkoff.tschema
 package example
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import ru.tinkoff.tschema.finagle.unitInstance._
-import ru.tinkoff.tschema.finagle.{MkService, NoneCompleting, StringCompleting}
+import ru.tinkoff.tschema.finagle.{Complete, CompleteIn, MkService, NoneCompleting, StringCompleting}
 import ru.tinkoff.tschema.swagger.MkSwagger
+import shapeless.HNil
 import syntax._
 import zio.ZIO
 
@@ -28,6 +28,8 @@ object ReceiveModule extends ExampleModule {
       opPut |> body[String]('value) |> $$[Unit]
     ) <> (
       opGet |> $$[Composite[Receive[String]]]
+    ) <> (
+      get |> operation("read") |> $$[String].?
     ))
 
   def route = MkService[Http](api)(ReceiveService)
@@ -38,5 +40,7 @@ object ReceiveService {
   def put(key: String, value: String): Example[Unit] = ZIO.accessM(_.storage.update(_ + (key -> value)).unit)
   def get(key: String): Example[Receive[String]] =
     if (key.isEmpty || key.startsWith("bad")) ZIO.succeed(BadKey(key))
-    else ZIO.accessM(_.storage.get.map(_.get(key).fold[Receive[String]](NotFound)(Result(_))))
+    else read(key).map(_.fold[Receive[String]](NotFound)(Result(_)))
+
+  def read(key: String): Example[Option[String]] = ZIO.accessM(_.storage.get.map(_.get(key)))
 }

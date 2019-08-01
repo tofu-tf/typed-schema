@@ -166,7 +166,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     derivedParam[name, T, Capture](In.path).map(PathSpec.path.modify(s"{$name}" +: _))
 
   implicit def deriveReqBody[name, T](implicit content: SwaggerContent[T]): SwaggerMapper[ReqBody[name, T]] =
-    fromFunc((PathSpec.op ^|-> OpenApiOp.requestBody).set(OpenApiRequestBody.fromTypes(content.types: _*).some)) andThen fromTypes[
+    fromFunc((PathSpec.op ^|-> OpenApiOp.requestBody).set(OpenApiRequestBody.fromTypes(content.content.flatMap(_._2): _*).some)) andThen fromTypes[
       ReqBody[name, T]](content.collectTypes)
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =

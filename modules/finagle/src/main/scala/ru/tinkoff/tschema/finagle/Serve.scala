@@ -64,7 +64,7 @@ object Serve
   implicit def allQueryServe[F[_]: Routed: Monad, name, In <: HList]: Add[AllQuery[name], F, In, name, Map[String, String]] =
     add(Routed.request[F].map(_.params))
 
-  implicit def queryFlagServe[F[_]: Routed: Monad, name <: Symbol: Name, x, In <: HList]
+  implicit def queryFlagServe[F[_]: Routed: Monad, name : Name, x, In <: HList]
     : Add[QueryFlag[name], F, In, name, Boolean] =
     add[QueryFlag[name], F, In, Boolean, name](Routed.request[F].map(_.params.contains(Name[name].string)))
 
@@ -80,11 +80,11 @@ object Serve
     : Add[Cookie[name, x], F, In, name, x] =
     resolveParam[F, ParamSource.Cookie, name, x, Cookie[name, x], In]
 
-  implicit def formFieldServe[F[_]: Routed: Monad, name <: Symbol: Witness.Aux, x: Param.PForm, In <: HList]
+  implicit def formFieldServe[F[_]: Routed: Monad, name: Name, x: Param.PForm, In <: HList]
     : Add[FormField[name, x], F, In, name, x] =
     resolveParam[F, ParamSource.Form, name, x, FormField[name, x], In]
 
-  implicit def bodyServe[F[_]: FlatMap, name <: Symbol: Witness.Aux, A, In <: HList](
+  implicit def bodyServe[F[_]: FlatMap, name, A, In <: HList](
       implicit A: ParseBody[F, A]): Add[ReqBody[name, A], F, In, name, A] =
     add[ReqBody[name, A], F, In, A, name](A.parse())
 

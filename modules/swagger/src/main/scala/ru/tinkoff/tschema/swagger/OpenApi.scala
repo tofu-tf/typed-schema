@@ -327,7 +327,7 @@ object OpenApiResponse {
     OpenApiResponse(description = description, content = Map(swaggerType.mediaType -> OpenApiMediaType(swaggerType.some)))
 
   def makeMany(types: SwaggerType*): OpenApiResponse =
-    OpenApiResponse(content = types.iterator.map(t => t.mediaType -> OpenApiMediaType(t.typ.some)).toMap)
+    OpenApiResponse(content = types.iterator.map(t => t.mediaType -> OpenApiMediaType(t.some)).toMap)
 }
 
 @Lenses

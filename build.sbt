@@ -1,10 +1,60 @@
-name := "Typed Schema"
+import com.typesafe.sbt.SbtGit.git
 
-moduleName := "typed-schema-all"
+val pubVersion = "0.11.0-RC2"
+
+val publishSettings = List(
+  name := "Typed Schema",
+  organization := "ru.tinkoff",
+  description := "Typelevel DSL for defining webservices, covertible to akka-http and swagger definitions",
+  publishMavenStyle := true,
+  publishTo := Some(
+    if (isSnapshot.value)
+      Opts.resolver.sonatypeSnapshots
+    else
+      Opts.resolver.sonatypeStaging
+  ),
+  credentials += Credentials(Path.userHome / ".sbt" / ".ossrh-credentials"),
+  version := {
+    val branch = git.gitCurrentBranch.value
+    if (branch == "master") pubVersion
+    else s"$pubVersion-$branch-SNAPSHOT"
+  },
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/TinkoffCreditSystems/typed-schema"),
+      "git@github.com:username/projectname.git"
+    )
+  )
+)
+
+licenses in ThisBuild += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
+publishMavenStyle in ThisBuild := true
+
+homepage in ThisBuild := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
+developers in ThisBuild := List(
+  Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
+)
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions in ThisBuild := Seq("2.11.12", "2.12.8")
+val crossCompile = crossScalaVersions in ThisBuild := List("2.11.12", "2.12.8")
+
+val commonScalacOptions = scalacOptions ++= List(
+  "-deprecation",
+  "-feature",
+  "-language:existentials",
+  "-language:experimental.macros",
+  "-language:higherKinds",
+  "-language:implicitConversions",
+  "-language:postfixOps"
+)
+
+val setExperimental = scalacOptions ++= {
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, y)) if y == 11 => Seq("-Xexperimental")
+    case _                       => Seq.empty[String]
+  }
+}
 
 val specificScalacOptions = scalacOptions ++= {
   minorVersion.value match {
@@ -20,9 +70,9 @@ val setMinorVersion = minorVersion := {
   }
 }
 
-lazy val compilerPlugins = List(
-  addCompilerPlugin("org.typelevel" %% "kind-projector"     % Version.kindProjector),
-  addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1")
+lazy val compilerPlugins = libraryDependencies ++= List(
+  compilerPlugin("org.typelevel" %% "kind-projector"     % Version.kindProjector),
+  compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
 )
 
 val paradise = libraryDependencies ++= {
@@ -39,21 +89,25 @@ val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % {
   }
 }
 
-val monocle = libraryDependencies ++= List("core", "macro").map(module =>
-  "com.github.julien-truffaut" %% s"monocle-$module" % {
-    minorVersion.value match {
-      case 11 | 12 => Version.monocle
-      case 13      => Version.monocle213
+val monocle = libraryDependencies ++= List("core", "macro").map(
+  module =>
+    "com.github.julien-truffaut" %% s"monocle-$module" % {
+      minorVersion.value match {
+        case 11 | 12 => Version.monocle
+        case 13      => Version.monocle213
+      }
     }
-})
+)
 
-val circe = libraryDependencies ++= List("core", "parser", "generic", "derivation", "generic-extras").map(module =>
-  "io.circe" %% s"circe-$module" % {
-    minorVersion.value match {
-      case 11      => Version.circe211
-      case 12 | 13 => Version.circe
+val circe = libraryDependencies ++= List("core", "parser", "generic", "derivation", "generic-extras").map(
+  module =>
+    "io.circe" %% s"circe-$module" % {
+      minorVersion.value match {
+        case 11      => Version.circe211
+        case 12 | 13 => Version.circe
+      }
     }
-})
+)
 
 val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % {
   minorVersion.value match {
@@ -109,9 +163,17 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
 lazy val testLibs = libraryDependencies ++= scalacheck :: scalatest :: Nil
 
-lazy val commonSettings = specificScalacOptions :: crossCompile :: setMinorVersion :: testLibs :: compilerPlugins
+lazy val commonSettings = publishSettings ++ List(
+  compilerPlugins,
+  commonScalacOptions,
+  setExperimental,
+  specificScalacOptions,
+  crossCompile,
+  setMinorVersion,
+  testLibs
+)
 
-val compile213 = crossScalaVersions += "2.13.0"
+val compile213 = List(crossScalaVersions += "2.13.0")
 
 lazy val kernel = project
   .in(file("modules/kernel"))
@@ -203,6 +265,14 @@ lazy val finagleZio = project
     libraryDependencies ++= catsEffect :: zio
   )
 
+lazy val finagleCommon = project
+  .in(file("modules/finagle-common"))
+  .dependsOn(finagle, swagger)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-finagle-common"
+  )
+
 lazy val finagleEnv = project
   .in(file("modules/finagle-env"))
   .dependsOn(finagle)
@@ -218,7 +288,7 @@ lazy val main = project
   .settings(
     commonSettings,
     compile213,
-    moduleName := "typed-schema",
+    moduleName := "typed-schema-base",
     libraryDependencies ++= akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: akka,
     akkaHttpCirce
   )
@@ -260,23 +330,27 @@ lazy val docs = project
   .settings(
     Seq(
       unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
-    ))
+    )
+  )
   .dependsOn(kernel, macros, main, akkaHttp)
 
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .aggregate(macros,
-               kernel,
-               main,
-               param,
-               swagger,
-               akkaHttp,
-               scalaz,
-               finagle,
-               finagleZio,
-               finagleEnv,
-               finagleCirce,
-               finagleTethys,
-               swaggerUI,
-               docs)
+    .aggregate(
+      macros,
+      kernel,
+      main,
+      param,
+      swagger,
+      akkaHttp,
+      scalaz,
+      finagle,
+      finagleZio,
+      finagleEnv,
+      finagleCirce,
+      finagleTethys,
+      finagleCommon,
+      swaggerUI,
+      docs
+    )

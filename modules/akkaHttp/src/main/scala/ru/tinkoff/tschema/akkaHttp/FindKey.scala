@@ -1,8 +1,6 @@
 package ru.tinkoff.tschema.akkaHttp
-import akka.shapeless.DepFn1
 import ru.tinkoff.tschema.common.Find
 import shapeless.{DepFn0, HList, Witness}
-import shapeless.ops.record.Selector
 
 trait FindKey[Params <: HList] extends DepFn0 {
   type Out <: Symbol

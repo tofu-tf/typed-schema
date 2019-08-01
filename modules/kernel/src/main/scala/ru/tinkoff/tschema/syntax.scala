@@ -1,5 +1,4 @@
 package ru.tinkoff.tschema
-import ru.tinkoff.tschema.common.HasReq
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 
@@ -61,14 +60,6 @@ object syntax {
     def apply[s](witness: Witness.Aux[s]) = maker.make[s]
   }
 
-  class MkTransform[a, b] {
-    def apply[t, u, s](t: t)(wu: Witness.Aux[u], ws: Witness.Aux[s]) = new Transform[u, s, t, a, b]
-  }
-
-  class MkTransformReq[a, b] {
-    def apply[t <: HasReq, u, s](t: t)(wu: Witness.Aux[u], ws: Witness.Aux[s]) = new Transform[u, s, t, a, b]
-  }
-
   implicit class TypeApiOps[x <: DSLDef](x: => x) {
     def ~[y](y: => y): x <|> y                         = new <|>(x, y)
     def <|>[y](y: => y): x <|> y                       = new <|>(x, y)
@@ -120,4 +111,12 @@ object syntax {
 
   def apiKeyAuth[realm, Param <: CanHoldApiKey](realm: Witness.Aux[realm], param: Param): ApiKeyAuth[realm, Param] =
     new ApiKeyAuth
+
+  implicit class CompleteOps[x](c: Complete[x]) {
+    def ? : Complete[Composite[Option[x]]]  = new Complete
+    def opt: Complete[Composite[Option[x]]] = ?
+
+    def ||[y](cmpl: Complete[y]): Complete[Composite[Either[x, y]]] = new Complete
+    def or[y](cmpl: Complete[y]): Complete[Composite[Either[x, y]]] = new Complete
+  }
 }

@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema.example
 
 import com.twitter.finagle.http.Response
-import ru.tinkoff.tschema.example.ExampleEnv.incrementAlohas
+import ru.tinkoff.tschema.example.Example.incrementAlohas
 import ru.tinkoff.tschema.finagle.{Complete, MkService}
 import ru.tinkoff.tschema.syntax._
 import zio._

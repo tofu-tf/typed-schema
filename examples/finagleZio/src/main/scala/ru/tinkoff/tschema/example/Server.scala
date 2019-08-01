@@ -13,7 +13,7 @@ import zio.{blocking => _, _}
 
 object Server extends App {
   val modules: List[ExampleModule] =
-    List(Greeting, TestModule, FiltersModule, FormFieldsModule, MultiParameters, ProxyModule, VersionModule, Authorize)
+    List(Greeting, TestModule, FiltersModule, FormFieldsModule, MultiParameters, ProxyModule, VersionModule, Authorize, ReceiveModule)
 
   val svc: Http[Response] = modules.foldMapK(_.route) <+> Swagger.route
 
@@ -27,9 +27,10 @@ object Server extends App {
 
   def run(args: List[String]): ZIO[Environment, Nothing, Int] =
     for {
-      ref <- Ref.make(0)
+      ref     <- Ref.make(0)
+      storage <- Ref.make(Map[String, String]())
       _ <- server
             .catchAll(ex => putStr(ex.getMessage))
-            .provide(ExampleEnv("lol", ref))
+            .provide(ExampleEnv("lol", ref, storage))
     } yield 0
 }

@@ -78,8 +78,11 @@ trait LowLevelSwaggerTypeable {
   }
   @inline final def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]): SwaggerTypeable[X[T]] =
     make[X[T]](SwaggerArray(items.later))
+
   @inline final def neseq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]): SwaggerTypeable[X[T]] =
     make[X[T]](SwaggerArray(items.later, minLength = Some(1)))
+
+  @inline final def unwrap[X[_], T](implicit item: SwaggerTypeable[T]): SwaggerTypeable[X[T]] = item.as[X[T]]
 
   final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]] = seq[Seq, T]
   final implicit def immutableseqTypeable[T: SwaggerTypeable]: SwaggerTypeable[collection.immutable.Seq[T]] =
@@ -117,6 +120,9 @@ trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwagger
   final implicit def swaggerNEStreamTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyStream[T]] = neseq[NonEmptyStream, T]
   final implicit def swaggerNEChainTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyChain[T]]   = neseq[NonEmptyChain, T]
 
+  final implicit def swaggerSomeTypeable[T: SwaggerTypeable]: SwaggerTypeable[Some[T]]         = unwrap[Some, T]
+  final implicit def swaggerLeftTypeable[T: SwaggerTypeable, R]: SwaggerTypeable[Left[T, R]]   = unwrap[Left[*, R], T]
+  final implicit def swaggerRightTypeable[T: SwaggerTypeable, L]: SwaggerTypeable[Right[L, T]] = unwrap[Right[L, *], T]
 
   implicit def optionTypeable[T](implicit inst: Lazy[SwaggerTypeable[T]]): SwaggerTypeable[Option[T]] =
     new SwaggerTypeable[Option[T]] {

@@ -51,6 +51,7 @@ class SwaggerPrimitive[Typ <: SwaggerValue](
   def mod(f: Typ => Typ) = new SwaggerPrimitive[Typ](f(typ), format)
 }
 
+
 object SwaggerPrimitive {
   case object string  extends SwaggerPrimitive(SwaggerStringValue())
   case object uuid    extends SwaggerPrimitive(SwaggerStringValue.uuid)

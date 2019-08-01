@@ -170,32 +170,6 @@ object typeDSL {
   final class As[directive, name] extends DSLAtom
 
   /**
-    * captures multiple fields from place
-    *
-    * @tparam place Header, FormField, Cookie or QueryParam
-    * @tparam x     record type - only simple types, with modifiers like Option or List accepted
-    */
-  final class Record[place[_, _], x] extends DSLAtom
-
-  /**
-    * transforms existing parameter
-    * introducing new parameter
-    * using known transformation
-    *
-    * @tparam source
-    */
-  final class Transform[source, name, t, a, b] extends DSLAtom
-
-  /**
-    * transforms existing parameter
-    * introducing new parameter
-    * using known transformation
-    *
-    * @tparam source
-    */
-  final class TransformReq[source, name, t, a, b, req] extends DSLAtom
-
-  /**
     * concatenates pair of paths into complete path
     *
     * @tparam path    prefix - always simple path without disjunctions

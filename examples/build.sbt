@@ -50,7 +50,8 @@ lazy val finagleZio = project
   .settings(
     libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-zio"    % Version.typedSchema,
     libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-tethys" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-circe"  % Version.typedSchema
+    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-circe"  % Version.typedSchema,
+    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-common" % Version.typedSchema
   )
 
 lazy val finagleEnv = project

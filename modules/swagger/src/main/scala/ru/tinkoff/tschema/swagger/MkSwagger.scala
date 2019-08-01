@@ -215,7 +215,9 @@ object MkSwagger {
 
   implicit def derivedComplete[T](implicit content: SwaggerContent[T]) =
     single[Complete[T]](
-      op = OpenApiOp(responses = OpenApiResponses(codes = Map(200 -> OpenApiResponse.makeMany(content.types: _*)))),
+      op = OpenApiOp(responses = OpenApiResponses(codes = content.content.groupBy(_._1).map {
+        case (i, contents) => (i, OpenApiResponse.makeMany(contents.flatMap(_._2): _*))
+      })),
       typeList = TreeMap(content.collectTypes.toSeq: _*)
     )
 

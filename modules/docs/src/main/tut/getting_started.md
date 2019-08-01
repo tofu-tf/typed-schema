@@ -35,7 +35,7 @@ object Example extends App {
   val apiRoute = MkRoute(api)(handler)
 
   //building swagger
-  val apiSwagger   = MkSwagger(api)(()).make(OpenApiInfo("example"))
+  val apiSwagger   = MkOpenApi(api)(()).make(OpenApiInfo("example"))
   val printer      = Printer.spaces2.copy(dropNullValues = true)
   val swaggerRoute = path("swagger")(complete(apiSwagger.asJson.pretty(printer)))
 

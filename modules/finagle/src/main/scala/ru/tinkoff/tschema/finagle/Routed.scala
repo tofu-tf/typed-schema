@@ -5,12 +5,10 @@ import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.foldable._
 import cats.syntax.functor._
-import cats.syntax.order._
-import cats.{Apply, Contravariant, Foldable, Monad, Monoid, MonoidK, Order, SemigroupK}
-import com.twitter.finagle.http.Status._
+import cats.{Apply, Foldable, Monad, MonoidK}
 import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route}
 import com.twitter.finagle.{Service, http}
-import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam, notFound}
+import ru.tinkoff.tschema.finagle.Rejection.notFound
 import ru.tinkoff.tschema.param.{Param, ParamSource}
 
 import scala.annotation.implicitNotFound
@@ -37,133 +35,6 @@ trait RoutedPlus[F[_]] extends Routed[F] with MonoidK[F] {
 object Routed extends RoutedFunctions {
   def apply[F[_]](implicit instance: Routed[F]): Routed[F] = instance
 
-}
-
-trait LiftHttp[F[_], G[_]] { self =>
-  def apply[A](fa: G[A]): F[A]
-
-  def funK: FunctionK[G, F] = new FunctionK[G, F] {
-    def apply[A](fa: G[A]): F[A] = self(fa)
-  }
-}
-
-trait Runnable[F[_], G[_]] {
-  def run(fresp: F[Response]): G[Service[Request, Response]]
-}
-
-object Runnable {
-  def run[G[_]] = new Run[G]
-
-  class Run[G[_]] {
-    def apply[F[_]](resp: F[Response])(implicit runnable: Runnable[F, G]): G[Service[Request, Response]] = runnable.run(resp)
-    def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(
-        implicit runnable: Runnable[F, G],
-        G: Monad[G]
-    ): G[Service[Request, Response]] =
-      resps
-        .foldM[G, HttpMuxer](HttpMuxer) {
-          case (mux, (name, svc)) => runnable.run(svc).map(s => mux withHandler Route(name, s))
-        }
-        .widen
-  }
-
-}
-
-@implicitNotFound(
-  "Could not parse body ${A} in ${F}. Make sure you have appropriate deserializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
-trait ParseBody[F[_], A] {
-  def parse(): F[A]
-}
-@implicitNotFound(
-  "Could not complete ${A} knowing that result should be ${Out} using ${In} in ${F}. Make sure you have appropriate serializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
-trait CompleteIn[F[_], -In, Out, A] {
-  def completeIn(a: A, in: In): F[Response]
-}
-
-trait Complete[F[_], R, A] extends CompleteIn[F, Any, R, A] {
-  def complete(a: A): F[Response]
-
-  def completeIn(a: A, in: Any): F[Response] = complete(a)
-}
-
-object Complete {
-  implicit def contravariant[F[_], R]: Contravariant[Complete[F, R, *]] =
-    new Contravariant[Complete[F, R, *]] {
-      def contramap[A, B](fa: Complete[F, R, A])(f: B => A): Complete[F, R, B] = b => fa.complete(f(b))
-    }
-}
-
-final case class Rejection(
-    priority: Double,
-    status: http.Status = NotFound,
-    path: String = "",
-    wrongMethod: List[String] = Nil,
-    missing: List[MissingParam] = Nil,
-    malformed: List[MalformedParam] = Nil,
-    unauthorized: Boolean = false,
-    messages: List[String] = Nil
-) {
-  def withPath(p: String): Rejection   = copy(path = p)
-  def addMessage(s: String): Rejection = copy(messages = s :: messages)
-  def message: String = messages.headOption.getOrElse {
-    (Iterator(s"at $path") ++
-      Iterator(
-        "incorrect methods"    -> wrongMethod,
-        "missing parameters"   -> missing.map(p => s"${p.name} in ${p.source}"),
-        "malformed parameters" -> malformed.map(p => s"${p.name} in ${p.source} with ${p.error}")
-      ).collect { case (m, ms) if ms.nonEmpty => ms.mkString(m, ",", "") } ++
-      Iterator("unauthorized").filter(_ => unauthorized)).mkString("\n")
-  }
-}
-
-object Rejection {
-  val notFound                                        = Rejection(0)
-  def wrongMethod(method: String)                     = Rejection(1, MethodNotAllowed, wrongMethod = List(method))
-  def missingParam(name: String, source: ParamSource) = Rejection(3, BadRequest, missing = List(MissingParam(name, source)))
-  def malformedParam(name: String, error: String, source: ParamSource) =
-    Rejection(4, BadRequest, malformed = List(MalformedParam(name, error, source)))
-  def body(error: String) = Rejection(5, BadRequest, messages = List(error))
-  val unauthorized        = Rejection(6, Unauthorized)
-  case class MissingParam(name: String, source: ParamSource)
-  case class MalformedParam(name: String, error: String, source: ParamSource)
-
-  implicit val rejectionMonoid: Monoid[Rejection] = new Monoid[Rejection] {
-    def empty: Rejection = notFound
-    def combine(x: Rejection, y: Rejection): Rejection =
-      if (x < y) combine(y, x)
-      else
-        Rejection(
-          x.priority,
-          x.status,
-          x.path,
-          x.wrongMethod ::: y.wrongMethod,
-          x.missing ::: y.missing,
-          x.malformed ::: y.malformed,
-          x.unauthorized || y.unauthorized,
-          x.messages ::: y.messages
-        )
-  }
-
-  implicit val order: Order[Rejection] =
-    (x, y) =>
-      x.priority compare y.priority match {
-        case 0 => x.path.length compare y.path.length
-        case i => i
-    }
-
-  trait Handler {
-    def apply(rej: Rejection): Response
-  }
-
-  val defaultHandler: Handler = rej => {
-    val response = http.Response(rej.status)
-    response.setContentString(rej.message)
-    response
-  }
-}
-
-trait ConvertService[F[_]] {
-  def convertService[A](svc: Service[http.Request, A]): F[A]
 }
 
 class RoutedFunctions {
@@ -219,4 +90,44 @@ class RoutedFunctions {
     else if (pref.length() < path.length() && path.charAt(0) == '/' && path.subSequence(1, pref.length() + 1) == pref)
       pref.length() + 1
     else -1
+}
+
+trait LiftHttp[F[_], G[_]] { self =>
+  def apply[A](fa: G[A]): F[A]
+
+  def funK: FunctionK[G, F] = new FunctionK[G, F] {
+    def apply[A](fa: G[A]): F[A] = self(fa)
+  }
+}
+
+trait Runnable[F[_], G[_]] {
+  def run(fresp: F[Response]): G[Service[Request, Response]]
+}
+
+object Runnable {
+  def run[G[_]] = new Run[G]
+
+  class Run[G[_]] {
+    def apply[F[_]](resp: F[Response])(implicit runnable: Runnable[F, G]): G[Service[Request, Response]] = runnable.run(resp)
+    def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(
+        implicit runnable: Runnable[F, G],
+        G: Monad[G]
+    ): G[Service[Request, Response]] =
+      resps
+        .foldM[G, HttpMuxer](HttpMuxer) {
+          case (mux, (name, svc)) => runnable.run(svc).map(s => mux withHandler Route(name, s))
+        }
+        .widen
+  }
+
+}
+
+@implicitNotFound(
+  "Could not parse body ${A} in ${F}. Make sure you have appropriate deserializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
+trait ParseBody[F[_], A] {
+  def parse(): F[A]
+}
+
+trait ConvertService[F[_]] {
+  def convertService[A](svc: Service[http.Request, A]): F[A]
 }

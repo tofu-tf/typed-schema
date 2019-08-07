@@ -33,13 +33,15 @@ object TaskRouting extends TaskInstanceDecl {
     val promise = Promise[Response]
     val routing = TaskRouting(request, SubString(request.path), 0)
 
-    envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
+    val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
       case Right(res) => promise.setValue(res)
       case Left(ex) =>
         val resp = Response(Status.InternalServerError)
         resp.setContentString(ex.getMessage)
         promise.setValue(resp)
     }
+
+    promise.setInterruptHandler{ case _ => cancelable.cancel()}
 
     promise
   }

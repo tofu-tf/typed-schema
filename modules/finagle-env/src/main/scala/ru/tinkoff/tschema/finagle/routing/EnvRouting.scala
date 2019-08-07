@@ -37,13 +37,15 @@ object EnvRouting extends EnvInstanceDecl {
     val promise = Promise[Response]
     val routing = EnvRouting(request, SubString(request.path), 0, r)
 
-    envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
+    val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
       case Right(res) => promise.setValue(res)
       case Left(ex) =>
         val resp = Response(Status.InternalServerError)
         resp.setContentString(ex.getMessage)
         promise.setValue(resp)
     }
+
+    promise.setInterruptHandler{ case _ => cancelable.cancel() }
 
     promise
   }
@@ -71,11 +73,14 @@ private[finagle] class EnvInstanceDecl {
 
     def convertService[A](svc: Service[http.Request, A]): F[A] =
       Env(r =>
-        Task.async(cb =>
+        Task.cancelable(cb =>
           svc(r.request).respond {
             case twitter.util.Return(a) => cb.onSuccess(a)
             case twitter.util.Throw(ex) => cb.onError(ex)
-        }))
+        }
+
+
+        ))
 
     def apply[A](fa: Env[R, A]): EnvHttp[R, A] = fa.localP(_.embedded)
 

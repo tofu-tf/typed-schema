@@ -9,7 +9,7 @@ import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.ZioRouting.ZIOHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
-import zio.{Exit, ZIO}
+import zio.{Exit, Fiber, ZIO}
 
 final case class ZioRouting[+R](
     request: http.Request,
@@ -28,28 +28,37 @@ object ZioRouting extends ZioRoutedImpl {
   def zioConvertService[R, E](f: Throwable => Fail[E]): ConvertService[ZIOHttp[R, E, *]] =
     new ConvertService[ZIOHttp[R, E, *]] {
       def convertService[A](svc: Service[http.Request, A]): ZIOHttp[R, E, A] =
-        ZIO.accessM(r =>
-          ZIO.effectAsync(cb =>
+        ZIO.accessM { r =>
+          ZIO.effectAsync { cb =>
             svc(r.request).respond {
               case twitter.util.Return(a) => cb(ZIO.succeed(a))
               case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-          }))
+            }
+          }
+        }
     }
 
   implicit def zioRunnable[R, E <: Throwable](
       implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[ZIOHttp[R, E, *], ZIO[R, E, *]] =
+      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  ): Runnable[ZIOHttp[R, E, *], ZIO[R, E, *]] =
     zioResponse => ZIO.runtime[R].flatMap(runtime => ZIO.effectTotal(execResponse(runtime, zioResponse, _)))
 
-  private[this] def execResponse[R, E <: Throwable](runtime: zio.Runtime[R],
-                                                    zioResponse: ZIOHttp[R, E, Response],
-                                                    request: Request)(implicit handler: Rejection.Handler): Future[Response] = {
+  private[this] def execResponse[R, E <: Throwable](
+      runtime: zio.Runtime[R],
+      zioResponse: ZIOHttp[R, E, Response],
+      request: Request
+  )(implicit handler: Rejection.Handler): Future[Response] = {
     val promise = Promise[Response]
+
     runtime.unsafeRunAsync(
-      zioResponse.provideSome[R](r => ZioRouting(request, SubString(request.path), 0, r)).catchAll {
-        case Fail.Rejected(rejection) => ZIO.succeed(handler(rejection))
-        case Fail.Other(e)        => ZIO.fail(e)
-      }
+      interruption
+        .set(zioResponse, promise, runtime)
+        .provideSome[R](r => ZioRouting(request, SubString(request.path), 0, r))
+        .catchAll {
+          case Fail.Rejected(rejection) => ZIO.succeed(handler(rejection))
+          case Fail.Other(e)            => ZIO.fail(e)
+        }
     ) {
       case Exit.Success(resp) => promise.setValue(resp)
       case Exit.Failure(cause) =>
@@ -57,12 +66,14 @@ object ZioRouting extends ZioRoutedImpl {
         resp.setContentString(cause.squash.getMessage)
         promise.setValue(resp)
     }
+
     promise
   }
 }
 private[finagle] class ZioRoutedImpl {
 
-  protected trait ZioRoutedInstance[R, E] extends RoutedPlus[ZIOHttp[R, E, *]] with LiftHttp[ZIOHttp[R, E, *], ZIO[R, E, *]] {
+  protected trait ZioRoutedInstance[R, E]
+      extends RoutedPlus[ZIOHttp[R, E, *]] with LiftHttp[ZIOHttp[R, E, *], ZIO[R, E, *]] {
     private type F[a] = ZIOHttp[R, E, a]
     implicit private[this] val self: RoutedPlus[F] = this
     implicit private[this] val monad: Monad[F]     = zio.interop.catz.ioInstances

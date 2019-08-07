@@ -1,5 +1,4 @@
 env:
   global:
-    - CC_TEST_REPORTER_ID=0078f4bf92a5a525bb5b3af4a2d3c6b8ba516a00c1a01c52638b5fc80a181484
     - SCALA_VERSION=2.12
 language: scala

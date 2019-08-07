@@ -15,9 +15,9 @@ object Version {
 
   val akkaHttpCirce = "1.27.0"
 
-  val cats = "2.0.0-M4"
+  val cats = "2.0.0-RC1"
 
-  val catsEffect = "2.0.0-M4"
+  val catsEffect = "2.0.0-RC1"
 
   val enumeratum = "1.5.13"
 
@@ -33,17 +33,17 @@ object Version {
 
   val magnolia213 = "0.11.0"
 
-  val zio = "1.0.0-RC10-1"
+  val zio = "1.0.0-RC11-1"
 
-  val zioCats = "2.0.0.0-RC1"
+  val zioCats = "2.0.0.0-RC2"
 
-  val finagle = "19.7.0"
+  val finagle = "19.8.0"
 
   val derevo = "0.8.1"
 
-  val tofu = "0.1"
+  val tofu = "0.1.1"
 
-  val swaggerUI = "3.23.1"
+  val swaggerUI = "3.23.4"
 
   val scalaTags211 = "0.6.8"
 

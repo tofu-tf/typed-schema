@@ -15,28 +15,16 @@ final case class UioRouting(
     request: http.Request,
     path: CharSequence,
     matched: Int
-)
+) extends ZioRoutingCommon
 
 object UioRouting extends UioRoutedImpl {
 
-  type UIOHttp[+A] = ZIO[IoRouting, Rejection, A]
+  type UIOHttp[+A] = ZIO[UioRouting, Rejection, A]
 
   implicit val uioRouted: RoutedPlus[UIOHttp] with LiftHttp[UIOHttp, UIO] = new UioRoutedInstance
 
   def uioConvertService(f: Throwable => Rejection): ConvertService[UIOHttp] =
-    new ConvertService[UIOHttp] {
-      def convertService[A](svc: Service[http.Request, A]): UIOHttp[A] =
-        ZIO.accessM { r =>
-          ZIO.effectAsyncInterrupt { cb =>
-            val fut = svc(r.request).respond {
-              case twitter.util.Return(a) => cb(ZIO.succeed(a))
-              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-            }
-
-            Left(UIO(fut.raise(new InterruptedException)))
-          }
-        }
-    }
+    new ZIOConvertService[UioRouting, Rejection](f)
 
   implicit def uioRunnable(
       implicit
@@ -52,7 +40,7 @@ object UioRouting extends UioRoutedImpl {
     runtime.unsafeRunAsync(
       interruption
         .set(zioResponse, promise, runtime)
-        .provide(IoRouting(request, SubString(request.path), 0))
+        .provide(UioRouting(request, SubString(request.path), 0))
         .catchAll(rejection => ZIO.succeed(handler(rejection)))
     ) {
       case Exit.Success(resp) => promise.setValue(resp)

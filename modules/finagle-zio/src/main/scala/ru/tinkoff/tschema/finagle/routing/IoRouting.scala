@@ -15,7 +15,7 @@ final case class IoRouting(
     request: http.Request,
     path: CharSequence,
     matched: Int
-)
+) extends ZioRoutingCommon
 
 object IoRouting extends IoRoutedImpl {
 
@@ -25,19 +25,7 @@ object IoRouting extends IoRoutedImpl {
     ioRoutedAny.asInstanceOf[IoRoutedInstance[E]]
 
   def ioConvertService[E](f: Throwable => Fail[E]): ConvertService[IOHttp[E, *]] =
-    new ConvertService[IOHttp[E, *]] {
-      def convertService[A](svc: Service[http.Request, A]): IOHttp[E, A] =
-        ZIO.accessM { r =>
-          ZIO.effectAsyncInterrupt { cb =>
-            val fut = svc(r.request).respond {
-              case twitter.util.Return(a) => cb(ZIO.succeed(a))
-              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-            }
-
-            Left(UIO(fut.raise(new InterruptedException)))
-          }
-        }
-    }
+    new ZIOConvertService[IoRouting, Fail[E]](f)
 
   implicit def ioRunnable[E <: Throwable](
       implicit

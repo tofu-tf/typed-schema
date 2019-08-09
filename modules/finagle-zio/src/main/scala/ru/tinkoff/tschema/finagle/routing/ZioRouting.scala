@@ -2,21 +2,20 @@ package ru.tinkoff.tschema.finagle.routing
 
 import cats.Monad
 import cats.syntax.semigroup._
-import com.twitter
+import com.twitter.finagle.http
 import com.twitter.finagle.http.{Request, Response, Status}
-import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.ZioRouting.ZIOHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
-import zio.{Exit, Fiber, UIO, ZIO}
+import zio.{Exit, ZIO}
 
 final case class ZioRouting[+R](
     request: http.Request,
     path: CharSequence,
     matched: Int,
     embedded: R
-)
+) extends ZioRoutingCommon
 
 object ZioRouting extends ZioRoutedImpl {
 
@@ -26,19 +25,7 @@ object ZioRouting extends ZioRoutedImpl {
     zioRoutedAny.asInstanceOf[ZioRoutedInstance[R, E]]
 
   def zioConvertService[R, E](f: Throwable => Fail[E]): ConvertService[ZIOHttp[R, E, *]] =
-    new ConvertService[ZIOHttp[R, E, *]] {
-      def convertService[A](svc: Service[http.Request, A]): ZIOHttp[R, E, A] =
-        ZIO.accessM { r =>
-          ZIO.effectAsyncInterrupt { cb =>
-            val fut = svc(r.request).respond {
-              case twitter.util.Return(a) => cb(ZIO.succeed(a))
-              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-            }
-
-            Left(UIO(fut.raise(new InterruptedException)))
-          }
-        }
-    }
+    new ZIOConvertService[ZioRouting[R], Fail[E]](f)
 
   implicit def zioRunnable[R, E <: Throwable](
       implicit

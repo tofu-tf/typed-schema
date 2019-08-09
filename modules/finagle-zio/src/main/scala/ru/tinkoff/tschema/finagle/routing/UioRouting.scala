@@ -9,42 +9,38 @@ import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.UioRouting.UIOHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
-import zio.{Exit, UIO, ZIO}
+import zio.{Exit, Fiber, UIO, ZIO}
 
 final case class UioRouting(
     request: http.Request,
     path: CharSequence,
     matched: Int
-)
+) extends ZioRoutingCommon
 
 object UioRouting extends UioRoutedImpl {
 
-  type UIOHttp[+A] = ZIO[IoRouting, Rejection, A]
+  type UIOHttp[+A] = ZIO[UioRouting, Rejection, A]
 
   implicit val uioRouted: RoutedPlus[UIOHttp] with LiftHttp[UIOHttp, UIO] = new UioRoutedInstance
 
   def uioConvertService(f: Throwable => Rejection): ConvertService[UIOHttp] =
-    new ConvertService[UIOHttp] {
-      def convertService[A](svc: Service[http.Request, A]): UIOHttp[A] =
-        ZIO.accessM(r =>
-          ZIO.effectAsync(cb =>
-            svc(r.request).respond {
-              case twitter.util.Return(a) => cb(ZIO.succeed(a))
-              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-          }))
-    }
+    new ZIOConvertService[UioRouting, Rejection](f)
 
   implicit def uioRunnable(
       implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[UIOHttp, UIO] =
+      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  ): Runnable[UIOHttp, UIO] =
     zioResponse => ZIO.runtime[Any].flatMap(runtime => ZIO.effectTotal(execResponse(runtime, zioResponse, _)))
 
   private[this] def execResponse(runtime: zio.Runtime[Any], zioResponse: UIOHttp[Response], request: Request)(
-      implicit handler: Rejection.Handler): Future[Response] = {
+      implicit handler: Rejection.Handler
+  ): Future[Response] = {
     val promise = Promise[Response]
+
     runtime.unsafeRunAsync(
-      zioResponse
-        .provide(IoRouting(request, SubString(request.path), 0))
+      interruption
+        .set(zioResponse, promise, runtime)
+        .provide(UioRouting(request, SubString(request.path), 0))
         .catchAll(rejection => ZIO.succeed(handler(rejection)))
     ) {
       case Exit.Success(resp) => promise.setValue(resp)

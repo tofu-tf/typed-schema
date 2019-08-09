@@ -27,6 +27,8 @@ val publishSettings = List(
   )
 )
 
+val doNotPublish = List(publish := {}, publishLocal := {}, PgpKeys.publishSigned := {})
+
 licenses in ThisBuild += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 publishMavenStyle in ThisBuild := true
 
@@ -328,29 +330,29 @@ lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
-    Seq(
-      unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
-    )
+    doNotPublish,
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
   )
   .dependsOn(kernel, macros, main, akkaHttp)
 
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
+    .settings(doNotPublish, publishSettings)
     .aggregate(
-      macros,
-      kernel,
-      main,
-      param,
-      swagger,
-      akkaHttp,
-      scalaz,
-      finagle,
-      finagleZio,
-      finagleEnv,
+      macros,     //
+      kernel,     //
+      main,       //
+      param,      //
+      swagger,    //
+      akkaHttp,   //
+      scalaz,     //
+      finagle,    //
+      finagleZio, //
+      finagleEnv, //
       finagleCirce,
-      finagleTethys,
-      finagleCommon,
-      swaggerUI,
+      finagleTethys, //
+      finagleCommon, //
+      swaggerUI,     //
       docs
     )

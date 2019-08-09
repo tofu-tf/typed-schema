@@ -9,13 +9,13 @@ import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.IoRouting.IOHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
-import zio.{Exit, IO, ZIO}
+import zio.{Exit, Fiber, IO, UIO, ZIO}
 
 final case class IoRouting(
     request: http.Request,
     path: CharSequence,
     matched: Int
-)
+) extends ZioRoutingCommon
 
 object IoRouting extends IoRoutedImpl {
 
@@ -25,26 +25,23 @@ object IoRouting extends IoRoutedImpl {
     ioRoutedAny.asInstanceOf[IoRoutedInstance[E]]
 
   def ioConvertService[E](f: Throwable => Fail[E]): ConvertService[IOHttp[E, *]] =
-    new ConvertService[IOHttp[E, *]] {
-      def convertService[A](svc: Service[http.Request, A]): IOHttp[E, A] =
-        ZIO.accessM(r =>
-          ZIO.effectAsync(cb =>
-            svc(r.request).respond {
-              case twitter.util.Return(a) => cb(ZIO.succeed(a))
-              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-          }))
-    }
+    new ZIOConvertService[IoRouting, Fail[E]](f)
 
   implicit def ioRunnable[E <: Throwable](
       implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[IOHttp[E, *], IO[E, *]] =
+      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  ): Runnable[IOHttp[E, *], IO[E, *]] =
     zioResponse => ZIO.runtime[Any].flatMap(runtime => ZIO.effectTotal(execResponse(runtime, zioResponse, _)))
 
-  private[this] def execResponse[E <: Throwable](runtime: zio.Runtime[Any], zioResponse: IOHttp[E, Response], request: Request)(
-      implicit handler: Rejection.Handler): Future[Response] = {
+  private[this] def execResponse[E <: Throwable](
+      runtime: zio.Runtime[Any],
+      zioResponse: IOHttp[E, Response],
+      request: Request
+  )(implicit handler: Rejection.Handler): Future[Response] = {
     val promise = Promise[Response]
+
     runtime.unsafeRunAsync(
-      zioResponse.provide(IoRouting(request, SubString(request.path), 0)).catchAll {
+      interruption.set(zioResponse, promise, runtime).provide(IoRouting(request, SubString(request.path), 0)).catchAll {
         case Fail.Rejected(rejection) => ZIO.succeed(handler(rejection))
         case Fail.Other(e)            => ZIO.fail(e)
       }

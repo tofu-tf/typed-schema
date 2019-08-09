@@ -24,16 +24,18 @@ object EnvRouting extends EnvInstanceDecl {
   type EnvHttp[R, +A] = Env[EnvRouting[R], A]
 
   implicit def taskRouted[R]
-    : RoutedPlus[EnvHttp[R, *]] with ConvertService[EnvHttp[R, *]] with LiftHttp[EnvHttp[R, *], Env[R, *]] =
+      : RoutedPlus[EnvHttp[R, *]] with ConvertService[EnvHttp[R, *]] with LiftHttp[EnvHttp[R, *], Env[R, *]] =
     envRoutedAny.asInstanceOf[EnvRoutedConvert[R]]
 
   implicit def envRunnable[R](
-      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[EnvHttp[R, *], Env[R, *]] =
+      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  ): Runnable[EnvHttp[R, *], Env[R, *]] =
     response => Env(r => Task.deferAction(implicit sched => Task.delay(execResponse(r, response, _))))
 
   private[this] def execResponse[R](r: R, envResponse: EnvHttp[R, Response], request: Request)(
       implicit sc: Scheduler,
-      handler: Rejection.Handler): Future[Response] = {
+      handler: Rejection.Handler
+  ): Future[Response] = {
     val promise = Promise[Response]
     val routing = EnvRouting(request, SubString(request.path), 0, r)
 
@@ -45,14 +47,13 @@ object EnvRouting extends EnvInstanceDecl {
         promise.setValue(resp)
     }
 
-    promise.setInterruptHandler{ case _ => cancelable.cancel() }
+    promise.setInterruptHandler { case _ => cancelable.cancel() }
 
     promise
   }
 }
 
 private[finagle] class EnvInstanceDecl {
-
 
   protected trait EnvRoutedConvert[R]
       extends RoutedPlus[EnvHttp[R, *]] with ConvertService[EnvHttp[R, *]] with LiftHttp[EnvHttp[R, *], Env[R, *]] {
@@ -72,19 +73,18 @@ private[finagle] class EnvInstanceDecl {
       catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
 
     def convertService[A](svc: Service[http.Request, A]): F[A] =
-      Env(r =>
-        Task.cancelable(cb =>
-          svc(r.request).respond {
+      Env { r =>
+        Task.cancelable { cb =>
+          val fut = svc(r.request).respond {
             case twitter.util.Return(a) => cb.onSuccess(a)
             case twitter.util.Throw(ex) => cb.onError(ex)
+          }
+
+          Task(fut.raise(new InterruptedException))
         }
-
-
-        ))
+      }
 
     def apply[A](fa: Env[R, A]): EnvHttp[R, A] = fa.localP(_.embedded)
-
-
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
 

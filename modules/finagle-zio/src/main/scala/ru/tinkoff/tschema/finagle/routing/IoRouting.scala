@@ -9,7 +9,7 @@ import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.IoRouting.IOHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
 import ru.tinkoff.tschema.utils.SubString
-import zio.{Exit, Fiber, IO, ZIO}
+import zio.{Exit, Fiber, IO, UIO, ZIO}
 
 final case class IoRouting(
     request: http.Request,
@@ -27,16 +27,16 @@ object IoRouting extends IoRoutedImpl {
   def ioConvertService[E](f: Throwable => Fail[E]): ConvertService[IOHttp[E, *]] =
     new ConvertService[IOHttp[E, *]] {
       def convertService[A](svc: Service[http.Request, A]): IOHttp[E, A] =
-        ZIO.accessM(
-          r =>
-            ZIO.effectAsync(
-              cb =>
-                svc(r.request).respond {
-                  case twitter.util.Return(a) => cb(ZIO.succeed(a))
-                  case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-                }
-            )
-        )
+        ZIO.accessM { r =>
+          ZIO.effectAsyncInterrupt { cb =>
+            val fut = svc(r.request).respond {
+              case twitter.util.Return(a) => cb(ZIO.succeed(a))
+              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
+            }
+
+            Left(UIO(fut.raise(new InterruptedException)))
+          }
+        }
     }
 
   implicit def ioRunnable[E <: Throwable](

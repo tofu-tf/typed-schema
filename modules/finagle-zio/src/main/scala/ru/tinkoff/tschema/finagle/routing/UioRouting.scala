@@ -26,16 +26,16 @@ object UioRouting extends UioRoutedImpl {
   def uioConvertService(f: Throwable => Rejection): ConvertService[UIOHttp] =
     new ConvertService[UIOHttp] {
       def convertService[A](svc: Service[http.Request, A]): UIOHttp[A] =
-        ZIO.accessM(
-          r =>
-            ZIO.effectAsync(
-              cb =>
-                svc(r.request).respond {
-                  case twitter.util.Return(a) => cb(ZIO.succeed(a))
-                  case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
-                }
-            )
-        )
+        ZIO.accessM { r =>
+          ZIO.effectAsyncInterrupt { cb =>
+            val fut = svc(r.request).respond {
+              case twitter.util.Return(a) => cb(ZIO.succeed(a))
+              case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))
+            }
+
+            Left(UIO(fut.raise(new InterruptedException)))
+          }
+        }
     }
 
   implicit def uioRunnable(

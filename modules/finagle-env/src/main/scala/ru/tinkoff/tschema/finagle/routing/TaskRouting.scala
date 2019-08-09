@@ -25,11 +25,15 @@ object TaskRouting extends TaskInstanceDecl {
   implicit val taskRouted: RoutedPlus[TaskHttp] with ConvertService[TaskHttp] with LiftHttp[TaskHttp, Task] =
     new TaskRoutedConvert
 
-  implicit def envRunnable(implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[TaskHttp, Task] =
+  implicit def envRunnable(
+      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  ): Runnable[TaskHttp, Task] =
     response => Task.deferAction(implicit sched => Task.delay(execResponse(response, _)))
 
-  private[this] def execResponse(envResponse: TaskHttp[Response],
-                                 request: Request)(implicit sc: Scheduler, handler: Rejection.Handler): Future[Response] = {
+  private[this] def execResponse(
+      envResponse: TaskHttp[Response],
+      request: Request
+  )(implicit sc: Scheduler, handler: Rejection.Handler): Future[Response] = {
     val promise = Promise[Response]
     val routing = TaskRouting(request, SubString(request.path), 0)
 
@@ -41,7 +45,7 @@ object TaskRouting extends TaskInstanceDecl {
         promise.setValue(resp)
     }
 
-    promise.setInterruptHandler{ case _ => cancelable.cancel()}
+    promise.setInterruptHandler { case _ => cancelable.cancel() }
 
     promise
   }
@@ -49,7 +53,8 @@ object TaskRouting extends TaskInstanceDecl {
 
 private[finagle] class TaskInstanceDecl {
 
-  protected class TaskRoutedConvert extends RoutedPlus[TaskHttp] with ConvertService[TaskHttp] with LiftHttp[TaskHttp, Task] {
+  protected class TaskRoutedConvert
+      extends RoutedPlus[TaskHttp] with ConvertService[TaskHttp] with LiftHttp[TaskHttp, Task] {
     private type F[a] = TaskHttp[a]
     implicit private[this] val self: RoutedPlus[F] = this
 
@@ -66,12 +71,16 @@ private[finagle] class TaskInstanceDecl {
       catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
 
     def convertService[A](svc: Service[http.Request, A]): F[A] =
-      Env(r =>
-        Task.async(cb =>
-          svc(r.request).respond {
+      Env { r =>
+        Task.cancelable { cb =>
+          val fut = svc(r.request).respond {
             case twitter.util.Return(a) => cb.onSuccess(a)
             case twitter.util.Throw(ex) => cb.onError(ex)
-        }))
+          }
+
+          Task(fut.raise(new InterruptedException))
+        }
+      }
 
     def apply[A](fa: Task[A]): TaskHttp[A] = Env.fromTask(fa)
 

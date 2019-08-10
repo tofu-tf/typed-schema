@@ -1,7 +1,7 @@
 object Version {
   val akkaHttpCirce = "1.19.0"
 
-  val swaggerUI = "3.23.4"
+  val swaggerUI = "3.23.5"
 
   val derevo = "0.10.1"
 

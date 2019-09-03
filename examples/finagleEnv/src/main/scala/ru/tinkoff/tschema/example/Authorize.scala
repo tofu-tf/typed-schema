@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.example
 
-import cats.Applicative
+import cats.{Applicative, Monad}
 import com.twitter.finagle.http.Response
 import com.twitter.util.Base64StringEncoder
 import org.manatki.derevo.circeDerivation.{decoder, encoder}
@@ -8,7 +8,17 @@ import org.manatki.derevo.derive
 import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
 import org.manatki.derevo.tschemaInstances._
 import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
-import ru.tinkoff.tschema.finagle.{Authorization, Credentials, MkService, Rejection, Routed, SimpleAuth, BearerToken}
+import ru.tinkoff.tschema.finagle.{
+  Authorization,
+  BearerToken,
+  Credentials,
+  LiftHttp,
+  MkService,
+  Rejection,
+  Routed,
+  RoutedPlus,
+  SimpleAuth
+}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
 import ru.tinkoff.tschema.syntax._
 import shapeless.{HNil, Witness}
@@ -19,10 +29,7 @@ import ru.tinkoff.tschema.finagle.util.Unapply
 import scala.annotation.tailrec
 import ru.tinkoff.tschema.finagle.tethysInstances._
 
-object Authorize extends ExampleModule {
-
-  override def route: Http[Response] = MkService[Http](api)(handler)
-  override def swag: SwaggerBuilder  = MkSwagger(api)
+object Authorize {
 
   final case class User(name: String, roles: List[String])
 
@@ -35,26 +42,20 @@ object Authorize extends ExampleModule {
     Map(
       "admin" -> ("adminadmin", List("admin")),
       "guest" -> ("guest", List())
-    ))
+    )
+  )
 
   val clients = Unapply(
     Map(
       "123456" -> Client("client", List("diamond card", "premium subscription"))
-    ))
+    )
+  )
 
   val sessions = Map(
     "x123" -> List(1, 2, 3),
-    "x12"  -> List(1, 2),
-    "y"    -> List.empty
+    "x12" -> List(1, 2),
+    "y" -> List.empty
   )
-
-  implicit val userAuth: Authorization[Basic, Http, User] = SimpleAuth {
-    case Credentials(id @ users(pass, roles), pwd) if secure_equals(pass, pwd) => User(id, roles)
-  }
-
-  implicit val clientAuth: Authorization[Bearer, Http, Client] = SimpleAuth {
-    case BearerToken(clients(client)) => client
-  }
 
   def api =
     tagPrefix('auth) |> ((
@@ -66,8 +67,23 @@ object Authorize extends ExampleModule {
     ))
 
   object handler {
-    def roles(user: User): List[String]               = user.roles
-    def client(client: Option[Client]): Client        = client.getOrElse(anonClient)
+    def roles(user:        User): List[String] = user.roles
+    def client(client:     Option[Client]): Client = client.getOrElse(anonClient)
     def numbers(sessionId: Option[String]): List[Int] = sessionId.flatMap(sessions.get).getOrElse(List(-1))
   }
+
+  implicit def userAuth[H[_]: Monad: Routed]: Authorization[Basic, H, User] = SimpleAuth {
+    case Credentials(id @ users(pass, roles), pwd) if secure_equals(pass, pwd) => User(id, roles)
+  }
+
+  implicit def clientAuth[H[_]: Monad: Routed]: Authorization[Bearer, H, Client] = SimpleAuth {
+    case BearerToken(clients(client)) => client
+  }
+}
+
+class Authorize[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
+  import Authorize._
+  override def route: H[Response] = MkService[H](api)(handler)
+  override def swag: SwaggerBuilder = MkSwagger(api)
+
 }

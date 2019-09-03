@@ -1,22 +1,27 @@
 package ru.tinkoff.tschema.example
 
-import ru.tinkoff.tschema.finagle.MkService
+import cats.Monad
+import ru.tinkoff.tschema.finagle.{MkService, RoutedPlus}
 import ru.tinkoff.tschema.swagger.MkSwagger
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import cats.instances.string._
 import org.manatki.derevo.derive
 import org.manatki.derevo.tethysInstances.tethysWriter
 import org.manatki.derevo.tschemaInstances.swagger
+import ru.tinkoff.tschema.syntax._
 
-object ProxyModule extends ExampleModule {
+class ProxyModule[H[_] : Monad: RoutedPlus] extends ExampleModule[H] {
+  import ProxyModule._
+  val swag  = MkSwagger(api)
+  val route = MkService[H](api)(handler)
+}
 
-  import ru.tinkoff.tschema.syntax._
-
+object ProxyModule{
   @derive(tethysWriter, swagger)
   final case class ProxyEcho(
-      foo: String,
-      bar: String,
-      all: Map[String, String]
+    foo: String,
+    bar: String,
+    all: Map[String, String]
   )
 
   def api =
@@ -31,6 +36,4 @@ object ProxyModule extends ExampleModule {
     def proxy(foo: String, bar: String, rest: Map[String, String]) = ProxyEcho(foo, bar, rest)
   }
 
-  val swag  = MkSwagger(api)
-  val route = MkService[Http](api)(handler)
 }

@@ -9,7 +9,7 @@ object Version {
 
   val catsCore = "2.0.0-RC1"
 
-  val typedSchema = "0.11.0-RC2"
+  val typedSchema = "0.11.0-RC3-fix-SNAPSHOT"
 
   val scalazDeriving = "1.0.0"
 }

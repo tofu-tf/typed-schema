@@ -166,8 +166,9 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     derivedParam[name, T, Capture](In.path).map(PathSpec.path.modify(s"{$name}" +: _))
 
   implicit def deriveReqBody[name, T](implicit content: SwaggerContent[T]): SwaggerMapper[ReqBody[name, T]] =
-    fromFunc((PathSpec.op ^|-> OpenApiOp.requestBody).set(OpenApiRequestBody.fromTypes(content.content.flatMap(_._2): _*).some)) andThen fromTypes[
-      ReqBody[name, T]](content.collectTypes)
+    fromFunc(
+      (PathSpec.op ^|-> OpenApiOp.requestBody).set(OpenApiRequestBody.fromTypes(content.content.flatMap(_._2): _*).some)
+    ) andThen fromTypes[ReqBody[name, T]](content.collectTypes)
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
     fromFunc[method](PathSpec.method.modify {
@@ -175,8 +176,10 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       case meth @ Some(_) => meth
     })
 
-  implicit def deriveCons[start, end](implicit start: SwaggerMapper[start],
-                                      end: SwaggerMapper[end]): SwaggerMapper[start :> end] =
+  implicit def deriveCons[start, end](
+      implicit start: SwaggerMapper[start],
+      end: SwaggerMapper[end]
+  ): SwaggerMapper[start :> end] =
     (start andThen end).as[start :> end]
 
   private def deriveDesr[T](descr: SwaggerDescription): SwaggerMapper[T] =
@@ -190,6 +193,9 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   implicit def deriveKey[name](implicit name: Name[name]): SwaggerMapper[Key[name]] =
     fromFunc(PathSpec.key.set(name.string.some))
+
+  implicit def deriveGroup[name](implicit name: Name[name]): SwaggerMapper[Group[name]] =
+    fromFunc(PathSpec.groups.modify(name.string +: _))
 
   def swaggerAuth[realm: Name, x, T](
       scheme: Option[OpenApiSecurityScheme] = None,
@@ -210,9 +216,11 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       param: ApiKeyParam[Param, name, x],
       name: Name[name]
   ): SwaggerMapper[ApiKeyAuth[realm, Param]] =
-    swaggerAuth[realm, x, ApiKeyAuth[realm, Param]](typ = OpenApiSecurityType.apiKey,
-                                                    in = param.in.some,
-                                                    name = Name[name].string.some)
+    swaggerAuth[realm, x, ApiKeyAuth[realm, Param]](
+      typ = OpenApiSecurityType.apiKey,
+      in = param.in.some,
+      name = Name[name].string.some
+    )
 
   implicit val monoidKInstance = new MonoidK[SwaggerMapper] {
     def empty[A]: SwaggerMapper[A]                                              = SwaggerMapper.empty
@@ -228,7 +236,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
 
     def add: OpenApiRequestBody => OpenApiRequestBody =
-      (OpenApiRequestBody.content ^|-? index(myMediaType) ^|-> OpenApiMediaType.schema ^<-? some).modify(_ merge objType)
+      (OpenApiRequestBody.content ^|-? index(myMediaType) ^|-> OpenApiMediaType.schema ^<-? some)
+        .modify(_ merge objType)
   }
 
   object MakeFormField {
@@ -237,7 +246,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
         SwaggerObject(
           required = Eval.now(Vector(name).filter(_ => required)),
           properties = Vector(SwaggerProperty(name, typ = Eval.now(typ), description = None))
-        ))
+        )
+      )
 
     implicit val semigroup: Semigroup[MakeFormField] = (x, y) => new MakeFormField(x.objType merge y.objType)
   }

@@ -41,7 +41,7 @@ trait SwaggerBuilder {
       paths.groupBy(_.path).map {
         case (parts, specs) =>
           parts.mkString("/", "/", "") ->
-            specs.collect { case PathSpec(_, Some(method), op, _) => method -> op }.toMap
+            specs.collect { case PathSpec(_, Some(method), op, _, _) => method -> op }.toMap
       }
     OpenApi(
       info = info,
@@ -92,10 +92,11 @@ object SwaggerBuilder {
 
   class Describe(self: SwaggerBuilder, descriptions: PathDescription.DescriptionMap) extends SwaggerBuilder {
     val paths = self.paths.map {
-      case spec @ PathSpec(_, _, OpenApiOp(opTags, _, _, _, _, _, _, _, _, _), Some(key)) =>
+      case spec @ PathSpec(_, _, op, Some(key), groups) =>
         import PathDescription.MethodTarget
         val method: MethodTarget => Option[SwaggerDescription] = {
-          val paths = opTags.map(tag => descriptions.method(s"$tag.$key")) :+ descriptions.method(key)
+          val fullKey = (groups :+ key).mkString(".")
+          val paths   = op.tags.map(tag => descriptions.method(s"$tag.$fullKey")) :+ descriptions.method(fullKey)
           target: PathDescription.MethodTarget =>
             paths.foldLeft(Option.empty[SwaggerDescription]) { (result, path) =>
               (result, path(target)) match {
@@ -154,7 +155,9 @@ trait MkSwagger[T] extends SwaggerBuilder {
 
   override def ++(other: SwaggerBuilder): MkSwagger[T] = new SwaggerBuilder.Concat(this, other) with MkSwagger[T]
 
-  def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit typeable: SwaggerTypeable[U]) =
+  def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(
+      implicit typeable: SwaggerTypeable[U]
+  ) =
     new MkSwagger[U] {
       val paths: PathSeq = self.paths.map(
         (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes)
@@ -179,7 +182,8 @@ object MkSwagger {
 
   object macroInterface {
     class ResultPA1[Out] {
-      def apply(in: Unit)(key: String, groups: String*)(implicit swagger: MkSwagger[Complete[Out]]): SwaggerBuilder = swagger
+      def apply(in: Unit)(key: String, groups: String*)(implicit swagger: MkSwagger[Complete[Out]]): SwaggerBuilder =
+        swagger
     }
     def makeResult[F[_], Out]: ResultPA1[Out]                               = new ResultPA1[Out]
     def concatResults(x: SwaggerBuilder, y: SwaggerBuilder): SwaggerBuilder = x ++ y
@@ -196,7 +200,13 @@ object MkSwagger {
   def apply[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
 
   @Lenses
-  case class PathSpec(path: Vector[String], method: Option[OpenApi.Method], op: OpenApiOp, key: Option[String] = None) {
+  case class PathSpec(
+      path: Vector[String],
+      method: Option[OpenApi.Method],
+      op: OpenApiOp,
+      key: Option[String] = None,
+      groups: Vector[String] = Vector.empty
+  ) {
     def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.modify(f)(this)
   }
 
@@ -224,7 +234,10 @@ object MkSwagger {
   implicit def deriveJoin[left, right](implicit left: MkSwagger[left], right: MkSwagger[right]) =
     (left ++ right).as[left <|> right]
 
-  implicit def deriveCons[start, end](implicit start: SwaggerMapper[start], end: MkSwagger[end]): MkSwagger[start :> end] =
+  implicit def deriveCons[start, end](
+      implicit start: SwaggerMapper[start],
+      end: MkSwagger[end]
+  ): MkSwagger[start :> end] =
     start(end).as[start :> end]
 
   implicit val monoidKInstance: MonoidK[MkSwagger] = new MonoidK[MkSwagger] {

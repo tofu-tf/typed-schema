@@ -1,7 +1,7 @@
 val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
 val commonSettings = List(
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.9",
   swaggerUIVersion := {
     libraryDependencies.value
       .find(_.name == "swagger-ui-dist")
@@ -26,7 +26,10 @@ val commonSettings = List(
   libraryDependencies += "ru.tinkoff"      %% "typed-schema-swagger" % Version.typedSchema,
   addCompilerPlugin("org.scalamacros" % "paradise"            % "2.1.1" cross CrossVersion.patch),
   addCompilerPlugin("org.typelevel"   %% "kind-projector"     % "0.10.3"),
-  addCompilerPlugin("com.olegpy"      %% "better-monadic-for" % "0.3.1")
+  addCompilerPlugin("com.olegpy"      %% "better-monadic-for" % "0.3.1"),
+  scalacOptions ++= List(
+    "language:higherKinds"
+  )
 )
 
 lazy val common =

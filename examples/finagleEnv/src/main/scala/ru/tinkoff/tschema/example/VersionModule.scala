@@ -2,7 +2,7 @@ package ru.tinkoff.tschema
 package example
 
 import ru.tinkoff.tschema.finagle.Serve.Filter
-import ru.tinkoff.tschema.finagle.{MkService, Rejection, Routed, Serve}
+import ru.tinkoff.tschema.finagle.{MkService, Rejection, Routed, RoutedPlus, Serve}
 import ru.tinkoff.tschema.param.ParamSource.Query
 import ru.tinkoff.tschema.swagger.{SwaggerMapper, _}
 import syntax._
@@ -17,11 +17,18 @@ import ru.tinkoff.tschema.common.Name
 import cats.instances.string._
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import Routed.{reject, uriParam}
-import cats.SemigroupK
+import cats.{Monad, SemigroupK}
 import com.twitter.finagle.http.{Request, Response}
 import ru.tinkoff.tschema.param.Param
 
-object VersionModule extends ExampleModule {
+class VersionModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
+  import VersionModule._
+  val route = MkService[H](api)(service)
+  val swag = MkSwagger(api)
+}
+
+
+object VersionModule {
   def api = tagPrefix('versioned) |> (
     (version('v1) |> get[String]) <>
       (version('v2) |> get[Map[String, Int]]) <>
@@ -29,13 +36,11 @@ object VersionModule extends ExampleModule {
   )
 
   object service {
-    def v1     = "Ololo"
-    def v2     = Map("Olol" -> 0)
+    def v1 = "Ololo"
+    def v2 = Map("Olol" -> 0)
     def `v2.1` = Vector("Olo", "lo")
   }
 
-  val route = MkService[Http](api)(service)
-  val swag  = MkSwagger(api)
 }
 
 final class version[v] extends DSLAtom
@@ -46,13 +51,13 @@ object version {
 
   def apply[v](v: Witness.Aux[v]): version[v] :> Key[v] = new version[v] :> key(v)
 
-  implicit def versionServe[v: Name, In <: HList]: Filter[version[v], Http, In] =
-    Serve.checkCont[version[v], Http, In] { cnt =>
+  implicit def versionServe[v: Name, In <: HList, H[_]: Monad: RoutedPlus]: Filter[version[v], H, In] =
+    Serve.checkCont[version[v], H, In] { cnt =>
       val shouldBe = Name[v].string
 
-      Routed.checkPath[Http, Response](Name[v].string, cnt) <+>
-        (uriParam[Http, String]("version").flatMap { s =>
-          reject[Http, Unit](wrongVersion(shouldBe, s)).whenA(s =!= shouldBe)
+      Routed.checkPath[H, Response](Name[v].string, cnt) <+>
+        (uriParam[H, String]("version").flatMap { s =>
+          reject[H, Unit](wrongVersion(shouldBe, s)).whenA(s =!= shouldBe)
         } >> cnt)
     }
 

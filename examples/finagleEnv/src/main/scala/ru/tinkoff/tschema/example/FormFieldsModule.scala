@@ -1,17 +1,23 @@
 package ru.tinkoff.tschema
 package example
 
+import cats.Monad
 import org.manatki.derevo.derive
 import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
 import org.manatki.derevo.tschemaInstances.swagger
-import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.finagle.{MkService, RoutedPlus}
 import ru.tinkoff.tschema.swagger._
 import syntax._
 import finagle.tethysInstances._
 
+class FormFieldsModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
+  import FormFieldsModule._
 
-object FormFieldsModule extends ExampleModule {
+  val route = MkService[H](api)(handler)
+  val swag = MkSwagger(api)
+}
 
+object FormFieldsModule {
   @derive(tethysWriter, tethysReader, swagger)
   final case class Person(name: String, age: Long)
 
@@ -25,7 +31,4 @@ object FormFieldsModule extends ExampleModule {
   object handler {
     def person(name: String, age: Long): Person = Person(name, age)
   }
-
-  val route = MkService[Http](api)(handler)
-  val swag  = MkSwagger(api)
 }

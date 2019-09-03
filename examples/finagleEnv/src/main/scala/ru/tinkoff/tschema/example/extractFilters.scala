@@ -1,13 +1,15 @@
 package ru.tinkoff.tschema
 package example
 
+import cats.Monad
 import org.manatki.derevo.derive
 import org.manatki.derevo.tethysInstances.tethysWriter
 import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.finagle.{MkService, RoutedPlus}
 import ru.tinkoff.tschema.swagger.{SwaggerTypeable, _}
 import syntax._
 import finagle.tethysInstances._
+import ru.tinkoff.tschema.example.FiltersModule.{api, handler}
 
 @derive(tethysWriter, openapiParam, httpParam)
 case class Filters(foo: Option[String], bar: Option[Int])
@@ -20,9 +22,13 @@ object Filters {
       .describeFields("foo" -> "filter for foo", "bar" -> "fitler for bar")
 }
 
-object FiltersModule extends ExampleModule {
+class FiltersModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   implicit val printer = io.circe.Printer.noSpaces.copy(dropNullValues = true)
+  val route = MkService[H](api)(handler)
+  val swag = api.mkSwagger
+}
 
+object FiltersModule {
   def api =
     tagPrefix('filters) |>
       keyPrefix('echo) |>
@@ -33,6 +39,4 @@ object FiltersModule extends ExampleModule {
     def echo(filt: Filters) = filt
   }
 
-  val route = MkService[Http](api)(handler)
-  val swag  = api.mkSwagger
 }

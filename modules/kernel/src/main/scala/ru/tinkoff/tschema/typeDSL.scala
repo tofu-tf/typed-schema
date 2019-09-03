@@ -26,7 +26,7 @@ object typeDSL {
 
   /**
     * naming intermediate group of methods */
-  class Group[key]
+  class Group[key] extends DSLAtom
 
   /**
     * return query params as Map[String, String]

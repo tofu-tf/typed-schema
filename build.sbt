@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.11.0-RC3"
+val pubVersion = "0.11.0-RC2"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -39,7 +39,7 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions in ThisBuild := List("2.11.12", "2.12.8")
+val crossCompile = crossScalaVersions in ThisBuild := List("2.11.12", "2.12.9")
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",

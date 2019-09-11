@@ -3,8 +3,8 @@ import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.{Applicative, Functor, Monad}
-import com.twitter.finagle.http.{Message, Response, Status}
-import ru.tinkoff.tschema.finagle.{Complete, LiftHttp, ParseBody, Rejection, Routed, Runnable}
+import com.twitter.finagle.http.{MediaType, Response, Status}
+import ru.tinkoff.tschema.finagle.{Complete, LiftHttp, ParseBody, Rejection, Routed}
 
 object message {
 
@@ -16,7 +16,7 @@ object message {
   }
 
   def stringResponse(s: String, status: Status = Status.Ok): Response = response(s, "text/plain")
-  def jsonResponse(s: String, status: Status = Status.Ok): Response   = response(s, Message.ContentTypeJson)
+  def jsonResponse(s: String, status: Status = Status.Ok): Response   = response(s, MediaType.Json)
 
   def emptyComplete[F[_]: Applicative, A, B](status: Status = Status.Ok): Complete[F, A, B] = _ => Response(status).pure[F]
 

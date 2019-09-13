@@ -1,11 +1,11 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.11.0-RC2"
+val pubVersion = "0.11.0-RC3"
 
 val publishSettings = List(
   name := "Typed Schema",
   organization := "ru.tinkoff",
-  description := "Typelevel DSL for defining webservices, covertible to akka-http and swagger definitions",
+  description := "Typelevel DSL for defining webservices, convertible to akka-http/finagle and swagger definitions",
   publishMavenStyle := true,
   publishTo := Some(
     if (isSnapshot.value)

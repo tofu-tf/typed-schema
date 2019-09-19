@@ -65,7 +65,7 @@ private[finagle] class ZioRoutedImpl {
       extends RoutedPlus[ZIOHttp[R, E, *]] with LiftHttp[ZIOHttp[R, E, *], ZIO[R, E, *]] {
     private type F[a] = ZIOHttp[R, E, a]
     implicit private[this] val self: RoutedPlus[F] = this
-    implicit private[this] val monad: Monad[F]     = zio.interop.catz.ioInstances
+    implicit private[this] val monad: Monad[F]     = zio.interop.catz.monadErrorInstance
 
     def matched: F[Int] = ZIO.access(_.matched)
 

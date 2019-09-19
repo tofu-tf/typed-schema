@@ -1,8 +1,5 @@
 package ru.tinkoff.tschema.swagger
-import java.time.ZonedDateTime
-
 import io.circe.Printer
-import io.circe.syntax._
 import org.scalatest.FlatSpec
 import ru.tinkoff.tschema.swagger.MagnoliaSpec._
 import shapeless.test.illTyped
@@ -37,21 +34,4 @@ object MagnoliaSpec {
 
   implicit val cfg: SwaggerTypeable.Config = SwaggerTypeable.defaultConfig.snakeCaseProps.snakeCaseAlts.withDiscriminator("type")
   implicit val printer = Printer.spaces4.copy(dropNullValues = true)
-
-  def main(args: Array[String]): Unit = {
-    implicit lazy val weirdThingSwagger: SwaggerTypeable[WeirdThing] =
-      SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
-
-    lazy val topStuffSwagger: SwaggerTypeable[TopStuff] = MagnoliaSwagger.derivedInstance
-
-    println(topStuffSwagger.typ.collectTypes.foreach { case (name, t) => println(s"$name: ${t.asJson.pretty(printer)}") })
-
-    case class Lol(lol: Option[Lol])
-
-    object Lol{
-      implicit val swagger: SwaggerTypeable[Lol] = MagnoliaSwagger.derive.named("lollol")
-    }
-
-    println(SwaggerTypeable[Lol].typ.collectTypes.asJson)
-  }
 }

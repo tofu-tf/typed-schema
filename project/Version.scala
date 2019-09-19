@@ -1,5 +1,7 @@
 object Version {
-  val circe = "0.12.0-M4"
+  val circe = "0.12.1"
+
+  val circeDerivation = "0.12.0-M7"
 
   val circe211 = "0.12.0-M3"
 

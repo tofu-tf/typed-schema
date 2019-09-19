@@ -46,9 +46,4 @@ object XmlSpec {
   def api = prefix("xml") :> get[Book]
 
   val swagger = api.mkSwagger
-
-  def main(args: Array[String]): Unit = {
-    val printer = Printer.spaces4.copy(dropNullValues = true)
-    println(swagger.make(OpenApiInfo()).asJson.pretty(printer))
-  }
 }

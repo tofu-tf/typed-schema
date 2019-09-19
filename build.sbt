@@ -101,7 +101,7 @@ val monocle = libraryDependencies ++= List("core", "macro").map(
     }
 )
 
-val circe = libraryDependencies ++= List("core", "parser", "generic", "derivation", "generic-extras").map(
+val circe = libraryDependencies ++= List("core", "parser", "generic", "generic-extras").map(
   module =>
     "io.circe" %% s"circe-$module" % {
       minorVersion.value match {
@@ -109,7 +109,12 @@ val circe = libraryDependencies ++= List("core", "parser", "generic", "derivatio
         case 12 | 13 => Version.circe
       }
     }
-)
+) :+ "io.circe" %% "circe-derivation" % {
+  minorVersion.value match {
+    case 11      => Version.circe211
+    case 12 | 13 => Version.circeDerivation
+  }
+}
 
 val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % {
   minorVersion.value match {

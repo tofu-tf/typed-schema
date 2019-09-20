@@ -53,7 +53,7 @@ object Version {
 
   val scalaTest = "3.0.8"
 
-  val scalaCheck = "1.14.0"
+  val scalaCheck = "1.14.1"
 
   val scalazDeriving = "1.0.0"
 }

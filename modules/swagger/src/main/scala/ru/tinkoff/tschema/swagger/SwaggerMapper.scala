@@ -188,6 +188,9 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def deriveTag[name](implicit name: Name[name]): SwaggerMapper[Tag[name]] =
     fromFunc((PathSpec.op ^|-> OpenApiOp.tags).modify(_ :+ name.string))
 
+  implicit def deriveDeprecated: SwaggerMapper[Deprecated] =
+    fromFunc((PathSpec.op ^|-> OpenApiOp.deprecated).set(true))
+
   implicit def deriveAs[x, name](implicit internal: Lazy[SwaggerMapper[x]]): SwaggerMapper[As[x, name]] =
     internal.value.as[As[x, name]]
 

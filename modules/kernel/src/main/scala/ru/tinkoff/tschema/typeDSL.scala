@@ -20,6 +20,11 @@ object typeDSL {
   class Tag[tag] extends Meta
 
   /**
+    * mark operation as deprecated
+    */
+  class Deprecated extends Meta
+
+  /**
     * naming symbol of single route in complex route
     */
   class Key[key] extends DSLAtom

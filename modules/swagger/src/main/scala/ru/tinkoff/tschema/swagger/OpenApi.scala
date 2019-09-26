@@ -293,7 +293,8 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            parameters: Vector[OpenApiParam] = Vector.empty,
                            requestBody: Option[OpenApiRequestBody] = None,
                            responses: OpenApiResponses = OpenApiResponses(),
-                           security: Vector[Map[String, Vector[String]]] = Vector.empty)
+                           security: Vector[Map[String, Vector[String]]] = Vector.empty,
+                           deprecated: Boolean = false)
 
 object OpenApiOp {
   implicit lazy val swaggerOpEncoder: Encoder.AsObject[OpenApiOp] = deriveEncoder

@@ -344,6 +344,7 @@ object SwaggerType {
             case SwaggerArray(items, _, _)                   => collectTypesImpl(items.value :: rest, acc)
             case SwaggerObject(props, _)                     => collectTypesImpl(props.map(_.typ.value) ++: rest, acc)
             case SwaggerOneOf(alts, _)                       => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
+            case SwaggerAllOf(conjs)                         => collectTypesImpl(conjs.map(_.value) ++: rest, acc)
             case SwaggerMap(value)                           => collectTypesImpl(value.value :: rest, acc)
             case SwaggerXML(wrapped, _)                      => collectTypesImpl(wrapped :: rest, acc)
             case SwaggerMedia(t, _)                          => collectTypesImpl(t :: rest, acc)

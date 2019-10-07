@@ -27,7 +27,7 @@ final case class Rejection(
         "incorrect methods"    -> wrongMethod,
         "missing parameters"   -> missing.map(p => s"${p.name} in ${p.source}"),
         "malformed parameters" -> malformed.map(p => s"${p.name} in ${p.source} with ${p.error}")
-      ).collect { case (m, ms) if ms.nonEmpty => ms.mkString(m, ",", "") } ++
+      ).collect { case (m, ms) if ms.nonEmpty => ms.mkString(m + " ", ",", "") } ++
       Iterator("unauthorized").filter(_ => unauthorized)).mkString("\n")
   }
 }

@@ -1,17 +1,17 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.11.0-RC3"
+val pubVersion = "0.11.0"
 
 val publishSettings = List(
   name := "Typed Schema",
   organization := "ru.tinkoff",
   description := "Typelevel DSL for defining webservices, convertible to akka-http/finagle and swagger definitions",
   publishMavenStyle := true,
-  publishTo := Some(
+  publishTo := (
     if (isSnapshot.value)
-      Opts.resolver.sonatypeSnapshots
+      Some(Opts.resolver.sonatypeSnapshots)
     else
-      Opts.resolver.sonatypeStaging
+      sonatypePublishToBundle.value
   ),
   credentials += Credentials(Path.userHome / ".sbt" / ".ossrh-credentials"),
   version := {
@@ -180,7 +180,7 @@ lazy val commonSettings = publishSettings ++ List(
   testLibs
 )
 
-val compile213 = List(crossScalaVersions += "2.13.0")
+val compile213 = List(crossScalaVersions += "2.13.1")
 
 lazy val kernel = project
   .in(file("modules/kernel"))

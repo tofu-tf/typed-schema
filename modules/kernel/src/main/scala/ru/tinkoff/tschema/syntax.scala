@@ -8,6 +8,7 @@ object syntax {
   def tag[s](witness: Witness.Aux[s])         = new Tag[s]
   def key[s](witness: Witness.Aux[s])         = new Key[s]
   def group[s](witness: Witness.Aux[s])       = new Group[s]
+  def deprecated                              = new Deprecated
   def tagPrefix[s](witness: Witness.Aux[s])   = prefix[s](witness) |> tag[s](witness)
   def keyPrefix[s](witness: Witness.Aux[s])   = prefix[s](witness) |> key[s](witness)
   def groupPrefix[s](witness: Witness.Aux[s]) = prefix[s](witness) |> group[s](witness)

@@ -25,6 +25,8 @@ sealed trait SwaggerType {
 
   def or(that: SwaggerType): SwaggerType = SwaggerOneOf(Vector(None -> Eval.now(this), None -> Eval.now(that)))
 
+  def and(that: SwaggerType): SwaggerType = SwaggerAllOf(Vector(Eval.now(this), Eval.now(that)))
+
   def deref: Eval[SwaggerType] = Eval.now(this)
 
   def mediaType: MediaType = "application/json"
@@ -153,6 +155,10 @@ final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[Swagg
 final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])], discriminator: Option[String] = None)
     extends SwaggerType {
   override def or(that: SwaggerType) = SwaggerOneOf(alts :+ (None -> Eval.now(that)), discriminator)
+}
+
+final case class SwaggerAllOf(conjs: Vector[Eval[SwaggerType]]) extends SwaggerType {
+  override def and(that: SwaggerType) = SwaggerAllOf(conjs :+ Eval.now(that))
 }
 
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
@@ -302,6 +308,11 @@ object SwaggerType {
             JsonObject("type" -> "object".asJson, "oneOf" -> Json.arr(alts: _*), "discriminator" -> disObj)
           }
 
+      case SwaggerAllOf(conjs) =>
+        conjs
+          .traverse(_.flatMap(encode).map(Json.fromJsonObject))
+          .map(c => JsonObject("allOf" -> Json.arr(c: _*)))
+
       case SwaggerMap(values) =>
         values
           .flatMap(encode)
@@ -333,6 +344,7 @@ object SwaggerType {
             case SwaggerArray(items, _, _)                   => collectTypesImpl(items.value :: rest, acc)
             case SwaggerObject(props, _)                     => collectTypesImpl(props.map(_.typ.value) ++: rest, acc)
             case SwaggerOneOf(alts, _)                       => collectTypesImpl(alts.map(_._2.value) ++: rest, acc)
+            case SwaggerAllOf(conjs)                         => collectTypesImpl(conjs.map(_.value) ++: rest, acc)
             case SwaggerMap(value)                           => collectTypesImpl(value.value :: rest, acc)
             case SwaggerXML(wrapped, _)                      => collectTypesImpl(wrapped :: rest, acc)
             case SwaggerMedia(t, _)                          => collectTypesImpl(t :: rest, acc)

@@ -23,7 +23,7 @@ object Version {
 
   val enumeratum = "1.5.13"
 
-  val enumeratumCirce = "1.5.21"
+  val enumeratumCirce = "1.5.22"
 
   val monocle = "1.5.1-cats"
 

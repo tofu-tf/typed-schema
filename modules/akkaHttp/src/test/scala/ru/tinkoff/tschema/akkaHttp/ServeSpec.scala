@@ -1,19 +1,18 @@
-package ru.tinkoff.tschema
+package ru.tinkoff.tschema.akkaHttp
 
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.server.MissingQueryParamRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{Matchers, WordSpec}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import ru.tinkoff.tschema.akkaHttp._
+import org.scalatest.{Matchers, WordSpec}
+import ru.tinkoff.tschema.syntax
 
 class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
   trait Small
 
   import syntax._
-  import typeDSL._
   val dsl = syntax
 
   val intAnswer = 42

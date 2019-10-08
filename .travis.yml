@@ -1,4 +1,14 @@
-env:
-  global:
-    - SCALA_VERSION=2.12
+dist: xenial
 language: scala
+
+scala:
+  - 2.12.9
+
+jdk:
+  - openjdk8
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
+    - $HOME/.coursier

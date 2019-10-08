@@ -27,7 +27,7 @@ trait ZioRoutingCommon {
 private class ZIOConvertService[R <: ZioRoutingCommon, E](f: Throwable => E) extends ConvertService[ZIO[R, E, *]] {
   def convertService[A](svc: Service[Request, A]): ZIO[R, E, A] =
     ZIO.accessM { r =>
-      ZIO.effectAsyncInterrupt { cb =>
+      ZIO.effectAsyncInterrupt[R, E, A] { cb =>
         val fut = svc(r.request).respond {
           case twitter.util.Return(a) => cb(ZIO.succeed(a))
           case twitter.util.Throw(ex) => cb(ZIO.fail(f(ex)))

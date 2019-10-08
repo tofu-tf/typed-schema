@@ -3,7 +3,6 @@ language: scala
 
 scala:
   - 2.12.9
-  - 2.11.12
 
 jdk:
   - openjdk8

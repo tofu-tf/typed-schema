@@ -347,7 +347,7 @@ lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
-    doNotPublish,
+    publish / skip := true,
     setMinorVersion,
     skipTest213,
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)

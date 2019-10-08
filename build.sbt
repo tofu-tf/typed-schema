@@ -27,8 +27,6 @@ val publishSettings = List(
   )
 )
 
-val doNotPublish = List(publish := {}, publishLocal := {}, PgpKeys.publishSigned := {})
-
 licenses in ThisBuild += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 publishMavenStyle in ThisBuild := true
 
@@ -123,10 +121,10 @@ val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % {
   }
 }
 
-val akkaHttpCirce = libraryDependencies ++= {
+val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % {
   minorVersion.value match {
-    case 11 | 12 => List("de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce)
-    case 13      => Nil
+    case 11      => Version.akkaHttpCirce211
+    case 12 | 13 => Version.akkaHttpCirce
   }
 }
 
@@ -182,6 +180,13 @@ lazy val commonSettings = publishSettings ++ List(
 
 val compile213 = List(crossScalaVersions += "2.13.1")
 
+val skipTest213 = skip in Test := {
+  minorVersion.value match {
+    case 11 | 12 => false
+    case 13      => true
+  }
+}
+
 lazy val kernel = project
   .in(file("modules/kernel"))
   .settings(
@@ -233,7 +238,8 @@ lazy val akkaHttp = project
     commonSettings,
     compile213,
     moduleName := "typed-schema-akka-http",
-    libraryDependencies ++= akkaHttpLib :: akka
+    libraryDependencies ++= akkaHttpLib :: akkaTestKit :: akkaHttpTestKit :: akka,
+    akkaHttpCirce
   )
 
 lazy val finagle = project
@@ -241,6 +247,7 @@ lazy val finagle = project
   .dependsOn(kernel, macros, param)
   .settings(
     commonSettings,
+    skipTest213,
     moduleName := "typed-schema-finagle",
     libraryDependencies ++= finagleHttp :: catsEffect :: catsFree :: Nil
   )
@@ -250,6 +257,7 @@ lazy val finagleCirce = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
+    skipTest213,
     moduleName := "typed-schema-finagle-circe",
     circe
   )
@@ -259,6 +267,7 @@ lazy val finagleTethys = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
+    skipTest213,
     moduleName := "typed-schema-finagle-tethys",
     libraryDependencies ++= tethys
   )
@@ -268,6 +277,7 @@ lazy val finagleZio = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
+    skipTest213,
     moduleName := "typed-schema-finagle-zio",
     libraryDependencies ++= catsEffect :: zio
   )
@@ -277,6 +287,7 @@ lazy val finagleCommon = project
   .dependsOn(finagle, swagger)
   .settings(
     commonSettings,
+    skipTest213,
     moduleName := "typed-schema-finagle-common"
   )
 
@@ -285,6 +296,7 @@ lazy val finagleEnv = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
+    skipTest213,
     moduleName := "typed-schema-finagle-env",
     libraryDependencies ++= catsEffect :: env :: Nil
   )
@@ -296,8 +308,7 @@ lazy val main = project
     commonSettings,
     compile213,
     moduleName := "typed-schema-base",
-    libraryDependencies ++= akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: akka,
-    akkaHttpCirce
+    libraryDependencies ++= akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: akka
   )
 
 lazy val scalaz = project
@@ -305,6 +316,7 @@ lazy val scalaz = project
   .dependsOn(swagger, param)
   .settings(
     commonSettings,
+    skipTest213,
     moduleName := "typed-schema-scalaz",
     libraryDependencies ++= scalazDeriving :: scalazDMacro :: Nil,
     addCompilerPlugin("org.scalaz" %% "deriving-plugin" % Version.scalazDeriving),
@@ -336,6 +348,8 @@ lazy val docs = project
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
     doNotPublish,
+    setMinorVersion,
+    skipTest213,
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
   )
   .dependsOn(kernel, macros, main, akkaHttp)
@@ -343,7 +357,7 @@ lazy val docs = project
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .settings(doNotPublish, publishSettings)
+    .settings(publish / skip := true, publishSettings, setMinorVersion, compile213)
     .aggregate(
       macros,     //
       kernel,     //

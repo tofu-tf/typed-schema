@@ -100,17 +100,17 @@ trait LiftHttp[F[_], G[_]] { self =>
   }
 }
 
-trait Runnable[F[_], G[_]] {
+trait RunHttp[F[_], G[_]] {
   def run(fresp: F[Response]): G[Service[Request, Response]]
 }
 
-object Runnable {
+object RunHttp {
   def run[G[_]] = new Run[G]
 
   class Run[G[_]] {
-    def apply[F[_]](resp: F[Response])(implicit runnable: Runnable[F, G]): G[Service[Request, Response]] = runnable.run(resp)
+    def apply[F[_]](resp: F[Response])(implicit runnable: RunHttp[F, G]): G[Service[Request, Response]] = runnable.run(resp)
     def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(
-        implicit runnable: Runnable[F, G],
+        implicit runnable: RunHttp[F, G],
         G: Monad[G]
     ): G[Service[Request, Response]] =
       resps

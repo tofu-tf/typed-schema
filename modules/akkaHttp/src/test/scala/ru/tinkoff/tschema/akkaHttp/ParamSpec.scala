@@ -1,12 +1,12 @@
-package ru.tinkoff.tschema
+package ru.tinkoff.tschema.akkaHttp
 
+import ForAllTypes.Checker
 import org.scalacheck.Arbitrary
 import org.scalactic.Equality
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-import ru.tinkoff.tschema.ForAllTypes.Checker
 import ru.tinkoff.tschema.param.ParamSource._
-import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam, _}
+import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam}
 import shapeless._
 
 import scala.reflect.runtime.universe._

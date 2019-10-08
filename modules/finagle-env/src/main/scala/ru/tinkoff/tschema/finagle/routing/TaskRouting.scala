@@ -8,7 +8,7 @@ import com.twitter.util.{Future, Promise}
 import monix.eval.Task
 import monix.execution.Scheduler
 import ru.tinkoff.tschema.finagle.routing.TaskRouting.TaskHttp
-import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
+import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
 import tofu.env.Env
 
@@ -27,7 +27,7 @@ object TaskRouting extends TaskInstanceDecl {
 
   implicit def envRunnable(
       implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
-  ): Runnable[TaskHttp, Task] =
+  ): RunHttp[TaskHttp, Task] =
     response => Task.deferAction(implicit sched => Task.delay(execResponse(response, _)))
 
   private[this] def execResponse(

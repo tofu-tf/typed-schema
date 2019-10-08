@@ -11,7 +11,7 @@ import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.Routing.FHttp
-import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
+import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
 
 final case class Routing(
@@ -29,7 +29,7 @@ object Routing extends FInstanceDecl {
     new FRoutedConvert[F]
 
   implicit def envRunnable[F[_]: Effect](
-      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler): Runnable[FHttp[F, *], F] =
+      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler): RunHttp[FHttp[F, *], F] =
     zioResponse => Sync[F].delay(execResponse(zioResponse, _))
 
   private[this] def execResponse[F[_]: Effect](envResponse: FHttp[F, Response], request: Request)(

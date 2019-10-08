@@ -7,7 +7,7 @@ import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.IoRouting.IOHttp
-import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
+import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
 import zio.{Exit, Fiber, IO, UIO, ZIO}
 
@@ -30,7 +30,7 @@ object IoRouting extends IoRoutedImpl {
   implicit def ioRunnable[E <: Throwable](
       implicit
       rejectionHandler: Rejection.Handler = Rejection.defaultHandler
-  ): Runnable[IOHttp[E, *], IO[E, *]] =
+  ): RunHttp[IOHttp[E, *], IO[E, *]] =
     zioResponse => ZIO.runtime[Any].flatMap(runtime => ZIO.effectTotal(execResponse(runtime, zioResponse, _)))
 
   private[this] def execResponse[E <: Throwable](

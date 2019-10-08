@@ -11,7 +11,7 @@ import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.ReaderTRouting.ReaderHttp
-import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, Runnable}
+import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
 
 final case class ReaderTRouting[+R](
@@ -30,7 +30,7 @@ object ReaderTRouting extends ReaderTInstanceDecl {
     new ReaderTRoutedConvert[F, R]
 
   implicit def envRunnable[F[_]: Effect, R](implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler)
-    : Runnable[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
+    : RunHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
     response => ReaderT(r => Sync[F].delay(execResponse(r, response, _)))
 
   private[this] def execResponse[F[_]: Effect, R](r: R, envResponse: ReaderHttp[F, R, Response], request: Request)(

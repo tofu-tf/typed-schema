@@ -1,10 +1,11 @@
-package ru.tinkoff.tschema
+package ru.tinkoff.tschema.akkaHttp
+
 import akka.http.scaladsl.server.{Directives, MissingQueryParamRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{FlatSpec, Matchers}
-import ru.tinkoff.tschema.MultiParamSpec._
-import ru.tinkoff.tschema.akkaHttp._
+import ru.tinkoff.tschema.akkaHttp.MultiParamSpec.{Page, route}
 import ru.tinkoff.tschema.param.HttpParam
+import ru.tinkoff.tschema.syntax
 import shapeless.Witness
 
 import scala.language.reflectiveCalls

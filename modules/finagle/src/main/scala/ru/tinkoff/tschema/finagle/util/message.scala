@@ -8,8 +8,8 @@ import ru.tinkoff.tschema.finagle.{Complete, LiftHttp, ParseBody, Rejection, Rou
 
 object message {
 
-  def response(s: String, contentType: String): Response = {
-    val resp = Response()
+  def response(s: String, contentType: String, status: Status = Status.Ok): Response = {
+    val resp = Response(status)
     resp.setContentType(contentType)
     resp.setContentString(s)
     resp

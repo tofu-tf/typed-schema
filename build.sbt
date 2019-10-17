@@ -2,6 +2,7 @@ import com.typesafe.sbt.SbtGit.git
 
 val pubVersion = "0.11.0"
 
+
 val publishSettings = List(
   name := "Typed Schema",
   organization := "ru.tinkoff",
@@ -37,7 +38,7 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions in ThisBuild := List("2.11.12", "2.12.9")
+val crossCompile = crossScalaVersions := List("2.11.12", "2.12.10")
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",
@@ -169,6 +170,8 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 lazy val testLibs = libraryDependencies ++= scalacheck :: scalatest :: Nil
 
 lazy val commonSettings = publishSettings ++ List(
+
+  scalaVersion := "2.12.10",
   compilerPlugins,
   commonScalacOptions,
   setExperimental,
@@ -180,12 +183,12 @@ lazy val commonSettings = publishSettings ++ List(
 
 val compile213 = List(crossScalaVersions += "2.13.1")
 
-val skipTest213 = skip in Test := {
-  minorVersion.value match {
-    case 11 | 12 => false
-    case 13      => true
-  }
-}
+//val skipTest213 = skip in Test := {
+//  minorVersion.value match {
+//    case 11 | 12 => false
+//    case 13      => true
+//  }
+//}
 
 lazy val kernel = project
   .in(file("modules/kernel"))
@@ -247,7 +250,6 @@ lazy val finagle = project
   .dependsOn(kernel, macros, param)
   .settings(
     commonSettings,
-    skipTest213,
     moduleName := "typed-schema-finagle",
     libraryDependencies ++= finagleHttp :: catsEffect :: catsFree :: Nil
   )
@@ -257,7 +259,6 @@ lazy val finagleCirce = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
-    skipTest213,
     moduleName := "typed-schema-finagle-circe",
     circe
   )
@@ -267,7 +268,6 @@ lazy val finagleTethys = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
-    skipTest213,
     moduleName := "typed-schema-finagle-tethys",
     libraryDependencies ++= tethys
   )
@@ -277,7 +277,6 @@ lazy val finagleZio = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
-    skipTest213,
     moduleName := "typed-schema-finagle-zio",
     libraryDependencies ++= catsEffect :: zio
   )
@@ -287,7 +286,6 @@ lazy val finagleCommon = project
   .dependsOn(finagle, swagger)
   .settings(
     commonSettings,
-    skipTest213,
     moduleName := "typed-schema-finagle-common"
   )
 
@@ -296,7 +294,6 @@ lazy val finagleEnv = project
   .dependsOn(finagle)
   .settings(
     commonSettings,
-    skipTest213,
     moduleName := "typed-schema-finagle-env",
     libraryDependencies ++= catsEffect :: env :: Nil
   )
@@ -316,7 +313,6 @@ lazy val scalaz = project
   .dependsOn(swagger, param)
   .settings(
     commonSettings,
-    skipTest213,
     moduleName := "typed-schema-scalaz",
     libraryDependencies ++= scalazDeriving :: scalazDMacro :: Nil,
     addCompilerPlugin("org.scalaz" %% "deriving-plugin" % Version.scalazDeriving),
@@ -349,7 +345,6 @@ lazy val docs = project
   .settings(
     publish / skip := true,
     setMinorVersion,
-    skipTest213,
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
   )
   .dependsOn(kernel, macros, main, akkaHttp)

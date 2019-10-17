@@ -188,9 +188,9 @@ object MkSwagger {
     def makeResult[F[_], Out]: ResultPA1[Out]                               = new ResultPA1[Out]
     def concatResults(x: SwaggerBuilder, y: SwaggerBuilder): SwaggerBuilder = x ++ y
 
-    def serve[F[_], T](in: Unit) = new ServePA[T](in)
+    def serve[F[_], T](in: Unit) = new ServePA[T](true)
 
-    class ServePA[T](val in: Unit) extends AnyVal {
+    class ServePA[T](private val in: Boolean) extends AnyVal {
       def apply(f: Unit => SwaggerBuilder)(implicit swagger: SwaggerMapper[T]): SwaggerBuilder = swagger.to(f(()))
     }
   }

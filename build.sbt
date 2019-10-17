@@ -344,6 +344,7 @@ lazy val docs = project
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
     publish / skip := true,
+    crossCompile,
     setMinorVersion,
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
   )
@@ -352,7 +353,7 @@ lazy val docs = project
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .settings(publish / skip := true, publishSettings, setMinorVersion, compile213)
+    .settings(publish / skip := true, publishSettings, setMinorVersion, crossCompile, compile213)
     .aggregate(
       macros,     //
       kernel,     //

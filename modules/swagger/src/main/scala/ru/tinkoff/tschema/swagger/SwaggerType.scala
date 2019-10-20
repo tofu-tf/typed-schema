@@ -10,15 +10,17 @@ import io.circe
 import io.circe._
 import io.circe.syntax._
 import io.circe.derivation._
-import monocle.{Optional, Prism, Setter}
-import monocle.macros.{GenPrism, GenPrismImpl, Lenses}
+import tofu.optics.{Property, Subset, Update}
+import tofu.optics.macros.{GenContains, GenSubset}
 import ru.tinkoff.tschema.swagger.internal.merge._
 import ru.tinkoff.tschema.utils.json.Skippable
-import ru.tinkoff.tschema.utils.setters
+import ru.tinkoff.tschema.utils.updates
 import shapeless.tag.@@
 
 import scala.annotation.tailrec
 import scala.language.higherKinds
+import tofu.optics.Contains
+import tofu.optics.chain
 
 sealed trait SwaggerType {
   def merge: PartialFunction[SwaggerType, SwaggerType] = PartialFunction.empty
@@ -91,10 +93,12 @@ final case class SwaggerArray(items: Eval[SwaggerType], minLength: Option[Int] =
   }
 }
 
-@Lenses
 final case class SwaggerProperty(name: String, description: Option[String], typ: Eval[SwaggerType])
+object SwaggerProperty {
+  val description: Contains[SwaggerProperty, Option[String]] = GenContains[SwaggerProperty](_.description)
+  val typ: Contains[SwaggerProperty, Eval[SwaggerType]] = GenContains[SwaggerProperty](_.typ)
+}
 
-@Lenses
 final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empty,
                                required: Eval[Vector[String]] = Eval.now(Vector.empty))
     extends SwaggerType {
@@ -123,7 +127,7 @@ final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empt
     * set or change fields description if this is ObjectType
     */
   def describeFields(descrs: (String, String)*) =
-    updateProps(descrs)(descr => SwaggerProperty.description.set(descr.some))
+    updateProps(descrs)(descr => SwaggerProperty.description.set(_, descr.some))
 
   /**
     * set or change XML options if fields
@@ -131,16 +135,17 @@ final case class SwaggerObject(properties: Vector[SwaggerProperty] = Vector.empt
     * @param opts
     */
   def xmlFields(opts: (String, SwaggerXMLOptions)*) =
-    updateProps(opts)(opt => (SwaggerProperty.typ composeSetter setters.eval).modify(SwaggerXML.wrap(opt)))
+    updateProps(opts)(opt => (sp) => (SwaggerProperty.typ >> updates.eval[SwaggerType]).update(sp, SwaggerXML.wrap(opt)))
 }
 
 object SwaggerObject {
+  val properties: Contains[SwaggerObject, Vector[SwaggerProperty]] = GenContains[SwaggerObject](_.properties)
+  val required: Contains[SwaggerObject, Eval[Vector[String]]] = GenContains[SwaggerObject](_.required)
 
   def withProps(props: (String, SwaggerType)*) =
     SwaggerObject(properties = props.map { case (name, typ) => SwaggerProperty(name, None, Eval.now(typ)) }.toVector)
 }
 
-@Lenses
 final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[SwaggerType]) extends SwaggerType {
   override def merge = {
     case SwaggerRef(`name`, descr2, t2) => SwaggerRef(name, descr.orElse(descr2), typ.map2(typ)(_ or _))
@@ -150,6 +155,10 @@ final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[Swagg
 
   override def describe(description: String) = copy(descr = Some(description))
   override def mediaType: MediaType          = typ.value.mediaType
+}
+object SwaggerRef {
+  val name: Contains[SwaggerRef, String] = GenContains[SwaggerRef](_.name)
+  val typ: Contains[SwaggerRef, Eval[SwaggerType]] = GenContains[SwaggerRef](_.typ)
 }
 
 final case class SwaggerOneOf(alts: Vector[(Option[String], Eval[SwaggerType])], discriminator: Option[String] = None)
@@ -163,25 +172,23 @@ final case class SwaggerAllOf(conjs: Vector[Eval[SwaggerType]]) extends SwaggerT
 
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 
-@Lenses
 final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType {
   override def mediaType: MediaType = "application/xml"
 }
-
-@Lenses
-final case class SwaggerMedia(typ: SwaggerType, override val mediaType: MediaType) extends SwaggerType {
-  override def withMediaType(mediaType: MediaType): SwaggerType = SwaggerMedia(typ, mediaType)
-}
-
 object SwaggerXML {
+  val typ: Contains[SwaggerXML, SwaggerType] = GenContains[SwaggerXML](_.typ)
+
   def wrap(opts: SwaggerXMLOptions)(typ: SwaggerType): SwaggerType = typ match {
     case xml: SwaggerXML => wrap(opts)(xml.typ)
-    case ref: SwaggerRef => (SwaggerRef.typ composeSetter setters.eval).modify(wrap(opts))(ref)
+    case ref: SwaggerRef => (SwaggerRef.typ >> updates.eval[SwaggerType]).update(ref, wrap(opts) _)
     case _               => SwaggerXML(typ, opts)
   }
 }
 
-@Lenses
+final case class SwaggerMedia(typ: SwaggerType, override val mediaType: MediaType) extends SwaggerType {
+  override def withMediaType(mediaType: MediaType): SwaggerType = SwaggerMedia(typ, mediaType)
+}
+
 final case class DescribedType(
     typ: SwaggerType,
     description: Option[SwaggerDescription] = None,
@@ -189,6 +196,10 @@ final case class DescribedType(
 )
 
 object DescribedType {
+  val typ: Contains[DescribedType, SwaggerType] = GenContains[DescribedType](_.typ)
+  val description: Contains[DescribedType, Option[SwaggerDescription]] = GenContains[DescribedType](_.description)
+  val title: Contains[DescribedType, Option[String]] = GenContains[DescribedType](_.title)
+
   private val additional: Encoder.AsObject[DescribedType] = deriveEncoder.mapJsonObject(_.remove("typ"))
   implicit val encoder: Encoder.AsObject[DescribedType] = Encoder.AsObject.instance { dt =>
     additional.encodeObject(dt).toIterable.foldRight(dt.typ.asJsonObject) { _ +: _ }
@@ -205,21 +216,23 @@ object SwaggerType {
 
   private def refTo(name: String) = s"#/components/schemas/$name"
 
-  val refPrism: Prism[SwaggerType, SwaggerRef] = GenPrism[SwaggerType, SwaggerRef]
+  val refPrism: Subset[SwaggerType, SwaggerRef] = GenSubset[SwaggerType, SwaggerRef]
 
-  val objOpt: Optional[SwaggerType, SwaggerObject] = Optional[SwaggerType, SwaggerObject] {
-    case obj: SwaggerObject => Some(obj)
-    case ref: SwaggerRef    => objOpt.getOption(ref.typ.value)
-    case xml: SwaggerXML    => objOpt.getOption(xml.typ)
-    case _                  => None
-  }(obj => {
-    case _: SwaggerObject => obj
-    case ref: SwaggerRef  => SwaggerRef.typ.set(Eval.now(obj))(ref)
-    case xml: SwaggerXML  => (SwaggerXML.typ composeOptional objOpt).set(obj)(xml)
-    case other            => other
-  })
+  val objProp: Property[SwaggerType, SwaggerObject] = new Property[SwaggerType, SwaggerObject] {
+    override def set(st: SwaggerType, obj: SwaggerObject): SwaggerType = st match {
+      case _: SwaggerObject => obj
+      case ref: SwaggerRef  => SwaggerRef.typ.set(ref, Eval.now(obj))
+      case xml: SwaggerXML  => (SwaggerXML.typ >> objProp).set(xml, obj)
+      case other            => other
+    }
 
-  val setObj: Setter[SwaggerType, SwaggerObject] = objOpt.asSetter
+    override def narrow(s: SwaggerType): Either[SwaggerType, SwaggerObject] = s match {
+      case obj: SwaggerObject => Right(obj)
+      case ref: SwaggerRef    => objProp.narrow(ref.typ.value)
+      case xml: SwaggerXML    => objProp.narrow(xml.typ)
+      case _                  => Left(s)
+    }
+  }
 
   implicit val encodeSwaggerType: Encoder.AsObject[SwaggerType] = new Encoder.AsObject[SwaggerType] {
     def encode(a: SwaggerType): Eval[JsonObject] = a match {

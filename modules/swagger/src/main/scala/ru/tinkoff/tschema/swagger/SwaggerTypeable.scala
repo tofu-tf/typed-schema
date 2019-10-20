@@ -16,6 +16,7 @@ import cats.syntax.traverse._
 import cats.instances.vector._
 import cats.instances.list._
 import enumeratum.values.{ValueEnum, ValueEnumEntry}
+import tofu.optics.Contains
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -35,13 +36,13 @@ trait SwaggerTypeable[T] {
 
   def named(name: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
     override def typ: SwaggerType =
-      (SwaggerType.refPrism composeLens SwaggerRef.name).set(name)(self.typ)
+      (SwaggerType.refPrism >> SwaggerRef.name).set(self.typ, name)
   }
 
   def describe(description: String): SwaggerTypeable[T] = updateTyp(_.describe(description))
 
   def describeFields(descriptions: (String, String)*): SwaggerTypeable[T] =
-    updateTyp(SwaggerType.setObj.modify(_.describeFields(descriptions: _*)))
+    updateTyp(SwaggerType.objProp.update(_, _.describeFields(descriptions: _*)))
 
   def xml(name: Option[String] = None,
           attribute: Boolean = false,
@@ -53,7 +54,7 @@ trait SwaggerTypeable[T] {
         SwaggerXMLOptions(name = name, attribute = attribute, prefix = prefix, namespace = namespace, wrapped = wrapped)))
 
   def xmlFields(fieldOpts: (String, SwaggerXMLOptions)*) =
-    updateTyp(SwaggerType.setObj.modify(_.xmlFields(fieldOpts: _*)))
+    updateTyp(SwaggerType.objProp.update(_, _.xmlFields(fieldOpts: _*)))
 
   //Safe versions
   def descr[S <: Symbol, L <: HList](fld: FieldType[S, String])(implicit lgen: LabelledGeneric.Aux[T, L],

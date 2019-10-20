@@ -8,9 +8,6 @@ import cats.syntax.foldable._
 import cats.instances.map._
 import cats.instances.vector._
 import cats.{Eval, Monoid, MonoidK}
-import monocle.function.all._
-import monocle.macros.Lenses
-import monocle.std.option.some
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.macros._
 import ru.tinkoff.tschema.swagger.MkSwagger._
@@ -19,6 +16,10 @@ import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
 import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
 import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
 import ru.tinkoff.tschema.typeDSL._
+import ru.tinkoff.tschema.utils.subsets._
+import tofu.optics.Contains
+import tofu.optics.functions._
+import tofu.optics.macros.GenContains
 import shapeless.{Lazy, Witness}
 
 import scala.annotation.implicitNotFound
@@ -106,17 +107,14 @@ object SwaggerBuilder {
             }
         }
 
-        PathSpec.op.modify(
-          OpenApiOp.description.modify(method(MethodTarget.Path) orElse _) andThen
-            OpenApiOp.summary.modify(method(MethodTarget.Summary) orElse _) andThen
-            OpenApiOp.parameters
-              .composeTraversal(each)
-              .modify(param => OpenApiParam.description.modify(method(MethodTarget.Param(param.name)) orElse _)(param)) andThen
-            OpenApiOp.requestBody
-              .composePrism(some)
-              .composeLens(OpenApiRequestBody.description)
-              .modify(method(MethodTarget.Body) orElse _)
-        )(spec)
+        PathSpec.op.update(spec,
+          (OpenApiOp.description.update(_, method(MethodTarget.Path) orElse _)) andThen
+            (OpenApiOp.summary.update(_, method(MethodTarget.Summary) orElse _)) andThen
+            ((OpenApiOp.parameters >> vecItems[OpenApiParam, OpenApiParam])
+              .update(_, param => OpenApiParam.description.update(param, method(MethodTarget.Param(param.name)) orElse _))) andThen
+            ((OpenApiOp.requestBody >> some[OpenApiRequestBody] >> OpenApiRequestBody.description)
+              .update(_, method(MethodTarget.Body) orElse _))
+        )
       case spec => spec
     }
     val types = {
@@ -125,11 +123,11 @@ object SwaggerBuilder {
           val typ = descriptions.typ(name)
 
           val setDescriptions =
-            DescribedType.title.modify(typ(TypeTarget.Title) orElse _) andThen
-              DescribedType.description.modify(typ(TypeTarget.Type) orElse _) andThen
-              (DescribedType.typ ^|-? SwaggerType.objOpt ^|-> SwaggerObject.properties ^|->> each).modify(
-                prop => SwaggerProperty.description.modify(typ(TypeTarget.Field(prop.name)) orElse _)(prop)
-              )
+            (DescribedType.title.update(_, typ(TypeTarget.Title) orElse _)) andThen
+              (DescribedType.description.update(_, typ(TypeTarget.Type) orElse _)) andThen
+              ((DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties >> vecItems[SwaggerProperty, SwaggerProperty]).update(_, 
+                prop => SwaggerProperty.description.update(prop, typ(TypeTarget.Field(prop.name)) orElse _)
+              ))
 
           name -> setDescriptions(t)
       }
@@ -160,8 +158,8 @@ trait MkSwagger[T] extends SwaggerBuilder {
   ) =
     new MkSwagger[U] {
       val paths: PathSeq = self.paths.map(
-        (PathSpec.op ^|-> OpenApiOp.responses ^|-> OpenApiResponses.codes)
-          .modify(_ + (code -> OpenApiResponse.make(description = description, swaggerType = typeable.typ)))
+        (PathSpec.op >> OpenApiOp.responses >> OpenApiResponses.codes)
+          .update(_, _ + (code -> OpenApiResponse.make(description = description, swaggerType = typeable.typ)))
       )
 
       val types: TypePool                         = self.types ++ typeable.typ.collectTypes
@@ -199,7 +197,6 @@ object MkSwagger {
 
   def apply[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
 
-  @Lenses
   case class PathSpec(
       path: Vector[String],
       method: Option[OpenApi.Method],
@@ -207,7 +204,14 @@ object MkSwagger {
       key: Option[String] = None,
       groups: Vector[String] = Vector.empty
   ) {
-    def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.modify(f)(this)
+    def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.update(this, f)
+  }
+  object PathSpec {
+    val path: Contains[PathSpec, Vector[String]] = GenContains[PathSpec](_.path)
+    val method: Contains[PathSpec, Option[OpenApi.Method]] = GenContains[PathSpec](_.method)
+    val op: Contains[PathSpec, OpenApiOp] = GenContains[PathSpec](_.op)
+    val key: Contains[PathSpec, Option[String]] = GenContains[PathSpec](_.key)
+    val groups: Contains[PathSpec, Vector[String]] = GenContains[PathSpec](_.groups)
   }
 
   type PathSeq = Vector[PathSpec]

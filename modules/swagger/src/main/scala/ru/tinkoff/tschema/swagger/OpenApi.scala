@@ -6,7 +6,8 @@ import io.circe._
 import io.circe.generic._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import monocle.macros.{GenPrism, Lenses}
+import tofu.optics.{Contains, Subset}
+import tofu.optics.macros.{GenContains, GenSubset}
 import ru.tinkoff.tschema.utils.json.CirceKeyEnum
 import ru.tinkoff.tschema.utils.json.circeSyntax._
 import ru.tinkoff.tschema.utils.json.circeCodecs._
@@ -14,7 +15,6 @@ import cats.syntax.option._
 
 import scala.collection.immutable.TreeMap
 
-@Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApi(openapi: String = "3.0.0",
                          info: OpenApiInfo = OpenApiInfo(),
@@ -47,7 +47,6 @@ object OpenApi {
   private[tschema] val defaultMediaTypeVec = Vector(none[MediaType])
 }
 
-@Lenses
 @JsonCodec
 final case class OpenApiInfo(title: String = "",
                              description: Option[SwaggerDescription] = None,
@@ -57,7 +56,6 @@ final case class OpenApiInfo(title: String = "",
                              version: String = "")
 object OpenApiInfo
 
-@Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiComponents(
     schemas: TreeMap[String, DescribedType] = TreeMap.empty,
@@ -66,7 +64,6 @@ final case class OpenApiComponents(
 
 object OpenApiComponents
 
-@Lenses
 @JsonCodec
 final case class OpenApiSecurity(
     `type`: OpenApiSecurityType,
@@ -97,17 +94,14 @@ object OpenApiSecurityScheme extends Enum[OpenApiSecurityScheme] with CirceEnum[
 @JsonCodec
 final case class OpenApiSchema()
 
-@Lenses
 @JsonCodec
 final case class OpenApiContact(name: Option[String] = None, url: Option[String] = None, email: Option[String] = None)
 object OpenApiContact
 
-@Lenses
 @JsonCodec
 final case class OpeApiLicense(name: String, url: Option[String] = None)
 object OpeApiLicense
 
-@Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiParam(name: String,
                               in: OpenApiParam.In,
@@ -118,6 +112,8 @@ final case class OpenApiParam(name: String,
                               allowEmptyValue: Boolean = false)
 
 object OpenApiParam {
+  val description: Contains[OpenApiParam, Option[SwaggerDescription]] = GenContains[OpenApiParam](_.description)
+
   sealed trait In extends EnumEntry
   object In extends Enum[In] with CirceEnum[In] {
     override val values = findValues
@@ -129,14 +125,12 @@ object OpenApiParam {
   }
 }
 
-@Lenses
 @JsonCodec
 final case class OpenApiServer(url: String,
                                description: Option[String] = None,
                                variables: Map[String, OpenApiServerVariable] = Map.empty)
 object OpenApiServer
 
-@Lenses
 @JsonCodec
 final case class OpenApiServerVariable(enum: Vector[String], default: String, description: Option[String])
 object OpenApiServerVariable
@@ -145,7 +139,6 @@ sealed trait SwaggerValue {
   def typeName: String
 }
 
-@Lenses
 final case class SwaggerStringValue(format: Option[OpenApiFormat[SwaggerStringValue]] = None,
                                     default: Option[String] = None,
                                     maxLength: Option[Int] = None,
@@ -161,7 +154,6 @@ object SwaggerStringValue {
   val uuid        = SwaggerStringValue(pattern = Some(uuidPattern))
 }
 
-@Lenses
 final case class SwaggerNumberValue(format: Option[OpenApiFormat[SwaggerNumberValue]] = None,
                                     default: Option[BigDecimal] = None,
                                     maximum: Option[BigDecimal] = None,
@@ -173,7 +165,6 @@ final case class SwaggerNumberValue(format: Option[OpenApiFormat[SwaggerNumberVa
 }
 object OpenApiNumberValue
 
-@Lenses
 final case class SwaggerIntValue(format: Option[OpenApiFormat[SwaggerIntValue]] = None,
                                  default: Option[Int] = None,
                                  maximum: Option[Int] = None,
@@ -185,7 +176,6 @@ final case class SwaggerIntValue(format: Option[OpenApiFormat[SwaggerIntValue]] 
 }
 object SwaggerIntValue
 
-@Lenses
 final case class SwaggerBooleanValue(default: Option[Boolean] = None) extends SwaggerValue {
   override def typeName = "boolean"
 }
@@ -195,7 +185,6 @@ case object SwaggerFileValue extends SwaggerValue {
   override def typeName = "file"
 }
 
-@Lenses
 final case class SwaggerArrayValue(items: SwaggerValue,
                                    default: Option[Vector[Json]] = None,
                                    collFormat: Option[SwaggerValue.CollectionFormat] = None,
@@ -207,12 +196,12 @@ final case class SwaggerArrayValue(items: SwaggerValue,
 object SwaggerArrayValue
 
 object SwaggerValue {
-  val string  = GenPrism[SwaggerValue, SwaggerStringValue]
-  val int     = GenPrism[SwaggerValue, SwaggerIntValue]
-  val number  = GenPrism[SwaggerValue, SwaggerNumberValue]
-  val boolean = GenPrism[SwaggerValue, SwaggerBooleanValue]
-  val file    = GenPrism[SwaggerValue, SwaggerFileValue.type]
-  val array   = GenPrism[SwaggerValue, SwaggerArrayValue]
+  val string  = GenSubset[SwaggerValue, SwaggerStringValue]
+  val int     = GenSubset[SwaggerValue, SwaggerIntValue]
+  val number  = GenSubset[SwaggerValue, SwaggerNumberValue]
+  val boolean = GenSubset[SwaggerValue, SwaggerBooleanValue]
+  val file    = GenSubset[SwaggerValue, SwaggerFileValue.type]
+  val array   = GenSubset[SwaggerValue, SwaggerArrayValue]
 
   sealed trait CollectionFormat extends EnumEntry
 
@@ -253,7 +242,6 @@ object OpenApiFormat {
     Encoder.encodeString.contramap[OpenApiFormat[T]](_.toString)
 }
 
-@Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiRequestBody(
     description: Option[String] = None,
@@ -262,6 +250,9 @@ final case class OpenApiRequestBody(
 )
 
 object OpenApiRequestBody {
+  val description: Contains[OpenApiRequestBody, Option[String]] = GenContains[OpenApiRequestBody](_.description)
+  val content: Contains[OpenApiRequestBody, Map[MediaType, OpenApiMediaType]] = GenContains[OpenApiRequestBody](_.content)
+
   def fromType(swaggerType: SwaggerType, description: Option[String] = None): OpenApiRequestBody =
     OpenApiRequestBody(description = description, content = Map(swaggerType.mediaType -> OpenApiMediaType(Some(swaggerType))))
 
@@ -269,7 +260,6 @@ object OpenApiRequestBody {
     OpenApiRequestBody(content = swaggerTypes.iterator.map(t => t.mediaType -> OpenApiMediaType(Some(t))).toMap)
 }
 
-@Lenses
 @JsonCodec
 final case class OpenApiTag(name: String,
                             description: Option[SwaggerDescription] = None,
@@ -277,13 +267,11 @@ final case class OpenApiTag(name: String,
 
 object OpenApiTag
 
-@Lenses
 @JsonCodec
 final case class OpenApiExternalDocs(description: Option[SwaggerDescription] = None, url: String)
 
 object OpenApiExternalDocs
 
-@Lenses
 final case class OpenApiOp(tags: Vector[String] = Vector.empty,
                            summary: Option[String] = None,
                            description: Option[SwaggerDescription] = None,
@@ -298,12 +286,23 @@ final case class OpenApiOp(tags: Vector[String] = Vector.empty,
 
 object OpenApiOp {
   implicit lazy val swaggerOpEncoder: Encoder.AsObject[OpenApiOp] = deriveEncoder
+
+  val tags: Contains[OpenApiOp, Vector[String]] = GenContains[OpenApiOp](_.tags)
+  val summary: Contains[OpenApiOp, Option[String]] = GenContains[OpenApiOp](_.summary)
+  val description: Contains[OpenApiOp, Option[SwaggerDescription]] = GenContains[OpenApiOp](_.description)
+  val parameters: Contains[OpenApiOp, Vector[OpenApiParam]] = GenContains[OpenApiOp](_.parameters)
+  val requestBody: Contains[OpenApiOp, Option[OpenApiRequestBody]] = GenContains[OpenApiOp](_.requestBody)
+  val responses: Contains[OpenApiOp, OpenApiResponses] = GenContains[OpenApiOp](_.responses)
+  val security: Contains[OpenApiOp, Vector[Map[String, Vector[String]]]] = GenContains[OpenApiOp](_.security)
+  val deprecated: Contains[OpenApiOp, Boolean] = GenContains[OpenApiOp](_.deprecated)
 }
 
-@Lenses
 final case class OpenApiResponses(default: Option[OpenApiResponse] = None, codes: Map[StatusCode, OpenApiResponse] = Map.empty)
 
 object OpenApiResponses {
+  val default: Contains[OpenApiResponses, Option[OpenApiResponse]] = GenContains[OpenApiResponses](_.default)
+  val codes: Contains[OpenApiResponses, Map[StatusCode, OpenApiResponse]] = GenContains[OpenApiResponses](_.codes)
+
   implicit lazy val statusCodeEncoder = KeyEncoder.encodeKeyInt
 
   val mapEnc = Encoder.encodeMapLike[StatusCode, OpenApiResponse, Map]
@@ -317,7 +316,6 @@ object OpenApiResponses {
   }
 }
 
-@Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiResponse(description: Option[SwaggerDescription] = None,
                                  content: Map[MediaType, OpenApiMediaType],
@@ -331,7 +329,8 @@ object OpenApiResponse {
     OpenApiResponse(content = types.iterator.map(t => t.mediaType -> OpenApiMediaType(t.some)).toMap)
 }
 
-@Lenses
 @JsonCodec(encodeOnly = true)
 final case class OpenApiMediaType(schema: Option[SwaggerType] = None, example: Option[Json] = None)
-object OpenApiMediaType
+object OpenApiMediaType {
+  val schema: Contains[OpenApiMediaType, Option[SwaggerType]] = GenContains[OpenApiMediaType](_.schema)
+}

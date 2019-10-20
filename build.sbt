@@ -77,9 +77,9 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val monocle = libraryDependencies ++= List("core", "macro").map(
+val tofuOptics = libraryDependencies ++= List("core", "macro").map(
   module =>
-    "com.github.julien-truffaut" %% s"monocle-$module" % Version.monocle
+    "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
 )
 
 val circe = libraryDependencies ++= List("core", "parser", "generic", "generic-extras").map(
@@ -190,7 +190,7 @@ lazy val swagger = project
     moduleName := "typed-schema-swagger",
     libraryDependencies ++= enumeratum :: enumeratumCirce :: Nil,
     magnolia,
-    monocle,
+    tofuOptics,
     paradise,
     circe
   )

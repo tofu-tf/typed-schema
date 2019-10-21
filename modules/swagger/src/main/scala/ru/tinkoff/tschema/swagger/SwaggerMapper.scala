@@ -20,7 +20,8 @@ import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
 import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
 import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.subsets._
-import tofu.optics.functions.mapAt
+import tofu.optics.chain
+import tofu.optics.tags.at
 import shapeless.{Lazy, Witness}
 
 import scala.annotation.implicitNotFound
@@ -237,9 +238,9 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     def make: OpenApiRequestBody =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
 
-    def add: OpenApiRequestBody => OpenApiRequestBody =
-      (OpenApiRequestBody.content >> mapAt[MediaType, OpenApiMediaType](myMediaType) >> some[OpenApiMediaType] >> OpenApiMediaType.schema >> some[SwaggerType])
-        .update(_, _ merge objType)
+    def add(body: OpenApiRequestBody): OpenApiRequestBody =
+      chain(body) >> OpenApiRequestBody.content > at >@ myMediaType > some >>
+        OpenApiMediaType.schema > some >@ () update (_ merge objType)
   }
 
   object MakeFormField {

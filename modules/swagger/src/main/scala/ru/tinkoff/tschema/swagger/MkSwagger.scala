@@ -17,7 +17,7 @@ import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
 import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
 import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.subsets._
-import tofu.optics.Contains
+import tofu.optics.{Contains, chain}
 import tofu.optics.functions._
 import tofu.optics.macros.GenContains
 import shapeless.{Lazy, Witness}
@@ -112,8 +112,8 @@ object SwaggerBuilder {
             (OpenApiOp.summary.update(_, method(MethodTarget.Summary) orElse _)) andThen
             ((OpenApiOp.parameters >> vecItems[OpenApiParam, OpenApiParam])
               .update(_, param => OpenApiParam.description.update(param, method(MethodTarget.Param(param.name)) orElse _))) andThen
-            ((OpenApiOp.requestBody >> some[OpenApiRequestBody] >> OpenApiRequestBody.description)
-              .update(_, method(MethodTarget.Body) orElse _))
+            ((oao: OpenApiOp) => chain(oao) >> 
+              OpenApiOp.requestBody > some >@ () >> OpenApiRequestBody.description update (method(MethodTarget.Body) orElse _))
         )
       case spec => spec
     }

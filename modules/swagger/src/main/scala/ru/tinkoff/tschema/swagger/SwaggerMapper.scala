@@ -22,6 +22,8 @@ import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.subsets._
 import tofu.optics.functions.mapAt
 import shapeless.{Lazy, Witness}
+import tofu.optics.chain
+import tofu.optics.tags.at
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
@@ -151,9 +153,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
         case pm: AsMultiOpenApiParam[T]  => pm.fields.reduceMap(p => param(p, p.name))
       }
 
-      (PathSpec.op >> OpenApiOp.requestBody).update(_, 
-        _.fold(params.make)(params.add).some
-      )
+      (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
     }
 
   implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
@@ -166,7 +166,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   implicit def deriveReqBody[name, T](implicit content: SwaggerContent[T]): SwaggerMapper[ReqBody[name, T]] =
     fromFunc(
-      (PathSpec.op >> OpenApiOp.requestBody).set(_, OpenApiRequestBody.fromTypes(content.content.flatMap(_._2): _*).some)
+      (PathSpec.op >> OpenApiOp.requestBody)
+        .set(_, OpenApiRequestBody.fromTypes(content.content.flatMap(_._2): _*).some)
     ) andThen fromTypes[ReqBody[name, T]](content.collectTypes)
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
@@ -237,9 +238,9 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     def make: OpenApiRequestBody =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
 
-    def add: OpenApiRequestBody => OpenApiRequestBody =
-      (OpenApiRequestBody.content >> mapAt[MediaType, OpenApiMediaType](myMediaType) >> some[OpenApiMediaType] >> OpenApiMediaType.schema >> some[SwaggerType])
-        .update(_, _ merge objType)
+    def add(body: OpenApiRequestBody) =
+      chain(body) >> OpenApiRequestBody.content > at >@ myMediaType > some_ >>
+        OpenApiMediaType.schema > some_ >@ () update (_ merge objType)
   }
 
   object MakeFormField {

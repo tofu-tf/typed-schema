@@ -3,8 +3,6 @@ object Version {
 
   val circeDerivation = "0.12.0-M7"
 
-  val circe211 = "0.12.0-M3"
-
   val tethys = "0.10.0"
 
   val akka = "2.5.26"
@@ -17,8 +15,6 @@ object Version {
 
   val akkaHttpCirce = "1.29.1"
 
-  val akkaHttpCirce211 = "1.27.0"
-
   val cats = "2.0.0"
 
   val catsEffect = "2.0.0"
@@ -27,15 +23,11 @@ object Version {
 
   val enumeratumCirce = "1.5.22"
 
-  val monocle = "1.5.1-cats"
-
-  val monocle213 = "1.6.0"
+  val monocle = "1.6.0"
 
   val simulacrum = "0.19.0"
 
-  val magnolia211 = "0.10.0"
-
-  val magnolia213 = "0.11.0"
+  val magnolia = "0.11.0"
 
   val zio = "1.0.0-RC15"
 
@@ -45,11 +37,9 @@ object Version {
 
   val derevo = "0.8.1"
 
-  val tofu = "0.2.0"
+  val tofu = "0.5.0"
 
   val swaggerUI = "3.24.0"
-
-  val scalaTags211 = "0.6.8"
 
   val scalaTags = "0.7.0"
 

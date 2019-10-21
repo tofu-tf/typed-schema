@@ -2,7 +2,6 @@ import com.typesafe.sbt.SbtGit.git
 
 val pubVersion = "0.11.0"
 
-
 val publishSettings = List(
   name := "Typed Schema",
   organization := "ru.tinkoff",
@@ -38,7 +37,7 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions := List("2.11.12", "2.12.10")
+val crossCompile = crossScalaVersions := List("2.12.10")
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",
@@ -50,16 +49,9 @@ val commonScalacOptions = scalacOptions ++= List(
   "-language:postfixOps"
 )
 
-val setExperimental = scalacOptions ++= {
-  CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, y)) if y == 11 => Seq("-Xexperimental")
-    case _                       => Seq.empty[String]
-  }
-}
-
 val specificScalacOptions = scalacOptions ++= {
   minorVersion.value match {
-    case 11 | 12 => List("-Ypartial-unification")
+    case 12 => List("-Ypartial-unification")
     case 13      => List("-Ymacro-annotations")
   }
 }
@@ -78,56 +70,26 @@ lazy val compilerPlugins = libraryDependencies ++= List(
 
 val paradise = libraryDependencies ++= {
   minorVersion.value match {
-    case 11 | 12 => List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch))
+    case 12 => List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch))
     case 13      => List()
   }
 }
 
-val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % {
-  minorVersion.value match {
-    case 11 => Version.magnolia211
-    case _  => Version.magnolia213
-  }
-}
+val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val monocle = libraryDependencies ++= List("core", "macro").map(
+val tofuOptics = libraryDependencies ++= List("core", "macro").map(
   module =>
-    "com.github.julien-truffaut" %% s"monocle-$module" % {
-      minorVersion.value match {
-        case 11 | 12 => Version.monocle
-        case 13      => Version.monocle213
-      }
-    }
+    "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
 )
 
 val circe = libraryDependencies ++= List("core", "parser", "generic", "generic-extras").map(
   module =>
-    "io.circe" %% s"circe-$module" % {
-      minorVersion.value match {
-        case 11      => Version.circe211
-        case 12 | 13 => Version.circe
-      }
-    }
-) :+ "io.circe" %% "circe-derivation" % {
-  minorVersion.value match {
-    case 11      => Version.circe211
-    case 12 | 13 => Version.circeDerivation
-  }
-}
+    "io.circe" %% s"circe-$module" % Version.circe
+) :+ "io.circe" %% "circe-derivation" % Version.circeDerivation
 
-val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % {
-  minorVersion.value match {
-    case 11      => Version.scalaTags211
-    case 12 | 13 => Version.scalaTags
-  }
-}
+val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
-val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % {
-  minorVersion.value match {
-    case 11      => Version.akkaHttpCirce211
-    case 12 | 13 => Version.akkaHttpCirce
-  }
-}
+val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
 val catsCore   = "org.typelevel"        %% s"cats-core"   % Version.cats
 val catsFree   = "org.typelevel"        %% s"cats-free"   % Version.cats
@@ -174,7 +136,6 @@ lazy val commonSettings = publishSettings ++ List(
   scalaVersion := "2.12.10",
   compilerPlugins,
   commonScalacOptions,
-  setExperimental,
   specificScalacOptions,
   crossCompile,
   setMinorVersion,
@@ -229,7 +190,7 @@ lazy val swagger = project
     moduleName := "typed-schema-swagger",
     libraryDependencies ++= enumeratum :: enumeratumCirce :: Nil,
     magnolia,
-    monocle,
+    tofuOptics,
     paradise,
     circe
   )

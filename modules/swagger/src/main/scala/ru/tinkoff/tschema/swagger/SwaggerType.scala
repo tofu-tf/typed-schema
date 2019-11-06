@@ -285,10 +285,10 @@ object SwaggerType {
               case (name, Some(descr), obj) => name -> obj.add("description", Json.fromString(descr)).asJson
             }
 
-            JsonObject.fromIterable(
-              "type" -> Json.fromString("object") ::
-                required.value.toNev.map("required" -> _.asJson).toList
-              ++ List("properties" -> Json.obj(fields: _*))
+            JsonObject(
+              "type" -> Json.fromString("object"),
+              "required" -> required.value.toNev.fold(Json.Null)(_.asJson),
+              "properties" -> Json.obj(fields: _*)
             )
           }
 

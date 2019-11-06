@@ -6,7 +6,7 @@ import cats.syntax.applicative._
 import cats.syntax.apply._
 import cats.syntax.option._
 import cats.syntax.traverse._
-import io.circe
+import cats.syntax.vector._
 import io.circe._
 import io.circe.syntax._
 import io.circe.derivation._
@@ -20,7 +20,6 @@ import shapeless.tag.@@
 import scala.annotation.tailrec
 import scala.language.higherKinds
 import tofu.optics.Contains
-import tofu.optics.chain
 
 sealed trait SwaggerType {
   def merge: PartialFunction[SwaggerType, SwaggerType] = PartialFunction.empty
@@ -285,9 +284,12 @@ object SwaggerType {
               case (name, None, obj)        => name -> obj.asJson
               case (name, Some(descr), obj) => name -> obj.add("description", Json.fromString(descr)).asJson
             }
-            JsonObject("type"       -> Json.fromString("object"),
-                       "required"   -> Json.arr(required.value.map(Json.fromString): _*),
-                       "properties" -> Json.obj(fields: _*))
+
+            JsonObject.fromIterable(
+              "type" -> Json.fromString("object") ::
+                required.value.toNev.map("required" -> _.asJson).toList
+              ++ List("properties" -> Json.obj(fields: _*))
+            )
           }
 
       case SwaggerOneOf(alts, discriminator) =>

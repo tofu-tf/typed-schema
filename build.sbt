@@ -315,7 +315,7 @@ lazy val docs = project
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .settings(publish / skip := true, publishSettings, setMinorVersion, crossCompile, compile213)
+    .settings(publish / skip := true, publishSettings, setMinorVersion, crossCompile)
     .aggregate(
       macros,
       kernel,

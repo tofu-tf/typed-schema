@@ -1,11 +1,12 @@
 object Version {
+
   val circe = "0.12.3"
 
   val circeDerivation = "0.12.0-M7"
 
   val tethys = "0.10.0"
 
-  val akka = "2.5.26"
+  val akka = "2.6.0"
 
   val akkaHttp = "10.1.10"
 
@@ -27,19 +28,19 @@ object Version {
 
   val simulacrum = "0.19.0"
 
-  val magnolia = "0.11.0"
+  val magnolia = "0.12.0"
 
   val zio = "1.0.0-RC15"
 
-  val zioCats = "2.0.0.0-RC6"
+  val zioCats = "2.0.0.0-RC7"
 
-  val finagle = "19.10.0"
+  val finagle = "19.11.0"
 
   val derevo = "0.8.1"
 
-  val tofu = "0.5.0"
+  val tofu = "0.5.2"
 
-  val swaggerUI = "3.24.0"
+  val swaggerUI = "3.24.2"
 
   val scalaTags = "0.7.0"
 

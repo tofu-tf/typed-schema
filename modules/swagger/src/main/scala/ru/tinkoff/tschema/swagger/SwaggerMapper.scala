@@ -240,7 +240,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
     def add(body: OpenApiRequestBody): OpenApiRequestBody =
       chain(body) >> OpenApiRequestBody.content > at >@ myMediaType > some >>
-        OpenApiMediaType.schema > some >@ () update (_ merge objType)
+        OpenApiMediaType.schema > some >@ {} update (_ merge objType)
   }
 
   object MakeFormField {

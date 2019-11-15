@@ -21,8 +21,14 @@ object ZioRouting extends ZioRoutedImpl {
 
   type ZIOHttp[-R, +E, +A] = ZIO[ZioRouting[R], Fail[E], A]
 
-  implicit def zioRouted[R, E]: RoutedPlus[ZIOHttp[R, E, *]] with LiftHttp[ZIOHttp[R, E, *], ZIO[R, E, *]] =
+  implicit def zioRouted[R, E]: RoutedPlus[ZIOHttp[R, E, *]] =
     zioRoutedAny.asInstanceOf[ZioRoutedInstance[R, E]]
+
+  implicit def zioLift[R, R1, E, E1](
+      implicit eve: E1 <:< E,
+      evr: R <:< R1
+  ): LiftHttp[ZIOHttp[R, E, *], ZIO[R1, E1, *]] =
+    zioLiftAny.asInstanceOf[ZioLiftInstance[R, R1, E, E1]]
 
   def zioConvertService[R, E](f: Throwable => Fail[E]): ConvertService[ZIOHttp[R, E, *]] =
     new ZIOConvertService[ZioRouting[R], Fail[E]](f)
@@ -61,8 +67,7 @@ object ZioRouting extends ZioRoutedImpl {
 }
 private[finagle] class ZioRoutedImpl {
 
-  protected trait ZioRoutedInstance[R, E]
-      extends RoutedPlus[ZIOHttp[R, E, *]] with LiftHttp[ZIOHttp[R, E, *], ZIO[R, E, *]] {
+  protected trait ZioRoutedInstance[R, E] extends RoutedPlus[ZIOHttp[R, E, *]] {
     private type F[a] = ZIOHttp[R, E, a]
     implicit private[this] val self: RoutedPlus[F] = this
     implicit private[this] val monad: Monad[F]     = zio.interop.catz.monadErrorInstance
@@ -78,15 +83,20 @@ private[finagle] class ZioRoutedImpl {
 
     def combineK[A](x: F[A], y: F[A]): F[A] =
       catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
-
-    def apply[A](fa: ZIO[R, E, A]): F[A] = fa.mapError(Fail.Other(_)).provideSome(_.embedded)
-
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.catchSome { case Fail.Rejected(xrs) => f(xrs) }
 
     @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
   }
 
+  protected class ZioLiftInstance[R, R1, E, E1](implicit eve: E1 <:< E, evr: R <:< R1)
+      extends LiftHttp[ZIOHttp[R, E, *], ZIO[R1, E1, *]] {
+    private type F[a] = ZIOHttp[R, E, a]
+    def apply[A](fa: ZIO[R1, E1, A]): F[A] =
+      fa.mapError(Fail.Other(_): Fail[E]).provideSome[ZioRouting[R]](_.embedded)
+  }
+
   protected[this] object zioRoutedAny extends ZioRoutedInstance[Any, Nothing]
+  protected[this] object zioLiftAny   extends ZioLiftInstance[Any, Any, Nothing, Nothing]
 
 }

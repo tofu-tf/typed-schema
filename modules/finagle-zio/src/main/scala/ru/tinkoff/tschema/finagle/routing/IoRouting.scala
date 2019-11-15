@@ -21,8 +21,11 @@ object IoRouting extends IoRoutedImpl {
 
   type IOHttp[+E, +A] = ZIO[IoRouting, Fail[E], A]
 
-  implicit def ioRouted[E]: RoutedPlus[IOHttp[E, *]] with LiftHttp[IOHttp[E, *], IO[E, *]] =
+  implicit def ioRouted[E]: RoutedPlus[IOHttp[E, *]] =
     ioRoutedAny.asInstanceOf[IoRoutedInstance[E]]
+
+  implicit def ioLift[E, E1](implicit as: E1 <:< E): LiftHttp[IOHttp[E, *], IO[E1, *]] =
+    ioLiftAny.asInstanceOf[IoLiftInstance[E, E1]]
 
   def ioConvertService[E](f: Throwable => Fail[E]): ConvertService[IOHttp[E, *]] =
     new ZIOConvertService[IoRouting, Fail[E]](f)
@@ -57,7 +60,7 @@ object IoRouting extends IoRoutedImpl {
 }
 private[finagle] class IoRoutedImpl {
 
-  protected trait IoRoutedInstance[E] extends RoutedPlus[IOHttp[E, *]] with LiftHttp[IOHttp[E, *], IO[E, *]] {
+  protected trait IoRoutedInstance[E] extends RoutedPlus[IOHttp[E, *]] {
     private type F[a] = IOHttp[E, a]
     implicit private[this] val self: RoutedPlus[F] = this
     implicit private[this] val monad: Monad[F]     = zio.interop.catz.monadErrorInstance
@@ -74,14 +77,19 @@ private[finagle] class IoRoutedImpl {
     def combineK[A](x: F[A], y: F[A]): F[A] =
       catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
 
-    def apply[A](fa: IO[E, A]): F[A] = fa.mapError(Fail.Other(_))
-
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.catchSome { case Fail.Rejected(xrs) => f(xrs) }
 
     @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
   }
 
+  protected class IoLiftInstance[E, E1](implicit ev : E1 <:< E) extends LiftHttp[IOHttp[E, *], IO[E1, *]] {
+    private type F[a] = IOHttp[E, a]
+
+    def apply[A](fa: IO[E1, A]): F[A] = fa.mapError(Fail.Other(_))
+  }
+
   protected[this] object ioRoutedAny extends IoRoutedInstance[Nothing]
+  protected[this] object ioLiftAny   extends IoLiftInstance[Nothing, Nothing]
 
 }

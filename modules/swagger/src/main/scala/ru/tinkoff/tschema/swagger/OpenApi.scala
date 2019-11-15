@@ -165,7 +165,9 @@ final case class SwaggerStringValue(
 
 object SwaggerStringValue {
   val uuidPattern = Seq(8, 4, 4, 4, 12).map(k => s"[0-9a-fA-F]{$k}").mkString("-")
+  val timePattern = s"(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(\\.[0-9]+)?(Z)?"
   val uuid        = SwaggerStringValue(pattern = Some(uuidPattern))
+  val time        = SwaggerStringValue(pattern = Some(timePattern))
 }
 
 @JsonCodec(Configuration.encodeOnly)
@@ -238,7 +240,8 @@ object SwaggerValue {
     case object multi extends CollectionFormat
   }
 
-  private lazy val derivedEncoder: Encoder.AsObject[SwaggerValue] = deriveEncoder[SwaggerValue]((x: String) => x, Some("type"))
+  private lazy val derivedEncoder: Encoder.AsObject[SwaggerValue] =
+    deriveEncoder[SwaggerValue]((x: String) => x, Some("type"))
 
   implicit lazy val encodeSwaggerValue: Encoder.AsObject[SwaggerValue] = derivedEncoder.mapObjWithSrc { (x, obj) =>
     obj.add("type", Json.fromString(x.typeName))
@@ -257,6 +260,7 @@ object OpenApiFormat {
   case object base64   extends OpenApiFormat[SwaggerStringValue]
   case object date     extends OpenApiFormat[SwaggerStringValue]
   case object dateTime extends OpenApiFormat[SwaggerStringValue]
+  case object time     extends OpenApiFormat[SwaggerStringValue]
   case object password extends OpenApiFormat[SwaggerStringValue]
 
   implicit def formatDecoder[T <: SwaggerValue]: Encoder[OpenApiFormat[T]] =

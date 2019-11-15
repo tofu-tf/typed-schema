@@ -70,6 +70,7 @@ object SwaggerPrimitive {
   case object binary   extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.binary))
   case object date     extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.date))
   case object dateTime extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.dateTime))
+  case object time     extends SwaggerPrimitive(SwaggerStringValue.time)
   case object password extends SwaggerPrimitive(SwaggerStringValue(), Some(OpenApiFormat.password))
 
   def bin(mediaType: MediaType): SwaggerPrimitive[SwaggerStringValue] =

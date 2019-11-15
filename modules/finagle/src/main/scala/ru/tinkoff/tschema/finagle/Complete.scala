@@ -17,6 +17,8 @@ import scala.annotation.implicitNotFound
 )
 trait CompleteIn[F[_], -In, Out, A] {
   def completeIn(a: A, in: In): F[Response]
+
+  def as[Out1]: CompleteIn[F, In, Out1, A] = this.asInstanceOf[CompleteIn[F, In, Out1, A]]
 }
 
 object CompleteIn extends CompositeCompleteInInstances with DefaultCompleteInInstances
@@ -25,6 +27,8 @@ trait Complete[F[_], R, A] extends CompleteIn[F, Any, R, A] {
   def complete(a: A): F[Response]
 
   def completeIn(a: A, in: Any): F[Response] = complete(a)
+
+  override def as[R1]: Complete[F, R1, A] = this.asInstanceOf[Complete[F, R1, A]]
 }
 
 object Complete {

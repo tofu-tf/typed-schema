@@ -107,13 +107,24 @@ object SwaggerBuilder {
             }
         }
 
-        PathSpec.op.update(spec,
+        PathSpec.op.update(
+          spec,
           (OpenApiOp.description.update(_, method(MethodTarget.Path) orElse _)) andThen
             (OpenApiOp.summary.update(_, method(MethodTarget.Summary) orElse _)) andThen
-            ((OpenApiOp.parameters >> vecItems[OpenApiParam, OpenApiParam])
-              .update(_, param => OpenApiParam.description.update(param, method(MethodTarget.Param(param.name)) orElse _))) andThen
-            ((oao: OpenApiOp) => chain(oao) >> 
-              OpenApiOp.requestBody > some >@ () >> OpenApiRequestBody.description update (method(MethodTarget.Body) orElse _))
+            (
+              (OpenApiOp.parameters >> vecItems[OpenApiParam, OpenApiParam])
+                .update(
+                  _,
+                  param => OpenApiParam.description.update(param, method(MethodTarget.Param(param.name)) orElse _)
+                )
+              ) andThen
+            (
+                (oao: OpenApiOp) =>
+                  chain(oao) >>
+                    OpenApiOp.requestBody > some >@ {} >> OpenApiRequestBody.description update (method(
+                    MethodTarget.Body
+                  ) orElse _)
+              )
         )
       case spec => spec
     }
@@ -125,9 +136,15 @@ object SwaggerBuilder {
           val setDescriptions =
             (DescribedType.title.update(_, typ(TypeTarget.Title) orElse _)) andThen
               (DescribedType.description.update(_, typ(TypeTarget.Type) orElse _)) andThen
-              ((DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties >> vecItems[SwaggerProperty, SwaggerProperty]).update(_, 
-                prop => SwaggerProperty.description.update(prop, typ(TypeTarget.Field(prop.name)) orElse _)
-              ))
+              (
+                (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties >> vecItems[
+                  SwaggerProperty,
+                  SwaggerProperty
+                ]).update(
+                  _,
+                  prop => SwaggerProperty.description.update(prop, typ(TypeTarget.Field(prop.name)) orElse _)
+                )
+              )
 
           name -> setDescriptions(t)
       }
@@ -166,6 +183,41 @@ trait MkSwagger[T] extends SwaggerBuilder {
       val tags: TagInfo                           = self.tags
       val auths: TreeMap[String, OpenApiSecurity] = self.auths
     }
+
+  def addDescribedResponse(code: StatusCode, typ: SwaggerType, description: Option[SwaggerDescription] = None) =
+    new MkSwagger[T] {
+      val paths: PathSeq = self.paths.map(
+        (PathSpec.op >> OpenApiOp.responses >> OpenApiResponses.codes)
+          .update(_, _ + (code -> OpenApiResponse.make(description = description, swaggerType = typ)))
+      )
+
+      val types: TypePool                         = self.types ++ typ.collectTypes
+      val tags: TagInfo                           = self.tags
+      val auths: TreeMap[String, OpenApiSecurity] = self.auths
+    }
+
+  def addContent[U](content: SwaggerContent[U]): MkSwagger[T] = {
+    val (newPaths, newTypes) = content.content.foldLeft((this.paths, this.types)) {
+      case ((paths, types), (status, ot)) =>
+        val resp     = ot.fold(OpenApiResponse())(typ => OpenApiResponse.make(swaggerType = typ))
+        val addTypes = ot.fold[Map[String, DescribedType]](Map())(_.collectTypes)
+        (
+          paths.map(
+            (PathSpec.op >> OpenApiOp.responses >> OpenApiResponses.codes)
+              .update(_, _ + (status -> resp))
+          ),
+          types ++ addTypes
+        )
+    }
+
+    new MkSwagger[T] {
+      val paths: PathSeq                          = newPaths
+      val types: TypePool                         = newTypes
+      val tags: TagInfo                           = self.tags
+      val auths: TreeMap[String, OpenApiSecurity] = self.auths
+    }
+
+  }
 
   override def map(f: PathSpec => PathSpec): MkSwagger[T] = new SwaggerBuilder.SMap(this, f) with MkSwagger[T]
 
@@ -207,11 +259,11 @@ object MkSwagger {
     def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.update(this, f)
   }
   object PathSpec {
-    val path: Contains[PathSpec, Vector[String]] = GenContains[PathSpec](_.path)
+    val path: Contains[PathSpec, Vector[String]]           = GenContains[PathSpec](_.path)
     val method: Contains[PathSpec, Option[OpenApi.Method]] = GenContains[PathSpec](_.method)
-    val op: Contains[PathSpec, OpenApiOp] = GenContains[PathSpec](_.op)
-    val key: Contains[PathSpec, Option[String]] = GenContains[PathSpec](_.key)
-    val groups: Contains[PathSpec, Vector[String]] = GenContains[PathSpec](_.groups)
+    val op: Contains[PathSpec, OpenApiOp]                  = GenContains[PathSpec](_.op)
+    val key: Contains[PathSpec, Option[String]]            = GenContains[PathSpec](_.key)
+    val groups: Contains[PathSpec, Vector[String]]         = GenContains[PathSpec](_.groups)
   }
 
   type PathSeq = Vector[PathSpec]

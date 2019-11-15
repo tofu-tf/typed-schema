@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.11.0"
+val pubVersion = "0.11.1"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -52,7 +52,7 @@ val commonScalacOptions = scalacOptions ++= List(
 val specificScalacOptions = scalacOptions ++= {
   minorVersion.value match {
     case 12 => List("-Ypartial-unification")
-    case 13      => List("-Ymacro-annotations")
+    case 13 => List("-Ymacro-annotations")
   }
 }
 
@@ -71,21 +71,21 @@ lazy val compilerPlugins = libraryDependencies ++= List(
 val paradise = libraryDependencies ++= {
   minorVersion.value match {
     case 12 => List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch))
-    case 13      => List()
+    case 13 => List()
   }
 }
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
 val tofuOptics = libraryDependencies ++= List("core", "macro").map(
-  module =>
-    "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
+  module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
 )
 
-val circe = libraryDependencies ++= List("core", "parser", "generic", "generic-extras").map(
-  module =>
-    "io.circe" %% s"circe-$module" % Version.circe
-) :+ "io.circe" %% "circe-derivation" % Version.circeDerivation
+val circe = libraryDependencies ++= List("core", "parser").map(
+  module => "io.circe" %% s"circe-$module" % Version.circe
+) ++ List("derivation", "derivation-annotations").map(
+  module => "io.circe" %% s"circe-$module" % Version.circeDerivation
+)
 
 val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
@@ -132,7 +132,6 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 lazy val testLibs = libraryDependencies ++= scalacheck :: scalatest :: Nil
 
 lazy val commonSettings = publishSettings ++ List(
-
   scalaVersion := "2.12.10",
   compilerPlugins,
   commonScalacOptions,
@@ -144,12 +143,6 @@ lazy val commonSettings = publishSettings ++ List(
 
 val compile213 = List(crossScalaVersions += "2.13.1")
 
-//val skipTest213 = skip in Test := {
-//  minorVersion.value match {
-//    case 11 | 12 => false
-//    case 13      => true
-//  }
-//}
 
 lazy val kernel = project
   .in(file("modules/kernel"))
@@ -231,6 +224,14 @@ lazy val finagleTethys = project
     commonSettings,
     moduleName := "typed-schema-finagle-tethys",
     libraryDependencies ++= tethys
+  )
+
+lazy val finagleCustom = project
+  .in(file("modules/finagleCustom"))
+  .dependsOn(finagleCirce, finagleTethys, swagger)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-finagle-custom"
   )
 
 lazy val finagleZio = project
@@ -316,19 +317,20 @@ lazy val typedschema =
     .dependsOn(macros, kernel, main)
     .settings(publish / skip := true, publishSettings, setMinorVersion, crossCompile, compile213)
     .aggregate(
-      macros,     //
-      kernel,     //
-      main,       //
-      param,      //
-      swagger,    //
-      akkaHttp,   //
-      scalaz,     //
-      finagle,    //
-      finagleZio, //
-      finagleEnv, //
+      macros,
+      kernel,
+      main,
+      param,
+      swagger,
+      akkaHttp,
+      scalaz,
+      finagle,
+      finagleZio,
+      finagleEnv,
       finagleCirce,
-      finagleTethys, //
-      finagleCommon, //
-      swaggerUI,     //
+      finagleTethys,
+      finagleCommon,
+      finagleCustom,
+      swaggerUI,
       docs
     )

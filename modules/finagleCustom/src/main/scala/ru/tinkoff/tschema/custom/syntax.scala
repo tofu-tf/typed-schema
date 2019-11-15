@@ -5,6 +5,8 @@ import ru.tinkoff.tschema.typeDSL._
 object syntax {
   def json[A]: Complete[JsonResult[A]] = new Complete
 
+  def plain[A]: Complete[PlainResult[A]] = new Complete
+
   def err[E, A]: Complete[ErrorResult[E, A]] = new Complete
 
   def jsonErr[E, A]: Complete[ErrorResult[E, JsonResult[A]]] = new Complete

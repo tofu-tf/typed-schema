@@ -247,7 +247,7 @@ object MkSwagger {
 
   def empty[T]: MkSwagger[T] = new EmptySwaggerBuilder with MkSwagger[T]
 
-  def apply[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
+  def summon[T](implicit derived: MkSwagger[T]): MkSwagger[T] = derived
 
   case class PathSpec(
       path: Vector[String],

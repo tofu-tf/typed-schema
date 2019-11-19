@@ -43,27 +43,15 @@ object ZioRouting extends ZioRoutedImpl {
       runtime: zio.Runtime[R],
       zioResponse: ZIOHttp[R, E, Response],
       request: Request
-  )(implicit handler: Rejection.Handler): Future[Response] = {
-    val promise = Promise[Response]
-
-    runtime.unsafeRunAsync(
-      interruption
-        .set(zioResponse, promise, runtime)
+  )(implicit handler: Rejection.Handler): Future[Response] =
+    execWithRuntime(runtime, request)(
+      zioResponse
         .provideSome[R](r => ZioRouting(request, SubString(request.path), 0, r))
         .catchAll {
           case Fail.Rejected(rejection) => ZIO.succeed(handler(rejection))
           case Fail.Other(e)            => ZIO.fail(e)
         }
-    ) {
-      case Exit.Success(resp) => promise.setValue(resp)
-      case Exit.Failure(cause) =>
-        val resp = Response(Status.InternalServerError)
-        resp.setContentString(cause.squash.getMessage)
-        promise.setValue(resp)
-    }
-
-    promise
-  }
+    )
 }
 private[finagle] class ZioRoutedImpl {
 

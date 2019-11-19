@@ -40,23 +40,13 @@ object IoRouting extends IoRoutedImpl {
       runtime: zio.Runtime[Any],
       zioResponse: IOHttp[E, Response],
       request: Request
-  )(implicit handler: Rejection.Handler): Future[Response] = {
-    val promise = Promise[Response]
-
-    runtime.unsafeRunAsync(
-      interruption.set(zioResponse, promise, runtime).provide(IoRouting(request, SubString(request.path), 0)).catchAll {
+  )(implicit handler: Rejection.Handler): Future[Response] =
+    execWithRuntime(runtime, request)(
+      zioResponse.provide(IoRouting(request, SubString(request.path), 0)).catchAll {
         case Fail.Rejected(rejection) => ZIO.succeed(handler(rejection))
         case Fail.Other(e)            => ZIO.fail(e)
       }
-    ) {
-      case Exit.Success(resp) => promise.setValue(resp)
-      case Exit.Failure(cause) =>
-        val resp = Response(Status.InternalServerError)
-        resp.setContentString(cause.squash.getMessage)
-        promise.setValue(resp)
-    }
-    promise
-  }
+    )
 }
 private[finagle] class IoRoutedImpl {
 
@@ -83,7 +73,7 @@ private[finagle] class IoRoutedImpl {
     @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
   }
 
-  protected class IoLiftInstance[E, E1](implicit ev : E1 <:< E) extends LiftHttp[IOHttp[E, *], IO[E1, *]] {
+  protected class IoLiftInstance[E, E1](implicit ev: E1 <:< E) extends LiftHttp[IOHttp[E, *], IO[E1, *]] {
     private type F[a] = IOHttp[E, a]
 
     def apply[A](fa: IO[E1, A]): F[A] = fa.mapError(Fail.Other(_))

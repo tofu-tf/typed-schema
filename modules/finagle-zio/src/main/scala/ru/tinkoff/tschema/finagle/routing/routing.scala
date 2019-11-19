@@ -7,17 +7,6 @@ import ru.tinkoff.tschema.finagle.ConvertService
 import ru.tinkoff.tschema.finagle.routing.IoRouting.IOHttp
 import zio.{Fiber, Runtime, UIO, ZIO}
 
-private[tschema] object interruption {
-  def set[R, E, A, X](zio: ZIO[R, E, A], promise: Promise[X], rt: Runtime[Any]): ZIO[R, E, A] = {
-    def setInterrupt(fiber: Fiber[Any, Any]) =
-      ZIO.effectTotal(promise.setInterruptHandler {
-        case _ => rt.unsafeRunAsync(fiber.interrupt)(_ => ())
-      })
-
-    zio.fork.tap(setInterrupt) >>= (_.join)
-  }
-}
-
 trait ZioRoutingCommon {
   def request: Request
   def path: CharSequence
@@ -37,5 +26,3 @@ private class ZIOConvertService[R <: ZioRoutingCommon, E](f: Throwable => E) ext
       }
     }
 }
-
-

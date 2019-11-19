@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.11.3"
+val pubVersion = "0.11.4"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -231,7 +231,8 @@ lazy val finagleCustom = project
   .dependsOn(finagleCirce, finagleTethys, swagger)
   .settings(
     commonSettings,
-    moduleName := "typed-schema-finagle-custom"
+    moduleName := "typed-schema-finagle-custom",
+    libraryDependencies += derevo
   )
 
 lazy val finagleZio = project

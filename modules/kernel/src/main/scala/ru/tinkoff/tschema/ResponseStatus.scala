@@ -5,14 +5,22 @@ import ru.tinkoff.tschema.Decompose.{Cons, Last}
 trait Composite[A]
 
 /** microtypeclass for binding special types with the corresponding status */
-final case class ResponseStatus[T](status: Int) extends AnyVal
+trait ResponseStatus[T] {
+  def status: Int
+}
 
 object ResponseStatus {
+  final case class Impl[T](status: Int) extends ResponseStatus[T]
+
+  def apply[T](x: Int): ResponseStatus[T] = Impl(x)
+
   final def default[T]: ResponseStatus[T] = ResponseStatus[T](200)
 
-  implicit val noneStatus: ResponseStatus[None.type]                                             = ResponseStatus(404)
-  implicit def leftStatus[A, B]: ResponseStatus[Left[A, B]]                                      = ResponseStatus(400)
-  implicit def rightStatus[A, B](implicit right: ResponseStatus[B]): ResponseStatus[Right[A, B]] = ResponseStatus(right.status)
+  implicit val noneStatus: ResponseStatus[None.type]        = ResponseStatus(404)
+  implicit def leftStatus[A, B]: ResponseStatus[Left[A, B]] = ResponseStatus(400)
+  implicit def rightStatus[A, B](implicit right: ResponseStatus[B]): ResponseStatus[Right[A, B]] = ResponseStatus(
+    right.status
+  )
 }
 
 sealed trait Decompose[A] {
@@ -58,14 +66,14 @@ object Decompose {
   type Arb1
 
   type OptInst[A] = Cons[Option[A], NotFound.type, Cons[Option[A], A, Last[Option[A]]]]
-  private val optionArb: OptInst[Arb]        = Decompose.make[Option[Arb]] { case Some(a) => a } { case None => NotFound } result
+  private val optionArb: OptInst[Arb] =
+    Decompose.make[Option[Arb]] { case Some(a) => a } { case None => NotFound } result
   implicit def optionInstance[A]: OptInst[A] = optionArb.asInstanceOf[OptInst[A]]
 
   type EitherInst[A, B] = Cons[Either[A, B], Left[A, B], Cons[Either[A, B], B, Last[Either[A, B]]]]
   private val eitherArb: EitherInst[Arb, Arb1] =
     Decompose.make[Either[Arb, Arb1]] { case Right(x) => x } { case l @ Left(_) => l } result
   implicit def eitherInstance[A, B]: EitherInst[A, B] = eitherArb.asInstanceOf[EitherInst[A, B]]
-
 
   case object NotFound
 }

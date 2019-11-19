@@ -29,12 +29,14 @@ object ReaderTRouting extends ReaderTInstanceDecl {
     with ConvertService[ReaderHttp[F, R, *]] with LiftHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
     new ReaderTRoutedConvert[F, R]
 
-  implicit def envRunnable[F[_]: Effect, R](implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler)
-    : RunHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
+  implicit def envRunnable[F[_]: Effect, R](
+      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  ): RunHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
     response => ReaderT(r => Sync[F].delay(execResponse(r, response, _)))
 
   private[this] def execResponse[F[_]: Effect, R](r: R, envResponse: ReaderHttp[F, R, Response], request: Request)(
-      implicit handler: Rejection.Handler): Future[Response] = {
+      implicit handler: Rejection.Handler
+  ): Future[Response] = {
     val promise = Promise[Response]
     val routing = ReaderTRouting(request, SubString(request.path), 0, r)
 
@@ -42,8 +44,9 @@ object ReaderTRouting extends ReaderTInstanceDecl {
       case Right(res) => IO(promise.setValue(res))
       case Left(ex) =>
         IO {
-          val resp = Response(Status.InternalServerError)
-          resp.setContentString(ex.getMessage)
+          val resp    = Response(Status.InternalServerError)
+          val message = Option(ex.getLocalizedMessage).getOrElse(ex.toString)
+          resp.setContentString(message)
           promise.setValue(resp)
         }
     }
@@ -78,12 +81,16 @@ private[finagle] class ReaderTInstanceDecl {
       catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
 
     def convertService[A](svc: Service[http.Request, A]): F[A] =
-      ReaderT(r =>
-        Async[G].async(cb =>
-          svc(r.request).respond {
-            case twitter.util.Return(a) => cb(Right(a))
-            case twitter.util.Throw(ex) => cb(Left(ex))
-        }))
+      ReaderT(
+        r =>
+          Async[G].async(
+            cb =>
+              svc(r.request).respond {
+                case twitter.util.Return(a) => cb(Right(a))
+                case twitter.util.Throw(ex) => cb(Left(ex))
+              }
+          )
+      )
 
     def apply[A](fa: ReaderT[G, R, A]): F[A] = ReaderT(routing => fa.run(routing.embedded))
 

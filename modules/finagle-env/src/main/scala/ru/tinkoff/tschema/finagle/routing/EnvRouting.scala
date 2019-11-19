@@ -42,8 +42,9 @@ object EnvRouting extends EnvInstanceDecl {
     val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
       case Right(res) => promise.setValue(res)
       case Left(ex) =>
-        val resp = Response(Status.InternalServerError)
-        resp.setContentString(ex.getMessage)
+        val resp    = Response(Status.InternalServerError)
+        val message = Option(ex.getLocalizedMessage).getOrElse(ex.toString)
+        resp.setContentString(message)
         promise.setValue(resp)
     }
 

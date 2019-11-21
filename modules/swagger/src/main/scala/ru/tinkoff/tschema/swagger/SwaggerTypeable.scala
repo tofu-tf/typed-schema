@@ -11,7 +11,7 @@ import shapeless.labelled.FieldType
 import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, LabelledGeneric, Lazy, Witness, ops}
 import SwaggerTypeable.{Config, seq}
 import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptySet, NonEmptyStream, NonEmptyVector}
-import magnolia.{CaseClass, Magnolia, SealedTrait}
+import magnolia.{CaseClass, Magnolia, SealedTrait, TypeName}
 import cats.syntax.traverse._
 import cats.instances.vector._
 import cats.instances.list._
@@ -175,7 +175,9 @@ object SwaggerTypeable extends SwaggerTypeableInstances {
       altMod: String => String = identity,
       plainCoproducts: Boolean = false,
       discriminator: Option[String] = None,
-      nameMod: String => String = identity
+      nameMod: String => String = identity,
+      useShortName: Boolean = false,
+      mangleTypeParams: Boolean = true
   ) {
 
     def snakeCaseProps = copy(propMod = snakeCaseModifier)
@@ -330,6 +332,21 @@ object DescribeTypeable {
 object MagnoliaSwagger {
   type Typeclass[T] = SwaggerTypeable[T]
 
+  private def calcTypeName(name: TypeName, cfg: Config, seen: Set[TypeName] = Set()): String =
+    if (seen(name)) "#"
+    else {
+      val selfName: String = cfg.nameMod(if (cfg.useShortName) name.short else name.full)
+      if (!cfg.mangleTypeParams || name.typeArguments.isEmpty) selfName
+      else
+        name.typeArguments.iterator
+          .map(calcTypeName(_, cfg, seen + name))
+          .mkString(
+            selfName + "[",
+            ", ",
+            "]"
+          )
+    }
+
   def combine[T](caseClass: CaseClass[Typeclass, T])(
       implicit cfg: Config = SwaggerTypeable.defaultConfig,
       desc: DescribeTypeable[T] = DescribeTypeable.empty[T]
@@ -337,7 +354,7 @@ object MagnoliaSwagger {
     new Typeclass[T] {
       lazy val typ: SwaggerType =
         SwaggerRef(
-          name = cfg.nameMod(caseClass.typeName.short),
+          name = calcTypeName(caseClass.typeName, cfg),
           descr = desc.whole,
           typ = Eval.now(
             SwaggerObject(
@@ -363,7 +380,7 @@ object MagnoliaSwagger {
     new Typeclass[T] {
       lazy val typ: SwaggerType =
         SwaggerRef(
-          name = cfg.nameMod(sealedTrait.typeName.short),
+          name = calcTypeName(sealedTrait.typeName, cfg),
           descr = desc.whole,
           typ = Eval.now(
             SwaggerOneOf(

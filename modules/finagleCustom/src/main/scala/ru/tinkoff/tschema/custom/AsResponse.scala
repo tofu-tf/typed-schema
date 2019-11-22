@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema.custom
 import cats.Show
-import com.twitter.finagle.http.{Response, Status}
-import com.twitter.io.Buf
+import com.twitter.finagle.http.{Response, Status, Version}
+import com.twitter.io.{Buf, Reader}
 import io.circe.{Encoder, Printer}
 import ru.tinkoff.tschema.ResponseStatus
 import ru.tinkoff.tschema.finagle.util.message.{jsonResponse, stringResponse}
@@ -43,6 +43,7 @@ object AsResponse extends AsResponseInstances {
 
   implicit val plainAsResponseString: AsResponse.Plain[String] = stringResponse(_)
   implicit val plainAsResponseUnit: AsResponse.Plain[Unit]     = _ => Response(Status.Ok)
+
   implicit def binAsResponseByteSeq[T[x] <: Seq[x], CT <: BinaryContentType](
       implicit ct: CT
   ): AsResponse.Binary[CT, T[Byte]] =
@@ -50,6 +51,25 @@ object AsResponse extends AsResponseInstances {
       val resp = Response(Status.Ok)
       resp.contentType = ct.name
       resp.content(Buf.ByteArray(bytes: _*))
+      resp
+    }
+
+  implicit def binAsResponseBuf[CT <: BinaryContentType](
+      implicit ct: CT
+  ): AsResponse.Binary[CT, Buf] =
+    buf => {
+      val resp = Response(Status.Ok)
+      resp.contentType = ct.name
+      resp.content(buf)
+      resp
+    }
+
+  implicit def binAsResponseReader[CT <: BinaryContentType](
+      implicit ct: CT
+  ): AsResponse.Binary[CT, Reader[Buf]] =
+    reader => {
+      val resp = Response(Version.Http11, Status.Ok, reader)
+      resp.contentType = ct.name
       resp
     }
 }

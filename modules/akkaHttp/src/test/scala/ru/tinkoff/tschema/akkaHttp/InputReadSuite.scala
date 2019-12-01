@@ -1,13 +1,14 @@
 package ru.tinkoff.tschema
 package akkaHttp
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{FlatSpec, Matchers}
 import shapeless.{HList, HNil, Witness}
 import shapeless.ops.hlist.Selector
 import akka.http.scaladsl.server.Directives.provide
 import ru.tinkoff.tschema.typeDSL.DSLAtom
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class InputReadSuite extends FlatSpec with Matchers with ScalatestRouteTest {
+class InputReadSuite extends AnyFlatSpec with Matchers with ScalatestRouteTest {
   import InputReadSuite._
   val route = MkRoute.of(api)(handler)(MagicalInput("Sergey") :: HNil)
 

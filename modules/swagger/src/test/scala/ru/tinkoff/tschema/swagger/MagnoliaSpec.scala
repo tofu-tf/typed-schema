@@ -1,10 +1,10 @@
 package ru.tinkoff.tschema.swagger
 import io.circe.Printer
-import org.scalatest.FlatSpec
 import ru.tinkoff.tschema.swagger.testDomain.{LotOfVariants, TopStuff, WeirdThing}
 import shapeless.test.illTyped
+import org.scalatest.flatspec.AnyFlatSpec
 
-class MagnoliaSpec extends FlatSpec {
+class MagnoliaSpec extends AnyFlatSpec {
   import MagnoliaSwagger.{derive => magnoliaDerive}
 
   "magnolia" should "derive known types" in {

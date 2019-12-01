@@ -1,9 +1,10 @@
 package ru.tinkoff.tschema.utils
 import cats.Eval
 import cats.data.ReaderT
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ContSuite extends FlatSpec with Matchers {
+class ContSuite extends AnyFlatSpec with Matchers {
   "traverse cont" should "not overflow stack in simple" in {
     cont
       .traverseCont[Int, Long, String, Eval](List.range(10000, 0, -1))((a, kb) => kb(a * 2))(ls =>

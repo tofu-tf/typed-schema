@@ -3,11 +3,12 @@ package swagger
 import cats.instances.option._
 import io.circe.ACursor
 import io.circe.syntax._
-import org.scalatest.{FlatSpec, Matchers}
 import ru.tinkoff.tschema.swagger.CompositeSuite.composwag
 import syntax._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class CompositeSuite extends FlatSpec with Matchers {
+class CompositeSuite extends AnyFlatSpec with Matchers {
   def op(name: String, status: Int) =
     composwag.hcursor.downField("paths").downField(s"/$name").downField("get").downField("responses").downField(status.toString)
 

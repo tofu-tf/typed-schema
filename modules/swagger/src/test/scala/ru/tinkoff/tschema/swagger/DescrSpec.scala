@@ -1,11 +1,12 @@
 package ru.tinkoff.tschema.swagger
 
-import org.scalatest.{FlatSpec, Matchers}
 import ru.tinkoff.tschema.swagger.DescrSpec._
 import shapeless.syntax.singleton._
 import shapeless.test.illTyped
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class DescrSpec extends FlatSpec with Matchers {
+class DescrSpec extends AnyFlatSpec with Matchers {
   "descr" should "set description for existing field" in assert(
     SwaggerTypeable
       .deriveNamedTypeable[Foo]

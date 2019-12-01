@@ -5,10 +5,11 @@ import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToResponseMarsha
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
 import akka.http.scaladsl.server.MethodRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{AsyncWordSpec, Matchers}
 import ru.tinkoff.tschema.syntax._
 
 import scala.concurrent.Future
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 
 class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
   object hello {

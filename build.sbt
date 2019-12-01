@@ -99,8 +99,6 @@ val shapeless  = "com.chuusai"          %% "shapeless"    % Version.shapeless
 val enumeratum = "com.beachape"         %% "enumeratum"   % Version.enumeratum
 
 val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaHttp
-val scalatest       = "org.scalatest"     %% "scalatest"         % Version.scalaTest % Test
-val scalacheck      = "org.scalacheck"    %% "scalacheck"        % Version.scalaCheck % Test
 val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka % Test
 val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
 val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
@@ -110,6 +108,10 @@ val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derev
 val swaggerUILib    = "org.webjars.npm"   % "swagger-ui-dist"    % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
 val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
+
+val scalatest           = "org.scalatest"     %% "scalatest"                % Version.scalaTest % Test
+val scalacheck          = "org.scalacheck"    %% "scalacheck"               % Version.scalaCheck % Test
+val scalatestScalacheck = "org.scalatestplus" %% "scalatestplus-scalacheck" % Version.scalaTestScalaCheck % Test
 
 val akka   = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
 val zio    = List("dev.zio" %% "zio" % Version.zio, "dev.zio" %% "zio-interop-cats" % Version.zioCats)
@@ -129,7 +131,7 @@ def resourcesOnCompilerCp(config: Configuration): Setting[_] =
 
 val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
-lazy val testLibs = libraryDependencies ++= scalacheck :: scalatest :: Nil
+lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatestScalacheck :: Nil
 
 lazy val commonSettings = publishSettings ++ List(
   scalaVersion := "2.12.10",

@@ -1,9 +1,9 @@
 package ru.tinkoff.tschema.swagger
 
 import cats.Eval
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
-class SwaggerTypeableTest extends FlatSpec {
+class SwaggerTypeableTest extends AnyFlatSpec {
 
   "SwaggerTypeable.genTypeable" should "derive typeable for case class" in {
     SwaggerTypeable.genTypeable[SwaggerTypeableTest.TestClass].typ match {

@@ -6,11 +6,11 @@ import SwaggerTypeable.deriveNamedTypeable
 import io.circe.syntax._
 import cats.syntax.option._
 import io.circe.Printer
-import org.scalatest.WordSpec
 import SwaggerXMLOptions.{apply => xmlOpts}
 import shapeless.syntax.singleton._
+import org.scalatest.wordspec.AnyWordSpec
 
-class XmlSpec extends WordSpec {
+class XmlSpec extends AnyWordSpec {
   val swaggerJson = XmlSpec.swagger.make(OpenApiInfo()).asJson
   val top = swaggerJson.hcursor
   val method = top.downField("paths").downField("/xml").downField("get")

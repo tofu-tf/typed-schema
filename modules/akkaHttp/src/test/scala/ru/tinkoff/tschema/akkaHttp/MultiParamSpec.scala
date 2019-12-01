@@ -2,15 +2,16 @@ package ru.tinkoff.tschema.akkaHttp
 
 import akka.http.scaladsl.server.{Directives, MissingQueryParamRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{FlatSpec, Matchers}
 import ru.tinkoff.tschema.akkaHttp.MultiParamSpec.{Page, route}
 import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.syntax
 import shapeless.Witness
 
 import scala.language.reflectiveCalls
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class MultiParamSpec extends FlatSpec with Matchers with ScalatestRouteTest {
+class MultiParamSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest {
   "Multi parameter case class" should "require first param" in {
     Get("/required") ~> route ~> check {
       rejections should contain(MissingQueryParamRejection("from"))

@@ -15,8 +15,8 @@ object message {
     resp
   }
 
-  def stringResponse(s: String, status: Status = Status.Ok): Response = response(s, "text/plain")
-  def jsonResponse(s: String, status: Status = Status.Ok): Response   = response(s, MediaType.Json)
+  def stringResponse(s: String, status: Status = Status.Ok): Response = response(s, "text/plain", status)
+  def jsonResponse(s: String, status: Status = Status.Ok): Response   = response(s, MediaType.Json, status)
 
   def emptyComplete[F[_]: Applicative, A, B](status: Status = Status.Ok): Complete[F, A, B] = _ => Response(status).pure[F]
 

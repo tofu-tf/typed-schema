@@ -14,7 +14,7 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
 
 // Docs
 addSbtPlugin("com.eed3si9n"     % "sbt-unidoc"     % "0.4.2")
-addSbtPlugin("com.47deg"        % "sbt-microsites" % "1.0.0")
+addSbtPlugin("com.47deg"        % "sbt-microsites" % "1.0.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages"    % "0.6.3")
 addSbtPlugin("org.tpolecat"     % "tut-plugin"     % "0.6.13")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")

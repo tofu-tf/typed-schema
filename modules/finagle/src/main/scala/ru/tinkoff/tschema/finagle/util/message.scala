@@ -25,16 +25,16 @@ object message {
       f(req.contentString).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.pure[F]))
 
   def stringComplete[F[_]: Applicative, A](f: A => String, status: Status = Status.Ok): Complete[F, A, A] =
-    a => stringResponse(f(a)).pure[F]
+    a => stringResponse(f(a), status).pure[F]
 
   def fstringComplete[F[_], G[_]: Functor, A](f: A => String, status: Status = Status.Ok)(implicit lift: LiftHttp[F, G]): Complete[F, A, G[A]] =
-    fa => lift(fa.map(a => stringResponse(f(a))))
+    fa => lift(fa.map(a => stringResponse(f(a), status)))
 
   def jsonComplete[F[_]: Applicative, A](f: A => String, status: Status = Status.Ok): Complete[F, A, A] =
-    a => jsonResponse(f(a)).pure[F]
+    a => jsonResponse(f(a), status).pure[F]
 
   def fjsonComplete[F[_], G[_]: Functor, A](f: A => String, status: Status = Status.Ok)(implicit lift: LiftHttp[F, G]): Complete[F, A, G[A]] =
-    fa => lift(fa.map(a => jsonResponse(f(a))))
+    fa => lift(fa.map(a => jsonResponse(f(a), status)))
 
   def jsonBodyParse[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): ParseBody[F, A] =
     () => parseRequest(f)

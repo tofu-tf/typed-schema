@@ -19,7 +19,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
 
   def makeRouteHNilNoImpl[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Res: WeakTypeTag](
       definition: c.Expr[Def]): c.Expr[Res] =
-    makeRouteImpl[F, If, Def, Unit, Res, HNil](definition)(none)(c.Expr(q"(HNil : HNil)"))
+    makeRouteImpl[F, If, Def, Unit, Res, HNil](definition)(none)(c.Expr(q"()"))
 
   def makeRouteHNil[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
       definition: c.Expr[Def]

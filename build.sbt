@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.11.6"
+val pubVersion = "0.11.7"
 
 val publishSettings = List(
   name := "Typed Schema",

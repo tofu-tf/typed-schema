@@ -42,7 +42,7 @@ object Version {
 
   val swaggerUI = "3.24.3"
 
-  val scalaTags = "0.7.0"
+  val scalaTags = "0.8.1"
 
   val scalaTest = "3.0.8"
 

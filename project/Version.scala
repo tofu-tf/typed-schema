@@ -16,9 +16,9 @@ object Version {
 
   val akkaHttpCirce = "1.30.0"
 
-  val cats = "2.0.0"
+  val cats = "2.1.0"
 
-  val catsEffect = "2.0.0"
+  val catsEffect = "2.1.0"
 
   val enumeratum = "1.5.14"
 

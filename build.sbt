@@ -91,12 +91,12 @@ val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.sc
 
 val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
-val catsCore   = "org.typelevel"        %% s"cats-core"   % Version.cats
-val catsFree   = "org.typelevel"        %% s"cats-free"   % Version.cats
-val catsEffect = "org.typelevel"        %% s"cats-effect" % Version.catsEffect
-val simulacrum = "com.github.mpilquist" %% "simulacrum"   % Version.simulacrum
-val shapeless  = "com.chuusai"          %% "shapeless"    % Version.shapeless
-val enumeratum = "com.beachape"         %% "enumeratum"   % Version.enumeratum
+val catsCore   = "org.typelevel" %% "cats-core"   % Version.cats
+val catsFree   = "org.typelevel" %% "cats-free"   % Version.cats
+val catsEffect = "org.typelevel" %% "cats-effect" % Version.catsEffect
+val simulacrum = "org.typelevel" %% "simulacrum"  % Version.simulacrum
+val shapeless  = "com.chuusai"   %% "shapeless"   % Version.shapeless
+val enumeratum = "com.beachape"  %% "enumeratum"  % Version.enumeratum
 
 val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaHttp
 val scalatest       = "org.scalatest"     %% "scalatest"         % Version.scalaTest % Test
@@ -141,6 +141,27 @@ lazy val commonSettings = publishSettings ++ List(
   testLibs
 )
 
+lazy val simulacrumSettings = Seq(
+  libraryDependencies ++= Seq(
+    scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided,
+    simulacrum              % Provided
+  ),
+  pomPostProcess := { node =>
+    import scala.xml.transform.{RewriteRule, RuleTransformer}
+
+    new RuleTransformer(new RewriteRule {
+      override def transform(node: xml.Node): Seq[xml.Node] = node match {
+        case e: xml.Elem
+          if e.label == "dependency" &&
+            e.child.exists(child => child.label == "groupId" && child.text == simulacrum.organization) &&
+            e.child.exists(child => child.label == "artifactId" && child.text.startsWith(s"${simulacrum.name}_")) =>
+          Nil
+        case _ => Seq(node)
+      }
+    }).transform(node).head
+  }
+)
+
 val compile213 = List(crossScalaVersions += "2.13.1")
 
 
@@ -148,9 +169,10 @@ lazy val kernel = project
   .in(file("modules/kernel"))
   .settings(
     commonSettings,
+    simulacrumSettings,
     compile213,
     moduleName := "typed-schema-typedsl",
-    libraryDependencies ++= catsCore :: simulacrum :: shapeless :: enumeratum :: Nil
+    libraryDependencies ++= catsCore :: shapeless :: enumeratum :: Nil
   )
 
 lazy val param = project
@@ -179,6 +201,7 @@ lazy val swagger = project
   .dependsOn(kernel, macros)
   .settings(
     commonSettings,
+    simulacrumSettings,
     compile213,
     moduleName := "typed-schema-swagger",
     libraryDependencies ++= enumeratum :: enumeratumCirce :: Nil,

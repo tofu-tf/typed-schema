@@ -165,10 +165,14 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
     derivedParam[name, T, Capture](In.path).map(PathSpec.path.update(_, s"{$name}" +: _))
 
-  implicit def deriveReqBody[name, T](implicit content: SwaggerContent[T]): SwaggerMapper[ReqBody[name, T]] =
+  implicit def deriveReqOptBody[name, T](implicit content: SwaggerContent[T]): SwaggerMapper[ReqBody[name, Option[T]]] = {
     fromFunc(
-      (PathSpec.op >> OpenApiOp.requestBody).set(_, OpenApiRequestBody.fromTypes(content.content.flatMap(_._2): _*).some)
-    ) andThen fromTypes[ReqBody[name, T]](content.collectTypes)
+      (PathSpec.op >> OpenApiOp.requestBody).set(_, OpenApiRequestBody.fromTypes(
+        required     = false,
+        swaggerTypes = content.content.flatMap(_._2): _*
+      ).some)
+    ) andThen fromTypes[ReqBody[name, Option[T]]](content.collectTypes)
+  }
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
     fromFunc[method](PathSpec.method.update(_, {
@@ -259,4 +263,14 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 trait SwaggerMapperInstances1 { self: SwaggerMapper.type =>
   implicit def deriveQueryParams[name: Name, T](implicit ev: AsSingleOpenApiParam[List[T]]) =
     derivedParamAtom[name, List[T], QueryParams[name, T]](In.query)
+
+
+  implicit def deriveReqBody[name, T](implicit content: SwaggerContent[T]): SwaggerMapper[ReqBody[name, T]] = {
+    fromFunc(
+      (PathSpec.op >> OpenApiOp.requestBody).set(_, OpenApiRequestBody.fromTypes(
+        required     = true,
+        swaggerTypes = content.content.flatMap(_._2): _*).some
+      )
+    ) andThen fromTypes[ReqBody[name, T]](content.collectTypes)
+  }
 }

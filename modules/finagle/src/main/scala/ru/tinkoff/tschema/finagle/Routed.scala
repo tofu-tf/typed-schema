@@ -126,6 +126,7 @@ object RunHttp {
   "Could not parse body ${A} in ${F}. Make sure you have appropriate deserializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
 trait ParseBody[F[_], A] {
   def parse(): F[A]
+  def parseOpt(): F[Option[A]]
 }
 
 trait ConvertService[F[_]] {

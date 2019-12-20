@@ -6,7 +6,7 @@
 Typed schema is an http service definition DSL, currently translating to [akka-http Routes](https://doc.akka.io/docs/akka-http/current/routing-dsl/overview.html) and [OpenApi 3.0 definition](https://swagger.io/specification/) inspired by the [haskell-servant](http://haskell-servant.readthedocs.io/en/stable/) library.
 
 ## Getting started
-Typed Schema is published to Maven Central and cross-built for Scala `2.11`, and `2.12` so you can just add the following to your build:
+Typed Schema is published to Maven Central and cross-built for Scala `2.12` and `2.13` so you can just add the following to your build:
 
 ```scala
 libraryDependencies ++= Seq(

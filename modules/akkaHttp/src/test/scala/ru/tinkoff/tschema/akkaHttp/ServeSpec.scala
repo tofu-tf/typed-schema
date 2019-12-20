@@ -6,10 +6,11 @@ import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.server.MissingQueryParamRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import org.scalatest.{Matchers, WordSpec}
 import ru.tinkoff.tschema.syntax
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ServeSpec extends WordSpec with Matchers with ScalatestRouteTest {
+class ServeSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
   trait Small
 
   import syntax._

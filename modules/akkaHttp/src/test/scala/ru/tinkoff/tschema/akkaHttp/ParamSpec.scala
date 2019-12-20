@@ -3,13 +3,14 @@ package ru.tinkoff.tschema.akkaHttp
 import ForAllTypes.Checker
 import org.scalacheck.Arbitrary
 import org.scalactic.Equality
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import ru.tinkoff.tschema.param.ParamSource._
 import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam}
 import shapeless._
-
 import scala.reflect.runtime.universe._
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 trait ForAllTypes[S >: All <: ParamSource, L] {
   def check(checker: Checker[S]): Unit
@@ -55,7 +56,7 @@ trait ParamSpecLow[S >: All <: ParamSource] {
 }
 
 abstract class ParamSpec[S >: All <: ParamSource]
-    extends PropSpec with ScalaCheckDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
+    extends AnyPropSpec with ScalaCheckDrivenPropertyChecks with Matchers with ParamSpecLow[S] {
   val bySemicolon                                                            = ";".r
   implicit def listList[A: SingleParam[S, *]]: SingleParam[S, List[List[A]]] = Param.separated[S, List[A]](bySemicolon)
   def fromParam[T](s: String)(implicit f: SingleParam[S, T])                 = f.applyOpt(Some(s))

@@ -3,9 +3,10 @@ package ru.tinkoff.tschema.akkaHttp
 import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToResponseMarshaller}
 import akka.http.scaladsl.model.{ContentTypes, HttpResponse}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{AsyncFlatSpec, Matchers}
 import ru.tinkoff.tschema.syntax
 import ru.tinkoff.tschema.syntax._
+import org.scalatest.flatspec.AsyncFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class InnerSuite extends AsyncFlatSpec with ScalatestRouteTest with Matchers {
 

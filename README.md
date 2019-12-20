@@ -9,7 +9,7 @@ Typed schema is an http service definition DSL, currently translating to [akka-h
 Typed Schema is published to Maven Central and cross-built for Scala `2.12` and `2.13` so you can just add the following to your build:
 
 ```scala
-libraryDependencies ++= Seq(
+libraryDependencies ++= List(
   "ru.tinkoff" %% "typed-schema" % "latest version in badge"
 )
 ```

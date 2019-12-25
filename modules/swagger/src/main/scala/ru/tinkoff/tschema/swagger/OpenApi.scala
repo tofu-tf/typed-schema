@@ -279,14 +279,25 @@ object OpenApiRequestBody {
   val content: Contains[OpenApiRequestBody, Map[MediaType, OpenApiMediaType]] =
     GenContains[OpenApiRequestBody](_.content)
 
-  def fromType(swaggerType: SwaggerType, description: Option[String] = None): OpenApiRequestBody =
+  def fromType(
+    swaggerType: SwaggerType,
+    description: Option[String] = None,
+    required: Boolean = true
+  ): OpenApiRequestBody =
     OpenApiRequestBody(
       description = description,
-      content = Map(swaggerType.mediaType -> OpenApiMediaType(Some(swaggerType)))
+      content     = Map(swaggerType.mediaType -> OpenApiMediaType(Some(swaggerType))),
+      required    = required
     )
 
   def fromTypes(swaggerTypes: SwaggerType*): OpenApiRequestBody =
-    OpenApiRequestBody(content = swaggerTypes.iterator.map(t => t.mediaType -> OpenApiMediaType(Some(t))).toMap)
+    fromTypes(true, swaggerTypes: _*)
+
+  def fromTypes(required: Boolean, swaggerTypes: SwaggerType*) =
+    OpenApiRequestBody(
+      content  = swaggerTypes.iterator.map(t => t.mediaType -> OpenApiMediaType(Some(t))).toMap,
+      required = required
+    )
 }
 
 @JsonCodec(Configuration.encodeOnly)

@@ -31,8 +31,9 @@ trait Serve[T, F[_], In, Out] {
   def as[U]: Serve[U, F, In, Out] = this.asInstanceOf[Serve[U, F, In, Out]]
 }
 
-object Serve
-    extends ServeAuthInstances with ServeParamsInstances with ServeFunctions with ServeCatsInstance with ServeMethodInstances {
+object Serve extends ServeAuthInstances with ServeParamsInstances 
+  with ServeReqBodyInstances with ServeFunctions with ServeCatsInstance with ServeMethodInstances {
+
   import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
   type Add[T, F[_], In <: HList, name, V] = Serve[T, F, In, FieldType[name, V] :: In]
@@ -84,10 +85,6 @@ object Serve
     : Add[FormField[name, x], F, In, name, x] =
     resolveParam[F, ParamSource.Form, name, x, FormField[name, x], In]
 
-  implicit def bodyServe[F[_]: FlatMap, name, A, In <: HList](
-      implicit A: ParseBody[F, A]): Add[ReqBody[name, A], F, In, name, A] =
-    add[ReqBody[name, A], F, In, A, name](A.parse())
-
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))
 
@@ -99,6 +96,23 @@ object Serve
       implicit serveInner: Serve[x, F, In, FieldType[old, Head] :: Rest])
     : Serve[As[x, name], F, In, FieldType[name, Head] :: Rest] =
     serveInner.asInstanceOf[Serve[As[x, name], F, In, FieldType[name, Head] :: Rest]]
+}
+
+private[finagle] trait ServeReqBodyInstances extends ServeReqBodyInstances1 { self: Serve.type =>
+  import ru.tinkoff.tschema.typeDSL.ReqBody
+
+  implicit def bodyOptServe[F[_]: FlatMap, name, A, In <: HList](
+    implicit A: ParseBody[F, A]
+  ): Add[ReqBody[name, Option[A]], F, In, name, Option[A]] =
+    add[ReqBody[name, Option[A]], F, In, Option[A], name](A.parseOpt())
+}
+
+private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
+  import ru.tinkoff.tschema.typeDSL.ReqBody
+
+  implicit def bodyServe[F[_]: FlatMap, name, A, In <: HList](
+      implicit A: ParseBody[F, A]): Add[ReqBody[name, A], F, In, name, A] =
+    add[ReqBody[name, A], F, In, A, name](A.parse())
 }
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>

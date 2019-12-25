@@ -2,6 +2,7 @@ package ru.tinkoff.tschema.finagle.util
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
+import cats.syntax.option._
 import cats.{Applicative, Functor, Monad}
 import com.twitter.finagle.http.{MediaType, Response, Status}
 import ru.tinkoff.tschema.finagle.{Complete, LiftHttp, ParseBody, Rejection, Routed}
@@ -24,6 +25,13 @@ object message {
     Routed.request.flatMap(req =>
       f(req.contentString).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.pure[F]))
 
+  def parseOptRequest[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): F[Option[A]] =
+    Routed.request.flatMap { req =>
+      val cs = req.contentString
+      if (cs.isEmpty) none.pure[F]
+      else f(cs).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.some.pure[F])
+    }
+
   def stringComplete[F[_]: Applicative, A](f: A => String, status: Status = Status.Ok): Complete[F, A, A] =
     a => stringResponse(f(a), status).pure[F]
 
@@ -37,5 +45,8 @@ object message {
     fa => lift(fa.map(a => jsonResponse(f(a), status)))
 
   def jsonBodyParse[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): ParseBody[F, A] =
-    () => parseRequest(f)
+    new ParseBody[F, A] {
+      override def parse(): F[A] = parseRequest(f)
+      override def parseOpt(): F[Option[A]] = parseOptRequest(f)
+    }
 }

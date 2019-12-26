@@ -4,7 +4,7 @@ object Version {
 
   val circeDerivation = "0.12.0-M7"
 
-  val tethys = "0.10.0"
+  val tethys = "0.11.0"
 
   val akka = "2.6.1"
 

@@ -12,12 +12,12 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
 import io.circe.Printer
-import ru.tinkoff.tschema.akkaHttp.MkRoute
+import tschema.akkaHttp.MkRoute
 import io.circe.syntax._
-import ru.tinkoff.tschema.swagger._
+import tschema.swagger._
 
 object ExampleDefinition {
-  import ru.tinkoff.tschema.syntax._
+  import tschema.syntax._
   def api = get |> operation('hello) |> capture[String]('name) |> $$[String]
 }
 
@@ -53,7 +53,7 @@ More examples see in subproject `examples`
 ## How it works
 
 ### Definition
-Your schemes definitions consist of elements from `ru.tinkoff.tschema.syntax._` and maybe custom directives
+Your schemes definitions consist of elements from `tschema.syntax._` and maybe custom directives
 
 ```scala
 def api = get |> operation('hello) |> capture[String]('name) |> $$[String]
@@ -81,7 +81,7 @@ Note that now you must implement `aloha` method in your handler
 or compile error will be raised in the `MkRoute` application
 ### DSL
 All definition elements are functions with almost no implementation, returning types from the
-`ru.tinkoff.tschema.typeDSL._` package, or created by yourself.
+`tschema.typeDSL._` package, or created by yourself.
 
 **Those types are the definition.**
 

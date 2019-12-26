@@ -13,7 +13,9 @@ val publishSettings = List(
     else
       sonatypePublishToBundle.value
   ),
-  credentials += Credentials(Path.userHome / ".sbt" / ".ossrh-credentials"),
+  credentials ++= ((Path.userHome / ".sbt" / ".ossrh-credentials") :: Nil)
+    .filter(_.exists())
+    .map(Credentials.apply),
   version := {
     val branch = git.gitCurrentBranch.value
     if (branch == "master") pubVersion
@@ -166,9 +168,10 @@ lazy val simulacrumSettings = Seq(
 
 val compile213 = List(crossScalaVersions += "2.13.1")
 
+lazy val modules = file("modules")
 
 lazy val kernel = project
-  .in(file("modules/kernel"))
+  .in(modules / "kernel")
   .settings(
     commonSettings,
     simulacrumSettings,
@@ -178,7 +181,7 @@ lazy val kernel = project
   )
 
 lazy val param = project
-  .in(file("modules/param"))
+  .in(modules / "param")
   .dependsOn(kernel)
   .settings(
     commonSettings,
@@ -188,7 +191,7 @@ lazy val param = project
   )
 
 lazy val macros = project
-  .in(file("modules/macros"))
+  .in(modules / "macros")
   .dependsOn(kernel)
   .settings(
     commonSettings,
@@ -199,7 +202,7 @@ lazy val macros = project
   )
 
 lazy val swagger = project
-  .in(file("modules/swagger"))
+  .in(modules / "swagger")
   .dependsOn(kernel, macros)
   .settings(
     commonSettings,
@@ -213,8 +216,8 @@ lazy val swagger = project
     circe
   )
 
-lazy val akkaHttp = project
-  .in(file("modules/akkaHttp"))
+lazy val `akka-http` = project
+  .in(modules / "akkaHttp")
   .dependsOn(kernel, macros, param)
   .settings(
     commonSettings,
@@ -224,8 +227,10 @@ lazy val akkaHttp = project
     akkaHttpCirce
   )
 
-lazy val finagle = project
-  .in(file("modules/finagle"))
+lazy val finagle = modules / "finagle"
+
+lazy val `finagle-core` = project
+  .in(finagle / "core")
   .dependsOn(kernel, macros, param)
   .settings(
     commonSettings,
@@ -233,53 +238,53 @@ lazy val finagle = project
     libraryDependencies ++= finagleHttp :: catsEffect :: catsFree :: Nil
   )
 
-lazy val finagleCirce = project
-  .in(file("modules/finagleCirce"))
-  .dependsOn(finagle)
+lazy val `finagle-common` = project
+  .in(finagle / "common")
+  .dependsOn(`finagle-core`, swagger)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-finagle-common"
+  )
+
+lazy val `finagle-circe` = project
+  .in(finagle / "circe")
+  .dependsOn(`finagle-core`)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-circe",
     circe
   )
 
-lazy val finagleTethys = project
-  .in(file("modules/finagleTethys"))
-  .dependsOn(finagle)
+lazy val `finagle-tethys` = project
+  .in(finagle / "tethys")
+  .dependsOn(`finagle-core`)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-tethys",
     libraryDependencies ++= tethys
   )
 
-lazy val finagleCustom = project
-  .in(file("modules/finagleCustom"))
-  .dependsOn(finagleCirce, finagleTethys, swagger)
+lazy val `finagle-custom` = project
+  .in(finagle / "custom")
+  .dependsOn(`finagle-circe`, `finagle-tethys`, swagger)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-custom",
     libraryDependencies += derevo
   )
 
-lazy val finagleZio = project
-  .in(file("modules/finagle-zio"))
-  .dependsOn(finagle)
+lazy val `finagle-zio` = project
+  .in(finagle / "zio")
+  .dependsOn(`finagle-core`)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-zio",
     libraryDependencies ++= catsEffect :: zio
   )
 
-lazy val finagleCommon = project
-  .in(file("modules/finagle-common"))
-  .dependsOn(finagle, swagger)
-  .settings(
-    commonSettings,
-    moduleName := "typed-schema-finagle-common"
-  )
-
-lazy val finagleEnv = project
-  .in(file("modules/finagle-env"))
-  .dependsOn(finagle)
+lazy val `finagle-env` = project
+  .in(finagle / "env")
+  .dependsOn(`finagle-core`)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-env",
@@ -287,8 +292,8 @@ lazy val finagleEnv = project
   )
 
 lazy val main = project
-  .in(file("modules/main"))
-  .dependsOn(kernel, macros, swagger, akkaHttp)
+  .in(modules / "main")
+  .dependsOn(kernel, macros, swagger, `akka-http`)
   .settings(
     commonSettings,
     compile213,
@@ -297,7 +302,7 @@ lazy val main = project
   )
 
 lazy val scalaz = project
-  .in(file("modules/scalaz"))
+  .in(modules / "scalaz")
   .dependsOn(swagger, param)
   .settings(
     commonSettings,
@@ -307,8 +312,8 @@ lazy val scalaz = project
     resourcesOnCompilerCp(Compile)
   )
 
-lazy val swaggerUI =
-  (project in file("modules/swaggerUI"))
+lazy val `swagger-ui` = project
+    .in(modules / "swaggerUI")
     .dependsOn(swagger)
     .enablePlugins(BuildInfoPlugin)
     .settings(
@@ -324,19 +329,19 @@ lazy val swaggerUI =
       },
       scalatags,
       buildInfoKeys := swaggerUIVersion :: Nil,
-      buildInfoPackage := "ru.tinkoff.tschema.swagger"
+      buildInfoPackage := "tschema.swagger"
     )
 
 lazy val docs = project
-  .in(file("modules/docs"))
+  .in(modules / "docs")
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
     publish / skip := true,
     crossCompile,
     setMinorVersion,
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, `akka-http`)
   )
-  .dependsOn(kernel, macros, main, akkaHttp)
+  .dependsOn(kernel, macros, main, `akka-http`)
 
 lazy val typedschema =
   (project in file("."))
@@ -348,15 +353,15 @@ lazy val typedschema =
       main,
       param,
       swagger,
-      akkaHttp,
+      `akka-http`,
+      `finagle-core`,
+      `finagle-common`,
+      `finagle-circe`,
+      `finagle-tethys`,
+      `finagle-custom`,
+      `finagle-zio`,
+      `finagle-env`,
       scalaz,
-      finagle,
-      finagleZio,
-      finagleEnv,
-      finagleCirce,
-      finagleTethys,
-      finagleCommon,
-      finagleCustom,
-      swaggerUI,
+      `swagger-ui`,
       docs
     )

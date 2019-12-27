@@ -10,7 +10,27 @@ Typed Schema is published to Maven Central and cross-built for Scala `2.12` and 
 
 ```scala
 libraryDependencies ++= List(
-  "ru.tinkoff" %% "typed-schema" % "latest version in badge"
+  "ru.tinkoff" %% "typed-schema-swagger" % "latest version in badge",
+  "ru.tinkoff" %% "typed-schema-finagle-zio" % "latest version in badge",
+  "ru.tinkoff" %% "typed-schema-finagle-custom" % "latest version in badge",
+)
+```
+
+or 
+
+```scala
+libraryDependencies ++= List(
+  "ru.tinkoff" %% "typed-schema-swagger" % "latest version in badge",
+  "ru.tinkoff" %% "typed-schema-finagle-env" % "latest version in badge",
+  "ru.tinkoff" %% "typed-schema-finagle-custom" % "latest version in badge",
+)
+```
+or
+
+```scala
+libraryDependencies ++= List(
+  "ru.tinkoff" %% "typed-schema-swagger" % "latest version in badge",
+  "ru.tinkoff" %% "typed-schema-akka-http" % "latest version in badge",
 )
 ```
 

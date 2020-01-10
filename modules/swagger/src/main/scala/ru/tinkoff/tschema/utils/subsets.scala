@@ -4,7 +4,7 @@ import tofu.optics.tags.{TagApply, TaggerObj}
 import tofu.optics.{PSubset, Subset}
 
 object subsets {
-  object some extends TaggerObj[PSubset] {
+  object _some extends TaggerObj[PSubset] {
     implicit def someOption[A]: TagApply[PSubset, Option[A], A, this.type, Unit] = _ => someSubset
   }
 

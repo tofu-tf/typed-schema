@@ -67,9 +67,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
         }
         """
 
-    val checkedTree = c.typecheck(tree)
-
-    c.Expr(checkedTree)
+    c.Expr(typeCheckOrAbort(tree))
   }
 
   def makeResult[F[_]: WTTF, In <: HList: WeakTypeTag, Out: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
@@ -106,7 +104,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
 
     val accessor = groupNames.map(TermName(_)).foldLeft[Tree](impl.tree)((a, gr) => q"$a.$gr")
 
-    c.Expr(c.typecheck(q""" $in match { case $recpat =>
+    c.Expr(typeCheckOrAbort(q""" $in match { case $recpat =>
         def res = $accessor.$meth(...$params)
         val route = $interface.route(res)
         route[$ft, $inT, $outT]($in)}"""))
@@ -254,4 +252,10 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
         q"$pack.${TermName(name)}"
       }
   private def infoTime(label: String) = if (false) info(s"$label: ${Instant.now().toString}")
+
+  private def typeCheckOrAbort(t: Tree): Tree =
+    try(c.typecheck(t))
+    catch {
+      case ex: TypecheckException => c.abort(c.enclosingPosition, ex.toString)
+    }
 }

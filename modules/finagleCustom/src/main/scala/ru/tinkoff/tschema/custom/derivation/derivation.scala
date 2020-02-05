@@ -1,8 +1,8 @@
 package ru.tinkoff.tschema.custom
 package derivation
 import com.twitter.finagle.http.Response
-import org.manatki.derevo.Derivation
 import ru.tinkoff.tschema.ResponseStatus
+import derevo.Derivation
 
 object responseStatus extends Derivation[ResponseStatus] {
   def apply[T](status: Int): ResponseStatus[T] = ResponseStatus(status)

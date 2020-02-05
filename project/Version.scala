@@ -36,7 +36,7 @@ object Version {
 
   val finagle = "19.12.0"
 
-  val derevo = "0.10.5"
+  val derevo = "0.11.0"
 
   val tofu = "0.6.1"
 

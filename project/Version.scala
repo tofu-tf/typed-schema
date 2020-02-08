@@ -14,7 +14,7 @@ object Version {
 
   val kindProjector = "0.10.3"
 
-  val akkaHttpCirce = "1.30.0"
+  val akkaHttpCirce = "1.31.0"
 
   val cats = "2.0.0"
 

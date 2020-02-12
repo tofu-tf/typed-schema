@@ -34,11 +34,11 @@ object Version {
 
   val zioCats = "2.0.0.0-RC10"
 
-  val finagle = "19.12.0"
+  val finagle = "20.1.0"
 
-  val derevo = "0.10.5"
+  val derevo = "0.11.0"
 
-  val tofu = "0.6.1"
+  val tofu = "0.7.0"
 
   val swaggerUI = "3.24.3"
 

@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema.custom
 package derivation
 import com.twitter.finagle.http.Response
-import org.manatki.derevo.Derivation
+import derevo.Derivation
 import ru.tinkoff.tschema.ResponseStatus
 
 object responseStatus extends Derivation[ResponseStatus] {

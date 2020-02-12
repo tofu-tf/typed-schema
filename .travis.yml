@@ -2,12 +2,16 @@ dist: xenial
 language: scala
 
 scala:
-#  - 2.11.12
   - 2.12.10
-#  - 2.13.1
+  - 2.13.1
 
 jdk:
   - openjdk8
+
+script:
+  - sbt compile
+  - sbt test
+
 
 cache:
   directories:

@@ -280,14 +280,14 @@ object OpenApiRequestBody {
     GenContains[OpenApiRequestBody](_.content)
 
   def fromType(
-    swaggerType: SwaggerType,
-    description: Option[String] = None,
-    required: Boolean = true
+      swaggerType: SwaggerType,
+      description: Option[String] = None,
+      required: Boolean = true
   ): OpenApiRequestBody =
     OpenApiRequestBody(
       description = description,
-      content     = Map(swaggerType.mediaType -> OpenApiMediaType(Some(swaggerType))),
-      required    = required
+      content = Map(swaggerType.mediaType -> OpenApiMediaType(Some(swaggerType))),
+      required = required
     )
 
   def fromTypes(swaggerTypes: SwaggerType*): OpenApiRequestBody =
@@ -295,7 +295,7 @@ object OpenApiRequestBody {
 
   def fromTypes(required: Boolean, swaggerTypes: SwaggerType*) =
     OpenApiRequestBody(
-      content  = swaggerTypes.iterator.map(t => t.mediaType -> OpenApiMediaType(Some(t))).toMap,
+      content = swaggerTypes.iterator.map(t => t.mediaType -> OpenApiMediaType(Some(t))).toMap,
       required = required
     )
 }
@@ -368,7 +368,7 @@ object OpenApiResponses {
 final case class OpenApiResponse(
     description: Option[SwaggerDescription] = None,
     content: Map[MediaType, OpenApiMediaType] = Map.empty,
-    headers: Map[String, SwaggerValue] = TreeMap.empty
+    headers: Map[String, OpenApiHeader] = TreeMap.empty
 )
 
 object OpenApiResponse {
@@ -381,6 +381,9 @@ object OpenApiResponse {
   def makeMany(types: SwaggerType*): OpenApiResponse =
     OpenApiResponse(content = types.iterator.map(t => t.mediaType -> OpenApiMediaType(t.some)).toMap)
 }
+
+@JsonCodec(Configuration.encodeOnly)
+final case class OpenApiHeader(description: Option[SwaggerDescription] = None, schema: Option[SwaggerType] = None)
 
 @JsonCodec(Configuration.encodeOnly)
 final case class OpenApiMediaType(schema: Option[SwaggerType] = None, example: Option[Json] = None)

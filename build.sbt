@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.11.8"
+val pubVersion = "0.12.0"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -37,7 +37,7 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions := List("2.12.10")
+val crossCompile = crossScalaVersions := List("2.13.1", "2.12.10")
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",
@@ -77,15 +77,14 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics = libraryDependencies ++= List("core", "macro").map(
-  module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
+val tofuOptics = libraryDependencies ++= List("core", "macro").map(module =>
+  "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
 )
 
-val circe = libraryDependencies ++= List("core", "parser").map(
-  module => "io.circe" %% s"circe-$module" % Version.circe
-) ++ List("derivation", "derivation-annotations").map(
-  module => "io.circe" %% s"circe-$module" % Version.circeDerivation
-)
+val circe = libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
+  "derivation",
+  "derivation-annotations"
+).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
 
 val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
@@ -109,8 +108,8 @@ val swaggerUILib    = "org.webjars.npm"   % "swagger-ui-dist"    % Version.swagg
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
 val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
 
-val scalatest           = "org.scalatest"     %% "scalatest"                % Version.scalaTest % Test
-val scalacheck          = "org.scalacheck"    %% "scalacheck"               % Version.scalaCheck % Test
+val scalatest           = "org.scalatest"     %% "scalatest"                % Version.scalaTest           % Test
+val scalacheck          = "org.scalacheck"    %% "scalacheck"               % Version.scalaCheck          % Test
 val scalatestScalacheck = "org.scalatestplus" %% "scalatestplus-scalacheck" % Version.scalaTestScalaCheck % Test
 
 val akka   = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
@@ -134,7 +133,7 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatestScalacheck :: Nil
 
 lazy val commonSettings = publishSettings ++ List(
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.13.1",
   compilerPlugins,
   commonScalacOptions,
   specificScalacOptions,
@@ -154,9 +153,9 @@ lazy val simulacrumSettings = Seq(
     new RuleTransformer(new RewriteRule {
       override def transform(node: xml.Node): Seq[xml.Node] = node match {
         case e: xml.Elem
-          if e.label == "dependency" &&
-            e.child.exists(child => child.label == "groupId" && child.text == simulacrum.organization) &&
-            e.child.exists(child => child.label == "artifactId" && child.text.startsWith(s"${simulacrum.name}_")) =>
+            if e.label == "dependency" &&
+              e.child.exists(child => child.label == "groupId" && child.text == simulacrum.organization) &&
+              e.child.exists(child => child.label == "artifactId" && child.text.startsWith(s"${simulacrum.name}_")) =>
           Nil
         case _ => Seq(node)
       }
@@ -164,15 +163,11 @@ lazy val simulacrumSettings = Seq(
   }
 )
 
-val compile213 = List(crossScalaVersions += "2.13.1")
-
-
 lazy val kernel = project
   .in(file("modules/kernel"))
   .settings(
     commonSettings,
     simulacrumSettings,
-    compile213,
     moduleName := "typed-schema-typedsl",
     libraryDependencies ++= catsCore :: shapeless :: enumeratum :: Nil
   )
@@ -182,7 +177,6 @@ lazy val param = project
   .dependsOn(kernel)
   .settings(
     commonSettings,
-    compile213,
     moduleName := "typed-schema-param",
     magnolia
   )
@@ -192,7 +186,6 @@ lazy val macros = project
   .dependsOn(kernel)
   .settings(
     commonSettings,
-    compile213,
     moduleName := "typed-schema-macros",
     libraryDependencies ++= shapeless :: catsCore :: akkaHttpTestKit :: Nil,
     reflect
@@ -204,7 +197,6 @@ lazy val swagger = project
   .settings(
     commonSettings,
     simulacrumSettings,
-    compile213,
     moduleName := "typed-schema-swagger",
     libraryDependencies ++= enumeratum :: enumeratumCirce :: Nil,
     magnolia,
@@ -218,7 +210,6 @@ lazy val akkaHttp = project
   .dependsOn(kernel, macros, param)
   .settings(
     commonSettings,
-    compile213,
     moduleName := "typed-schema-akka-http",
     libraryDependencies ++= akkaHttpLib :: akkaTestKit :: akkaHttpTestKit :: akka,
     akkaHttpCirce
@@ -291,20 +282,8 @@ lazy val main = project
   .dependsOn(kernel, macros, swagger, akkaHttp)
   .settings(
     commonSettings,
-    compile213,
     moduleName := "typed-schema-base",
     libraryDependencies ++= akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: akka
-  )
-
-lazy val scalaz = project
-  .in(file("modules/scalaz"))
-  .dependsOn(swagger, param)
-  .settings(
-    commonSettings,
-    moduleName := "typed-schema-scalaz",
-    libraryDependencies ++= scalazDeriving :: scalazDMacro :: Nil,
-    addCompilerPlugin("org.scalaz" %% "deriving-plugin" % Version.scalazDeriving),
-    resourcesOnCompilerCp(Compile)
   )
 
 lazy val swaggerUI =
@@ -313,7 +292,6 @@ lazy val swaggerUI =
     .enablePlugins(BuildInfoPlugin)
     .settings(
       commonSettings,
-      compile213,
       moduleName := "typed-schema-swagger-ui",
       libraryDependencies ++= swaggerUILib :: Nil,
       swaggerUIVersion := {
@@ -331,6 +309,7 @@ lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
+    scalaVersion := "2.13.1",
     publish / skip := true,
     crossCompile,
     setMinorVersion,
@@ -341,7 +320,13 @@ lazy val docs = project
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
-    .settings(publish / skip := true, publishSettings, setMinorVersion, crossCompile)
+    .settings(
+      publish / skip := true,
+      scalaVersion := "2.13.1",
+      publishSettings,
+      setMinorVersion,
+      crossCompile
+    )
     .aggregate(
       macros,
       kernel,
@@ -349,7 +334,6 @@ lazy val typedschema =
       param,
       swagger,
       akkaHttp,
-      scalaz,
       finagle,
       finagleZio,
       finagleEnv,

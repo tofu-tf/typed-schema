@@ -44,12 +44,12 @@ object SwaggerIndex {
             |    }""".stripPrefix("|"))
 
     def onload =
-      raw("""
+      raw(s"""
             |window.onload = function() {
             |
             |  // Build a system
             |  const ui = SwaggerUIBundle({
-            |    url: "/swagger",
+            |    url: "$url",
             |    dom_id: '#swagger-ui',
             |    deepLinking: true,
             |    presets: [

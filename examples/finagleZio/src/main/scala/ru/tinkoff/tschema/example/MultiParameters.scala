@@ -1,9 +1,8 @@
 package ru.tinkoff.tschema
 package example
 
-import org.manatki.derevo.catsInstances.show
-import org.manatki.derevo.derive
-import org.manatki.derevo.tschemaInstances.{httpParam, openapiParam, swagger}
+import derevo.cats.show
+import derevo.derive
 import ru.tinkoff.tschema.finagle.MkService
 import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder, _}
@@ -22,10 +21,10 @@ object MultiParameters extends ExampleModule {
     implicit val typeable: SwaggerTypeable[Child] = MagnoliaSwagger.derive
   }
 
-  @derive(swagger, httpParam, openapiParam, show)
+  @derive(Swagger, HttpParam, AsOpenApiParam, show)
   final case class User(name: String, age: Int, child: Child)
 
-  @derive(httpParam, openapiParam, show, swagger)
+  @derive(HttpParam, AsOpenApiParam, show, Swagger)
   final case class Page(from: Int, count: Int, opt: Option[String])
 
   def route                = MkService[Http](api)(handler)

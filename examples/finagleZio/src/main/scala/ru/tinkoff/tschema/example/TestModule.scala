@@ -1,8 +1,7 @@
 package ru.tinkoff.tschema.example
 
-import org.manatki.derevo.derive
-import org.manatki.derevo.tethysInstances._
-import org.manatki.derevo.tschemaInstances._
+import derevo.derive
+import derevo.tethys._
 import ru.tinkoff.tschema.finagle.MkService
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import ru.tinkoff.tschema.param.{Param, ParamSource}
@@ -12,16 +11,16 @@ import zio.ZIO
 
 object definitions {
 
-  @derive(tethysReader, tethysWriter, swagger)
+  @derive(tethysReader, tethysWriter, Swagger)
   case class StatsRes(theMean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
-  @derive(tethysReader, tethysWriter, swagger)
+  @derive(tethysReader, tethysWriter, Swagger)
   case class Combine(source: CombSource, res: CombRes)
 
-  @derive(tethysReader, tethysWriter, swagger)
+  @derive(tethysReader, tethysWriter, Swagger)
   case class CombSource(x: Int, y: Int)
 
-  @derive(tethysReader, tethysWriter, swagger)
+  @derive(tethysReader, tethysWriter, Swagger)
   case class CombRes(mul: Int, sum: Int)
 
   case class Client(value: Int)

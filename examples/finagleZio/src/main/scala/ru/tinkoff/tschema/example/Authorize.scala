@@ -3,10 +3,9 @@ package ru.tinkoff.tschema.example
 import cats.Applicative
 import com.twitter.finagle.http.Response
 import com.twitter.util.Base64StringEncoder
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
-import org.manatki.derevo.derive
-import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
-import org.manatki.derevo.tschemaInstances._
+import derevo.circe.{decoder, encoder}
+import derevo.derive
+import derevo.tethys.{tethysReader, tethysWriter}
 import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
 import ru.tinkoff.tschema.finagle.{Authorization, Credentials, MkService, Rejection, Routed, SimpleAuth, BearerToken}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
@@ -26,7 +25,7 @@ object Authorize extends ExampleModule {
 
   final case class User(name: String, roles: List[String])
 
-  @derive(tethysWriter, tethysReader, swagger)
+  @derive(tethysWriter, tethysReader, Swagger)
   final case class Client(name: String, products: List[String])
 
   val anonClient = Client("anon", List.empty)

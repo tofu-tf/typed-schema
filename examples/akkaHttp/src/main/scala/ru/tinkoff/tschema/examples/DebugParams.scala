@@ -4,14 +4,14 @@ package examples
 import akka.http.scaladsl.server.Directives
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.Encoder
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
-import org.manatki.derevo.derive
-import org.manatki.derevo.tschemaInstances.swagger
+import derevo.circe.{decoder, encoder}
+import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.RoutableIn
+import ru.tinkoff.tschema.swagger.Swagger
 import shapeless._
 import shapeless.labelled.FieldType
 
-@derive(encoder, decoder, swagger)
+@derive(encoder, decoder, Swagger)
 final case class DebugParams[T](value: T, params: Map[String, String])
 
 object DebugParams {

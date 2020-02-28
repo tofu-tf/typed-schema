@@ -11,6 +11,12 @@ object syntax {
 
   def err[E, A]: Complete[ExceptResult[E, A]] = new Complete
 
+  def jsonOpt[A]: Complete[ExceptResult[None.type, JsonResult[A]]] = new Complete
+
+  def plainOpt[A]: Complete[ExceptResult[None.type, PlainResult[A]]] = new Complete
+
+  def binOpt[CT, A]: Complete[ExceptResult[None.type, BinResult[CT, A]]] = new Complete
+
   def jsonErr[E, A]: Complete[ExceptResult[E, JsonResult[A]]] = new Complete
 
   def plainErr[E, A]: Complete[ExceptResult[E, PlainResult[A]]] = new Complete

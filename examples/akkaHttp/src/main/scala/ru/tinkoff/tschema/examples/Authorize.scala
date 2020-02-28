@@ -3,9 +3,8 @@ package ru.tinkoff.tschema.examples
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.Credentials
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport.marshaller
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
-import org.manatki.derevo.derive
-import org.manatki.derevo.tschemaInstances._
+import derevo.circe.{decoder, encoder}
+import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
@@ -20,7 +19,7 @@ object Authorize extends ExampleModule {
 
   final case class User(name: String, roles: List[String])
 
-  @derive(encoder, decoder, swagger)
+  @derive(encoder, decoder, Swagger)
   final case class Client(name: String, products: List[String])
 
   val anonClient = Client("anon", List.empty)
@@ -52,12 +51,12 @@ object Authorize extends ExampleModule {
   }
 
   def api =
-    tagPrefix('auth) |> ((
-      operation('roles) |> basicAuth[User]("users", 'user) |> get[List[String]]
+    tagPrefix("auth") |> ((
+      operation("roles") |> basicAuth[User]("users", "user") |> get[List[String]]
     ) <> (
-      operation('client) |> bearerAuth[Option[Client]]("clients", 'client) |> get[Client]
+      operation("client") |> bearerAuth[Option[Client]]("clients", "client") |> get[Client]
     ) <> (
-      operation('numbers) |> apiKeyAuth('sessionId, queryParam[Option[String]]('sessionId)) |> get[List[Int]]
+      operation("numbers") |> apiKeyAuth("sessionId", queryParam[Option[String]]("sessionId")) |> get[List[Int]]
     ))
 
   object handler {

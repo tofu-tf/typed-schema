@@ -15,11 +15,11 @@ import cats.syntax.order._
 import cats.instances.string._
 import ru.tinkoff.tschema.common.Name
 import cats.instances.string._
-import ru.tinkoff.tschema.finagle.tethysInstances._
 import Routed.{reject, uriParam}
 import cats.{Monad, SemigroupK}
 import com.twitter.finagle.http.{Request, Response}
 import ru.tinkoff.tschema.param.Param
+import ru.tinkoff.tschema.custom.syntax._
 
 class VersionModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import VersionModule._
@@ -27,12 +27,11 @@ class VersionModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   val swag = MkSwagger(api)
 }
 
-
 object VersionModule {
   def api = tagPrefix('versioned) |> (
-    (version('v1) |> get[String]) <>
-      (version('v2) |> get[Map[String, Int]]) <>
-      (version("v2.1") |> get[Vector[String]])
+    (version('v1) |> get |> plain[String]) <>
+      (version('v2) |> get |> json[Map[String, Int]]) <>
+      (version("v2.1") |> get |> json[Vector[String]])
   )
 
   object service {

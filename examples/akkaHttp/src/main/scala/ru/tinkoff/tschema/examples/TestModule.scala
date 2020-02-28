@@ -4,62 +4,61 @@ package examples
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import io.circe.derivation.renaming.snakeCase
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
-import org.manatki.derevo.derive
-import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.akkaHttp.MkRoute
+import derevo.circe.{decoder, encoder}
+import derevo.derive
+import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.param.{Param, ParamSource}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import ru.tinkoff.tschema.typeDSL.{As, QueryParam}
+import shapeless.labelled.FieldType
+import shapeless._
 
 import scala.concurrent.Future
 
 object definitions {
 
-  @derive(encoder(snakeCase), decoder(snakeCase), swagger)
-  case class StatsRes(theMean: BigDecimal,
-                      disperse: BigDecimal,
-                      median: BigDecimal)
+  @derive(encoder(snakeCase, None), decoder(snakeCase, false, None), Swagger)
+  case class StatsRes(theMean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
-  @derive(encoder, decoder, swagger)
+  @derive(encoder, decoder, Swagger)
   case class Combine(source: CombSource, res: CombRes)
-  @derive(encoder, decoder, swagger)
+  @derive(encoder, decoder, Swagger)
   case class CombSource(x: Int, y: Int)
 
-  @derive(encoder, decoder, swagger)
+  @derive(encoder, decoder, Swagger)
   case class CombRes(mul: Int, sum: Int)
 
   case class Client(value: Int)
 
   def concat =
-    operation('concat) |> queryParam[String]('left)
-      .as('l) |> queryParam[String]('right).as('r) |> get |> complete[String]
+    operation("concat") |> queryParam[String]('left)
+      .as("l") |> queryParam[String]('right).as("r") |> get |> complete[String]
 
   def combine =
-    get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
+    get |> operation("combine") |> capture[Int]("y") |> $$[DebugParams[Combine]]
 
-  def sum = get |> operation('sum) |> capture[Int]('y) |> $$[Int]
+  def sum = get |> operation("sum") |> capture[Int]("y") |> $$[Int]
 
   def stats =
-    post |> operation('stats) |> reqBody[Seq[BigDecimal]] |> $$[StatsRes]
+    post |> operation("stats") |> reqBody[Seq[BigDecimal]] |> $$[StatsRes]
 
   def statsq =
-    get |> operation('statsq) |> queryParams[BigDecimal]('num) |> $$[StatsRes]
+    get |> operation("statsq") |> queryParams[BigDecimal]("num") |> $$[StatsRes]
 
-  def intops = queryParam[Client]('x) |> (combine ~ sum)
+  def intops = queryParam[Client]("x") |> (combine ~ sum)
 
   def dist =
-    operation('sqrtMean) |> formField[Double]('a) |> formField[Double]('b) |> post[
+    operation("sqrtMean") |> formField[Double]("a") |> formField[Double]("b") |> post[
       Double
     ]
 
-  def api = tagPrefix('test) |> (concat <> intops <> stats <> statsq <> dist)
+  def api = tagPrefix("test") |> (concat <> intops <> stats <> statsq <> dist)
 }
 
 object TestModule extends ExampleModule {
   implicit val system = ActorSystem("swagger-test")
-  implicit val mat = ActorMaterializer()
 
   import definitions._
 
@@ -72,7 +71,7 @@ object TestModule extends ExampleModule {
 
   trait Mutate {
     def mutate(value: Long) = java.lang.Long.toBinaryString(value)
-    def concat(l: String, r: String) = l + r
+    def concat(l:     String, r: String) = l + r
   }
 
   object handler extends Mutate {

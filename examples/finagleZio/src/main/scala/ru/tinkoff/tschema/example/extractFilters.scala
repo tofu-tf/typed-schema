@@ -1,15 +1,15 @@
 package ru.tinkoff.tschema
 package example
 
-import org.manatki.derevo.derive
-import org.manatki.derevo.tethysInstances.tethysWriter
-import org.manatki.derevo.tschemaInstances._
+import derevo.derive
+import derevo.tethys.tethysWriter
 import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{SwaggerTypeable, _}
+import ru.tinkoff.tschema.custom.syntax._
 import syntax._
-import finagle.tethysInstances._
 
-@derive(tethysWriter, openapiParam, httpParam)
+@derive(tethysWriter, AsOpenApiParam, HttpParam)
 case class Filters(foo: Option[String], bar: Option[Int])
 
 object Filters {
@@ -27,12 +27,13 @@ object FiltersModule extends ExampleModule {
     tagPrefix('filters) |>
       keyPrefix('echo) |>
       queryParam[Filters]('filt) |>
-      get[Filters]
+      get |>
+      json[Filters]
 
   object handler {
     def echo(filt: Filters) = filt
   }
 
   val route = MkService[Http](api)(handler)
-  val swag  = api.mkSwagger
+  val swag = api.mkSwagger
 }

@@ -2,9 +2,8 @@ package ru.tinkoff.tschema.example
 package sample
 
 import cats.Monad
-import org.manatki.derevo.derive
-import org.manatki.derevo.tethysInstances._
-import org.manatki.derevo.tschemaInstances._
+import derevo.derive
+import derevo.tethys._
 import ru.tinkoff.tschema.finagle.{LiftHttp, MkService, RoutedPlus}
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import ru.tinkoff.tschema.param.{Param, ParamSource}
@@ -12,6 +11,8 @@ import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL.{:>, Group}
 import tofu.env.Env
+import ru.tinkoff.tschema.custom.syntax._
+
 
 class SampleModule[H[_]: Monad: RoutedPlus: LiftHttp[*[_], F], F[_]: Monad: SampleOps: SampleString]
     extends ExampleModule[H] {
@@ -36,7 +37,7 @@ object SampleModule {
       operation('concat) |>
       queryParam[String]('left).as('l) |>
       queryParam[String]('right).as('r) |>
-      complete[String]
+      plain[String]
 
   def combine = get |> operation('combine) |> capture[Int]('y) |> $$[DebugParams[Combine]]
 

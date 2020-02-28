@@ -4,9 +4,8 @@ import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsReject
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Route}
 import akka.http.scaladsl.server.directives.Credentials
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
-import org.manatki.derevo.derive
-import org.manatki.derevo.tschemaInstances.swagger
+import derevo.circe.{decoder, encoder}
+import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.examples.SpecialAuth.validateAuth
 import ru.tinkoff.tschema.swagger._
@@ -24,11 +23,11 @@ object CustomAuth extends ExampleModule {
   implicit val auth = AuthMap(Map("kriwda" -> (true, "admin"), "oleg" -> (false, "notadmin")))
 
   def api =
-    tagPrefix('adminka) |> queryParam[String]('userId) |>
+    tagPrefix("adminka") |> queryParam[String]("userId") |>
       ((
-        post |> validateAuth('userId, true) |> body[BanUser]('banUser) |> operation('ban) |> $$[Result]
+        post |> validateAuth("userId", true) |> body[BanUser]("banUser") |> operation("ban") |> $$[Result]
       ) <> (
-        get |> validateAuth('userId, false) |> operation('bans) |> $$[List[BanUser]]
+        get |> validateAuth("userId", false) |> operation("bans") |> $$[List[BanUser]]
       ))
 
   private val banned = TrieMap.empty[String, BanUser]
@@ -42,10 +41,10 @@ object CustomAuth extends ExampleModule {
   }
 }
 
-@derive(encoder, decoder, swagger)
+@derive(encoder, decoder, Swagger)
 final case class BanUser(userToBan: String, description: Option[String], ttl: Option[Long])
 
-@derive(encoder, decoder, swagger)
+@derive(encoder, decoder, Swagger)
 final case class Result(message: String)
 
 final case class AuthMap(values: Map[String, (Boolean, String)]) {
@@ -55,10 +54,10 @@ final case class AuthMap(values: Map[String, (Boolean, String)]) {
     }
 }
 
-class SpecialAuth[userVar <: Symbol, admin <: Boolean] extends DSLAtom
+class SpecialAuth[userVar , admin <: Boolean] extends DSLAtom
 
 object SpecialAuth {
-  def validateAuth[userVar <: Symbol, admin <: Boolean](
+  def validateAuth[userVar, admin <: Boolean](
       userVar: W.Aux[userVar],
       admin: W.Aux[admin]
   ): SpecialAuth[userVar, admin] =
@@ -66,13 +65,13 @@ object SpecialAuth {
 
   import Serve.{Check, serveReadCheck}
 
-  implicit def swagger[userVar <: Symbol, admin <: Boolean]: SwaggerMapper[SpecialAuth[userVar, admin]] =
-    bearerAuth[String]('kriwda, 'kriwda).swaggerMapper.as[SpecialAuth[userVar, admin]]
+  implicit def swagger[userVar, admin <: Boolean]: SwaggerMapper[SpecialAuth[userVar, admin]] =
+    bearerAuth[String]("kriwda", "kriwda").swaggerMapper.as[SpecialAuth[userVar, admin]]
 
 
   import akka.http.scaladsl.server.Directives._
 
-  implicit def serve[In <: HList, userVar <: Symbol, admin <: Boolean](
+  implicit def serve[In <: HList, userVar, admin <: Boolean](
       implicit auth: AuthMap,
       admin: W.Aux[admin],
       select: Selector.Aux[In, userVar, String]

@@ -15,6 +15,7 @@ import magnolia.{CaseClass, Magnolia, SealedTrait, TypeName}
 import cats.syntax.traverse._
 import cats.instances.vector._
 import cats.instances.list._
+import derevo.Derivation
 import enumeratum.values.{ValueEnum, ValueEnumEntry}
 import tofu.optics.Contains
 
@@ -329,7 +330,7 @@ object DescribeTypeable {
   }
 }
 
-object MagnoliaSwagger {
+object Swagger extends Derivation[SwaggerTypeable]{
   type Typeclass[T] = SwaggerTypeable[T]
 
   private def calcTypeName(name: TypeName, cfg: Config, seen: Set[TypeName] = Set()): String =
@@ -397,4 +398,5 @@ object MagnoliaSwagger {
 
   implicit def derivedInstance[T]: Typeclass[T] = macro Magnolia.gen[T]
   def derive[T]: Typeclass[T] = macro Magnolia.gen[T]
+  def instance[T]: Typeclass[T] = macro Magnolia.gen[T]
 }

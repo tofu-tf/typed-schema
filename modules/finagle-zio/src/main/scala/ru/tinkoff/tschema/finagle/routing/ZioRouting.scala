@@ -8,7 +8,7 @@ import com.twitter.util.{Future, Promise}
 import ru.tinkoff.tschema.finagle.routing.ZioRouting.ZIOHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
-import zio.{Exit, ZIO}
+import zio.{Exit, URIO, ZIO}
 
 final case class ZioRouting[+R](
     request: http.Request,
@@ -17,18 +17,18 @@ final case class ZioRouting[+R](
     embedded: R
 ) extends ZioRoutingCommon
 
-object ZioRouting extends ZioRoutedImpl {
+object ZioRouting extends ZIORoutedPlusInstances {
 
   type ZIOHttp[-R, +E, +A] = ZIO[ZioRouting[R], Fail[E], A]
+  type URIOHttp[-R, +A]    = ZIO[ZioRouting[R], Fail[Nothing], A]
 
-  implicit def zioRouted[R, E]: RoutedPlus[ZIOHttp[R, E, *]] =
-    zioRoutedAny.asInstanceOf[ZioRoutedInstance[R, E]]
+  implicit def zioUnexceptRouted[R]: RoutedPlus[URIOHttp[R, *]] =
+    zioRoutedAny.asInstanceOf[ZioRoutedInstance[R, Nothing]]
 
-  implicit def zioLift[R, R1, E, E1](
-      implicit eve: E1 <:< E,
-      evr: R <:< R1
-  ): LiftHttp[ZIOHttp[R, E, *], ZIO[R1, E1, *]] =
-    zioLiftAny.asInstanceOf[ZioLiftInstance[R, R1, E, E1]]
+  implicit def zioUnexceptLift[R, R1](
+      implicit evr: R <:< R1
+  ): LiftHttp[URIOHttp[R, *], URIO[R1, *]] =
+    zioLiftAny.asInstanceOf[ZioLiftInstance[R, R1, Nothing, Nothing]]
 
   def zioConvertService[R, E](f: Throwable => Fail[E]): ConvertService[ZIOHttp[R, E, *]] =
     new ZIOConvertService[ZioRouting[R], Fail[E]](f)
@@ -53,38 +53,46 @@ object ZioRouting extends ZioRoutedImpl {
         }
     )
 }
-private[finagle] class ZioRoutedImpl {
 
-  protected trait ZioRoutedInstance[R, E] extends RoutedPlus[ZIOHttp[R, E, *]] {
-    private type F[a] = ZIOHttp[R, E, a]
-    implicit private[this] val self: RoutedPlus[F] = this
-    implicit private[this] val monad: Monad[F]     = zio.interop.catz.monadErrorInstance
+trait ZIORoutedPlusInstances {
+  implicit def zioRouted[R, E]: RoutedPlus[ZIOHttp[R, E, *]] =
+    zioRoutedAny.asInstanceOf[ZioRoutedInstance[R, E]]
 
-    def matched: F[Int] = ZIO.access(_.matched)
+  implicit def zioLift[R, R1, E, E1](
+      implicit eve: E1 <:< E,
+      evr: R <:< R1
+  ): LiftHttp[ZIOHttp[R, E, *], ZIO[R1, E1, *]] =
+    zioLiftAny.asInstanceOf[ZioLiftInstance[R, R1, E, E1]]
 
-    def withMatched[A](m: Int, fa: F[A]): F[A] = fa.provideSome(_.copy(matched = m))
+  final protected[this] object zioRoutedAny extends ZioRoutedInstance[Any, Nothing]
+  final protected[this] object zioLiftAny   extends ZioLiftInstance[Any, Any, Nothing, Nothing]
 
-    def path: F[CharSequence]    = ZIO.access(_.path)
-    def request: F[http.Request] = ZIO.access(_.request)
-    def reject[A](rejection: Rejection): F[A] =
-      Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
+}
 
-    def combineK[A](x: F[A], y: F[A]): F[A] =
-      catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
-    @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
-      z.catchSome { case Fail.Rejected(xrs) => f(xrs) }
+protected trait ZioRoutedInstance[R, E] extends RoutedPlus[ZIOHttp[R, E, *]] {
+  private type F[a] = ZIOHttp[R, E, a]
+  implicit private[this] val self: RoutedPlus[F] = this
+  implicit private[this] val monad: Monad[F]     = zio.interop.catz.monadErrorInstance
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
-  }
+  def matched: F[Int] = ZIO.access(_.matched)
 
-  protected class ZioLiftInstance[R, R1, E, E1](implicit eve: E1 <:< E, evr: R <:< R1)
-      extends LiftHttp[ZIOHttp[R, E, *], ZIO[R1, E1, *]] {
-    private type F[a] = ZIOHttp[R, E, a]
-    def apply[A](fa: ZIO[R1, E1, A]): F[A] =
-      fa.mapError(Fail.Other(_): Fail[E]).provideSome[ZioRouting[R]](_.embedded)
-  }
+  def withMatched[A](m: Int, fa: F[A]): F[A] = fa.provideSome(_.copy(matched = m))
 
-  protected[this] object zioRoutedAny extends ZioRoutedInstance[Any, Nothing]
-  protected[this] object zioLiftAny   extends ZioLiftInstance[Any, Any, Nothing, Nothing]
+  def path: F[CharSequence]    = ZIO.access(_.path)
+  def request: F[http.Request] = ZIO.access(_.request)
+  def reject[A](rejection: Rejection): F[A] =
+    Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
+  def combineK[A](x: F[A], y: F[A]): F[A] =
+    catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
+  @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
+    z.catchSome { case Fail.Rejected(xrs) => f(xrs) }
+
+  @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
+}
+
+protected class ZioLiftInstance[R, R1, E, E1](implicit eve: E1 <:< E, evr: R <:< R1)
+    extends LiftHttp[ZIOHttp[R, E, *], ZIO[R1, E1, *]] {
+  private type F[a] = ZIOHttp[R, E, a]
+  def apply[A](fa: ZIO[R1, E1, A]): F[A] = fa.mapError(Fail.Other(_): Fail[E]).provideSome[ZioRouting[R]](_.embedded)
 }

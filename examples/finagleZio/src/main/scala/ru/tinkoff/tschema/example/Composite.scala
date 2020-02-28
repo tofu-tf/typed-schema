@@ -1,10 +1,12 @@
 package ru.tinkoff.tschema
 package example
+import ru.tinkoff.tschema.custom
+import ru.tinkoff.tschema.custom.AsResponse
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import ru.tinkoff.tschema.finagle.{Complete, CompleteIn, MkService, NoneCompleting, StringCompleting}
+import ru.tinkoff.tschema.finagle.{Complete, CompleteIn, LiftHttp, MkService, NoneCompleting, StringCompleting}
 import ru.tinkoff.tschema.swagger.MkSwagger
-import shapeless.HNil
-import syntax._
+import ru.tinkoff.tschema.custom.syntax._
+import ru.tinkoff.tschema.syntax._
 import zio.ZIO
 
 sealed trait Receive[+A]
@@ -23,17 +25,18 @@ object BadKey extends StringCompleting[BadKey]({ case BadKey(key) => s"key $key 
 final case class Result[A](x: A) extends Receive[A]
 
 object ReceiveModule extends ExampleModule {
+
   def api =
     tagPrefix("storage") |> queryParam[String]("key") |> ((
-      opPut |> body[String]('value) |> $$[Unit]
+      opPut |> body[String]('value) |> plain[Unit]
     ) <> (
       opGet |> $$[Composite[Receive[String]]]
     ) <> (
-      get |> operation("read") |> $$[String].?
+      get |> operation("read") |> plainErr[None.type, String]
     ))
 
   def route = MkService[Http](api)(ReceiveService)
-  def swag  = MkSwagger(api)
+  def swag = MkSwagger(api)
 }
 
 object ReceiveService {

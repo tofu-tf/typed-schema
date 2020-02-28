@@ -12,9 +12,9 @@ final case class ExampleEnv(trackingId: String, alohas: Ref[Int], storage: Ref[M
 object ExampleEnv {
 
 
-  final implicit val exampleMonad: Monad[Example] = zio.interop.catz.ioInstances
+  final implicit val exampleMonad: Monad[Example] = zio.interop.catz.monadErrorInstance
 
-  final implicit val httpMonad: Monad[Http] = zio.interop.catz.ioInstances
+  final implicit val httpMonad: Monad[Http] = zio.interop.catz.monadErrorInstance
 }
 
 object Example{

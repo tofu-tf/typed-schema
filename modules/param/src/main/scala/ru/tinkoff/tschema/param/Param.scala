@@ -9,6 +9,7 @@ import cats.kernel.Semigroup
 import cats.syntax.either._
 import cats.syntax.parallel._
 import cats.syntax.traverse._
+import derevo.Derivation
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import ru.tinkoff.tschema.param.HttpParam.tryParam
 import ru.tinkoff.tschema.param.Param.{MultiResult, Result, SingleResult}
@@ -68,7 +69,8 @@ object SingleParam extends ParamInstances[SingleParam] {
 
 trait SingleParamReq[+S >: All <: ParamSource, A] extends SingleParam[S, A] {
   def applyReq(source: CharSequence): SingleResult[A]
-  def applyOpt(source: Option[CharSequence]): SingleResult[A] = source.fold[SingleResult[A]](Left(MissingParamError))(applyReq)
+  def applyOpt(source: Option[CharSequence]): SingleResult[A] =
+    source.fold[SingleResult[A]](Left(MissingParamError))(applyReq)
 }
 
 trait MultiParam[+S >: All <: ParamSource, A] extends Param[S, A] { self =>
@@ -113,7 +115,8 @@ trait MultiParamReq[S >: All <: ParamSource, A] extends MultiParam[S, A] {
 sealed trait HttpParam[A] extends Param[All, A] {
   def optional: HttpParam[Option[A]]
 }
-object HttpParam extends HttpParamInstances[HttpParam] {
+
+object HttpParam extends HttpParamInstances[HttpParam] with Derivation[HttpParam] {
   def apply[T](implicit param: HttpParam[T]): HttpParam[T] = param
 
   trait Enum[E <: enumeratum.EnumEntry] {
@@ -127,7 +130,7 @@ object HttpParam extends HttpParamInstances[HttpParam] {
       try Right(f(s))
       catch {
         case NonFatal(ex) => Left(ParseParamError(ex.toString))
-    }
+      }
 
   def empty[A]: HttpMultiParam[List[A]] = new HttpMultiParam[List[A]] {
     def names: List[String]                                                      = Nil
@@ -164,9 +167,9 @@ object HttpParam extends HttpParamInstances[HttpParam] {
       .map(ctx.rawConstruct)
   }
 
-  def dispatch[T](ctx: SealedTrait[Typeclass, T]): Typeclass[T] = ???
-
   def generate[T]: Typeclass[T] = macro Magnolia.gen[T]
+
+  def instance[T]: Typeclass[T] = macro Magnolia.gen[T]
 }
 
 trait HttpSingleParam[A] extends SingleParam[All, A] with HttpParam[A] {
@@ -194,7 +197,8 @@ object Param extends ParamInstances[Param] {
 
   def apply[S >: All <: ParamSource, T](implicit instance: Param[S, T]): Param[S, T] = instance
 
-  def instance[S >: All <: ParamSource, T](f: Option[CharSequence] => SingleResult[T]): SingleParam[S, T] = param => f(param)
+  def instance[S >: All <: ParamSource, T](f: Option[CharSequence] => SingleResult[T]): SingleParam[S, T] = param =>
+    f(param)
 
   def separated[S >: All <: ParamSource, T](sep: Regex)(implicit param: SingleParam[S, T]): SingleParam[S, List[T]] =
     s => s.fold(List.empty[T].asRight[SingleParamError])(sep.split(_).toList.traverse(s => param.applyOpt(Some(s))))
@@ -213,23 +217,27 @@ object Param extends ParamInstances[Param] {
 }
 
 trait LowPriorParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]] {
-  implicit def optionalParam[S >: All <: ParamSource, A](implicit param: Param[S, A]): Param[S, Option[A]] = param.optional
+  implicit def optionalParam[S >: All <: ParamSource, A](implicit param: Param[S, A]): Param[S, Option[A]] =
+    param.optional
 }
 
 trait ParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]]
     extends LowPriorParamInstances[P] with PrimitiveParamInstances[P[All, *]] {
 
-  implicit def optSingleParam[S >: All <: ParamSource, A](implicit param: SingleParam[S, A]): SingleParam[S, Option[A]] =
+  implicit def optSingleParam[S >: All <: ParamSource, A](
+      implicit param: SingleParam[S, A]
+  ): SingleParam[S, Option[A]] =
     param.optional
   implicit def optMultiParam[S >: All <: ParamSource, A](implicit param: MultiParam[S, A]): MultiParam[S, Option[A]] =
     param.optional
 }
 
 trait LowPriorHttpParamInstances[P[a] >: HttpSingleParam[a]] {
-  implicit def optionalParam[S >: All <: ParamSource, A](implicit param: HttpParam[A]): HttpParam[Option[A]] = param.optional
+  implicit def optionalParam[A](implicit param: HttpParam[A]): HttpParam[Option[A]] = param.optional
 }
 
-trait HttpParamInstances[P[a] >: HttpSingleParam[a]] extends LowPriorHttpParamInstances[P] with PrimitiveParamInstances[P] {
+trait HttpParamInstances[P[a] >: HttpSingleParam[a]]
+    extends LowPriorHttpParamInstances[P] with PrimitiveParamInstances[P] {
   implicit def optSingleParam[A](implicit param: HttpSingleParam[A]): HttpSingleParam[Option[A]] =
     param.optional
   implicit def optMultiParam[A](implicit param: HttpMultiParam[A]): HttpMultiParam[Option[A]] =

@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.common
+package tschema.common
 
 import shapeless.Witness
 

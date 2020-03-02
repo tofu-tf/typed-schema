@@ -8,15 +8,13 @@ import ru.tinkoff.tschema.swagger.SwaggerContent.Content
 
 import scala.annotation.implicitNotFound
 
-@implicitNotFound(
-  "SwaggerContent for ${T} is not found, try supply SwaggerTypeable for T, e.g. using MagnoliaSwagger.derive"
-)
+@implicitNotFound("SwaggerContent for ${T} is not found, try supply Swagger[T], e.g. using Swagger.derive")
 final case class SwaggerContent[T](content: Content) {
   def collectTypes: Map[String, DescribedType] =
     content.foldLeft[Map[String, DescribedType]](Map()) { case (m, (_, ot)) => ot.foldLeft(m)(_ ++ _.collectTypes) }
 }
 
-object SwaggerContent extends CompositeInstances {
+object SwaggerContent {
   type Content = List[(Int, Option[SwaggerType])]
 
   def by = BuilderBy(Nil)
@@ -35,23 +33,4 @@ object SwaggerContent extends CompositeInstances {
 
   final implicit val notFoundContent: SwaggerContent[NotFound.type] = SwaggerContent(List(404 -> None))
   final implicit val noneContent: SwaggerContent[None.type]         = SwaggerContent(List(404 -> None))
-}
-
-class CompositeInstances {
-  final implicit def decomposeInstance[A, D](
-      implicit d: Decompose.Aux[A, D],
-      content: Lazy[CompositeContent[A, D]]
-  ): SwaggerContent[Composite[A]] =
-    SwaggerContent(content.value.content)
-}
-
-final case class CompositeContent[A, D](content: Content)
-
-object CompositeContent {
-  implicit def nilContent[A]: CompositeContent[A, Last[A]] = CompositeContent(Nil)
-
-  implicit def consContent[A, H, D <: Decompose[A]](
-      implicit head: SwaggerContent[H],
-      tail: CompositeContent[A, D]
-  ): CompositeContent[A, Cons[A, H, D]] = CompositeContent(head.content ::: tail.content)
 }

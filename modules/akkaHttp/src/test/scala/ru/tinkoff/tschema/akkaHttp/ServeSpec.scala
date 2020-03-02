@@ -6,15 +6,14 @@ import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.server.MissingQueryParamRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import ru.tinkoff.tschema.syntax
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class ServeSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
   trait Small
 
-  import syntax._
-  val dsl = syntax
+  import tschema.syntax._
+  val dsl = tschema.syntax
 
   val intAnswer = 42
 
@@ -30,11 +29,11 @@ class ServeSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
     def min(args: List[Int]) = args.min
   }
 
-  def api = (keyPrefix('int) :> get[Int]) ~
-            (keyPrefix('repeat) :> reqBody[String] :> queryParam[Int]('n) :> post[String]) ~
-            (keyPrefix('multiply) :> formField[Long]('x) :> formField[Double]('y) :> post[String]) ~
-            (keyPrefix('size) :> queryParams[Option[Int]]('args) :> post[Int]) ~
-            (keyPrefix('min) :> queryParams[Int]('args) :> post[Int])
+  def api = (keyPrefix("int") :> get :> complete[Int]) ~
+            (keyPrefix("repeat") :> reqBody[String] :> queryParam[Int]("n") :> post :> complete[String]) ~
+            (keyPrefix("multiply") :> formField[Long]("x") :> formField[Double]("y") :> post :> complete[String]) ~
+            (keyPrefix("size") :> queryParams[Option[Int]]("args") :> post :> complete[Int]) ~
+            (keyPrefix("min") :> queryParams[Int]("args") :> post :> complete[Int])
 
   val route = MkRoute(api)(handler)
 

@@ -1,26 +1,18 @@
-package ru.tinkoff.tschema.swagger
+package tschema.swagger
 
-import java.util.{Date, UUID}
-
-import cats.arrow.FunctionK
-import cats.syntax.option._
-import cats.syntax.foldable._
 import cats.instances.map._
-import cats.instances.vector._
-import cats.{Eval, Monoid, MonoidK}
-import ru.tinkoff.tschema.common.Name
+import cats.syntax.option._
+import cats.{Monoid, MonoidK}
 import ru.tinkoff.tschema.macros._
 import ru.tinkoff.tschema.swagger.MkSwagger._
-import ru.tinkoff.tschema.swagger.OpenApiParam.In
 import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
 import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
-import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
+import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.subsets._
-import tofu.optics.{Contains, chain}
-import tofu.optics.functions.{vecItems}
+import tofu.optics.functions.vecItems
 import tofu.optics.macros.GenContains
-import shapeless.{Lazy, Witness}
+import tofu.optics.{Contains, chain}
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
@@ -303,21 +295,6 @@ object MkSwagger {
   implicit def monoidInstance[A]: Monoid[MkSwagger[A]] = monoidKInstance.algebra[A]
 }
 
-final case class MethodDeclare[method](method: OpenApi.Method)
-object MethodDeclare {
-  implicit val checkGet: MethodDeclare[Get]         = MethodDeclare(OpenApi.Method.get)
-  implicit val checkPost: MethodDeclare[Post]       = MethodDeclare(OpenApi.Method.post)
-  implicit val checkDelete: MethodDeclare[Delete]   = MethodDeclare(OpenApi.Method.delete)
-  implicit val checkPut: MethodDeclare[Put]         = MethodDeclare(OpenApi.Method.put)
-  implicit val checkOptions: MethodDeclare[Options] = MethodDeclare(OpenApi.Method.options)
-  implicit val checkHead: MethodDeclare[Head]       = MethodDeclare(OpenApi.Method.head)
-  implicit val checkPatch: MethodDeclare[Patch]     = MethodDeclare(OpenApi.Method.patch)
-}
 
-final case class ApiKeyParam[Param <: CanHoldApiKey, name, x](in: OpenApiParam.In)
 
-object ApiKeyParam {
-  implicit def header[name, x]: ApiKeyParam[Header[name, x], name, x]    = ApiKeyParam(OpenApiParam.In.header)
-  implicit def query[name, x]: ApiKeyParam[QueryParam[name, x], name, x] = ApiKeyParam(OpenApiParam.In.query)
-  implicit def cookie[name, x]: ApiKeyParam[Cookie[name, x], name, x]    = ApiKeyParam(OpenApiParam.In.cookie)
-}
+

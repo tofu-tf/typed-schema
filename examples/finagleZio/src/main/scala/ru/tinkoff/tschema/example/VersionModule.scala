@@ -13,13 +13,12 @@ import cats.syntax.applicative._
 import cats.syntax.semigroupk._
 import cats.syntax.order._
 import cats.instances.string._
-import ru.tinkoff.tschema.common.Name
 import cats.instances.string._
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import Routed.{reject, uriParam}
 import cats.SemigroupK
 import com.twitter.finagle.http.{Request, Response}
 import ru.tinkoff.tschema.param.Param
+import tschema.common.Name
 
 object VersionModule extends ExampleModule {
   def api = tagPrefix('versioned) |> (

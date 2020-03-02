@@ -5,10 +5,10 @@ import io.circe.Encoder
 import derevo.tethys.{tethysReader, tethysWriter}
 import ru.tinkoff.tschema.finagle.{LiftHttp, Routed}
 import ru.tinkoff.tschema.swagger.Swagger
+import tschema.common.Name
 //import io.circe.syntax._
 import derevo.circe.{decoder, encoder}
 import derevo.derive
-import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.finagle.CompleteIn
 import ru.tinkoff.tschema.finagle.util.message
 import shapeless._

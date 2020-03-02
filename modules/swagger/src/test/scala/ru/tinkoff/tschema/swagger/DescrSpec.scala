@@ -8,9 +8,9 @@ import org.scalatest.matchers.should.Matchers
 
 class DescrSpec extends AnyFlatSpec with Matchers {
   "descr" should "set description for existing field" in assert(
-    SwaggerTypeable
-      .deriveNamedTypeable[Foo]
-      .descr('x ->> xDescr)
+    Swagger
+      .instance[Foo]
+      .descr(Symbol("x") ->> xDescr)
       .typ
       .asInstanceOf[SwaggerRef]
       .typ

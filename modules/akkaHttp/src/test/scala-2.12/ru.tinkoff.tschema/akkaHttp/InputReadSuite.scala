@@ -1,12 +1,12 @@
 package ru.tinkoff.tschema
 package akkaHttp
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import shapeless.{HList, HNil, Witness}
-import shapeless.ops.hlist.Selector
 import akka.http.scaladsl.server.Directives.provide
-import ru.tinkoff.tschema.typeDSL.DSLAtom
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import ru.tinkoff.tschema.typeDSL.DSLAtom
+import shapeless.ops.hlist.Selector
+import shapeless.{HList, HNil, Witness}
 
 class InputReadSuite extends AnyFlatSpec with Matchers with ScalatestRouteTest {
   import InputReadSuite._
@@ -22,18 +22,18 @@ class InputReadSuite extends AnyFlatSpec with Matchers with ScalatestRouteTest {
 
 final case class MagicalInput(value: String)
 
-final case class magicParam[name <: Symbol](name: Witness.Aux[name]) extends DSLAtom
+final case class magicParam[name](name: Witness.Aux[name]) extends DSLAtom
 
 object magicParam {
-  implicit def serve[In <: HList, name <: Symbol](
-      implicit sel: Selector[In, MagicalInput]): Serve.Add[magicParam[name], In, name, MagicalInput] =
+  implicit def serve[In <: HList, name](
+      implicit sel: Selector[In, MagicalInput]
+  ): Serve.Add[magicParam[name], In, name, MagicalInput] =
     Serve.serveAddIn(in => provide(sel(in)))
 }
 
 object InputReadSuite {
-  import ru.tinkoff.tschema.typeDSL._
-  import syntax._
-  def api = get |> operation('magic) |> magicParam('hello) |> $$[String]
+  import tschema.syntax._
+  def api = get |> operation("magic") |> magicParam("hello") |> $$[String]
   object handler {
     def magic(hello: MagicalInput) = s"Hello, ${hello.value}!"
   }

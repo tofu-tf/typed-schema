@@ -18,6 +18,7 @@ import cats.instances.list._
 import derevo.Derivation
 import enumeratum.values.{ValueEnum, ValueEnumEntry}
 import tofu.optics.Contains
+import tschema.common.Name
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -62,15 +63,15 @@ trait SwaggerTypeable[T] {
     updateTyp(SwaggerType.objProp.update(_, _.xmlFields(fieldOpts: _*)))
 
   //Safe versions
-  def descr[S <: Symbol, L <: HList](
+  def descr[S: Name, L <: HList](
       fld: FieldType[S, String]
-  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
-    describeFields(witness.value.name -> fld)
+  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S]) =
+    describeFields(Name[S].string -> fld)
 
-  def xmlFld[S <: Symbol, L <: HList](
+  def xmlFld[S: Name, L <: HList](
       fld: FieldType[S, SwaggerXMLOptions]
-  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
-    xmlFields(witness.value.name -> fld)
+  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S]) =
+    xmlFields(Name[S].string -> fld)
 
   def withMediaType(mediaType: MediaType): SwaggerTypeable[T] = updateTyp(_.withMediaType(mediaType))
 }
@@ -330,7 +331,7 @@ object DescribeTypeable {
   }
 }
 
-object Swagger extends Derivation[SwaggerTypeable]{
+object Swagger extends Derivation[SwaggerTypeable] {
   type Typeclass[T] = SwaggerTypeable[T]
 
   private def calcTypeName(name: TypeName, cfg: Config, seen: Set[TypeName] = Set()): String =

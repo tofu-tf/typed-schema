@@ -4,11 +4,11 @@ package examples
 import akka.http.scaladsl.server.{Directive, Rejection}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
-import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.swagger.{SwaggerMapper, _}
 import syntax._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
+import tschema.common.Name
 
 object VersionModule extends ExampleModule {
   def api = tagPrefix("versioned") |> (

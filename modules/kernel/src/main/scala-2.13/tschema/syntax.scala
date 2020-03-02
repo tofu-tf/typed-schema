@@ -1,21 +1,21 @@
-package ru.tinkoff.tschema
+package tschema
+
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 
-@deprecated("use tschema.syntax", since = "0.12.1")
 object syntax {
-  def prefix[s](witness: Witness.Aux[s])      = new Prefix[s]
-  def queryFlag[s](witness: Witness.Aux[s])   = new QueryFlag[s]
-  def tag[s](witness: Witness.Aux[s])         = new Tag[s]
-  def key[s](witness: Witness.Aux[s])         = new Key[s]
-  def group[s](witness: Witness.Aux[s])       = new Group[s]
-  def deprecated                              = new Deprecated
-  def tagPrefix[s](witness: Witness.Aux[s])   = prefix[s](witness) |> tag[s](witness)
-  def keyPrefix[s](witness: Witness.Aux[s])   = prefix[s](witness) |> key[s](witness)
-  def groupPrefix[s](witness: Witness.Aux[s]) = prefix[s](witness) |> group[s](witness)
-  def operation[s](witness: Witness.Aux[s])   = keyPrefix[s](witness)
+  def prefix[s <: Singleton](s: s)      = new Prefix[s]
+  def queryFlag[s <: Singleton](s: s)   = new QueryFlag[s]
+  def tag[s <: Singleton](s: s)         = new Tag[s]
+  def key[s <: Singleton](s: s)         = new Key[s]
+  def group[s <: Singleton](s: s)       = new Group[s]
+  def deprecated                        = new Deprecated
+  def tagPrefix[s <: Singleton](s: s)   = prefix[s](s) |> tag[s](s)
+  def keyPrefix[s <: Singleton](s: s)   = prefix[s](s) |> key[s](s)
+  def groupPrefix[s <: Singleton](s: s) = prefix[s](s) |> group[s](s)
+  def operation[s <: Singleton](s: s)   = keyPrefix[s](s)
 
-  def allQuery[name](s: Witness.Aux[name]): AllQuery[name] = new AllQuery[name]
+  def allQuery[name <: Singleton](name: name): AllQuery[name] = new AllQuery[name]
 
   def capture[x] =
     new MkComplex(new Maker[x, Capture] {
@@ -59,7 +59,7 @@ object syntax {
   }
 
   class MkComplex[x, T[_, _]](maker: Maker[x, T]) {
-    def apply[s](witness: Witness.Aux[s]) = maker.make[s]
+    def apply[s <: Singleton](s: s) = maker.make[s]
   }
 
   implicit class TypeApiOps[x <: DSLDef](x: => x) {
@@ -70,7 +70,7 @@ object syntax {
     def |>[y](y: => y): x :> y                         = new :>
     def &[y](y: => y): x :> y                          = new :>
     def apply[y](y: => y): x :> y                      = new :>
-    def as[name](name: Witness.Aux[name]): As[x, name] = new As
+    def as[name <: Singleton](name: name): As[x, name] = new As
   }
 
   implicit class ResultMaker[x <: DSLMethod](x: => x) {
@@ -100,17 +100,18 @@ object syntax {
   def basicAuth[x] = new MkBasicAuth[x]
 
   class MkBasicAuth[x] {
-    def apply[realm, name](realm: Witness.Aux[realm], name: Witness.Aux[name]): BasicAuth[realm, name, x] =
+    def apply[realm <: Singleton, name <: Singleton](realm: realm, name: name): BasicAuth[realm, name, x] =
       new BasicAuth
   }
 
   def bearerAuth[x] = new MkBearerAuth[x]
 
   class MkBearerAuth[x] {
-    def apply[realm, name](realm: Witness.Aux[realm], name: Witness.Aux[name]): BearerAuth[realm, name, x] =
+    def apply[realm <: Singleton, name <: Singleton](realm: realm, name: name): BearerAuth[realm, name, x] =
       new BearerAuth
   }
 
-  def apiKeyAuth[realm, Param <: CanHoldApiKey](realm: Witness.Aux[realm], param: Param): ApiKeyAuth[realm, Param] =
+  def apiKeyAuth[realm <: Singleton, Param <: CanHoldApiKey](realm: realm, param: Param): ApiKeyAuth[realm, Param] =
     new ApiKeyAuth
+
 }

@@ -1,6 +1,9 @@
-package ru.tinkoff.tschema.custom
-import ru.tinkoff.tschema.syntax.{Maker, MkComplex}
+package tschema.custom
+
+import ru.tinkoff.tschema.custom._
+
 import ru.tinkoff.tschema.typeDSL._
+import tschema.syntax.{Maker, MkComplex}
 
 object syntax {
   def json[A]: Complete[JsonResult[A]] = new Complete

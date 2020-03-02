@@ -177,7 +177,8 @@ lazy val param = project
     commonSettings,
     moduleName := "typed-schema-param",
     libraryDependencies += derevo,
-    magnolia
+    magnolia,
+    paradise,
   )
 
 lazy val macros = project

@@ -1,8 +1,7 @@
-package ru.tinkoff.tschema
+package tschema
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 
-@deprecated("use tschema.syntax", since = "0.12.1")
 object syntax {
   def prefix[s](witness: Witness.Aux[s])      = new Prefix[s]
   def queryFlag[s](witness: Witness.Aux[s])   = new QueryFlag[s]

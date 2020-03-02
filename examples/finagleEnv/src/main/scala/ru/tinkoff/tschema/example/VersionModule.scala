@@ -13,13 +13,12 @@ import cats.syntax.applicative._
 import cats.syntax.semigroupk._
 import cats.syntax.order._
 import cats.instances.string._
-import ru.tinkoff.tschema.common.Name
 import cats.instances.string._
-import Routed.{reject, uriParam}
 import cats.{Monad, SemigroupK}
 import com.twitter.finagle.http.{Request, Response}
 import ru.tinkoff.tschema.param.Param
 import ru.tinkoff.tschema.custom.syntax._
+import tschema.common.Name
 
 class VersionModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import VersionModule._

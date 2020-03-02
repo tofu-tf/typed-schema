@@ -21,7 +21,7 @@ trait CompleteIn[F[_], -In, Out, A] {
   def as[Out1]: CompleteIn[F, In, Out1, A] = this.asInstanceOf[CompleteIn[F, In, Out1, A]]
 }
 
-object CompleteIn extends CompositeCompleteInInstances with DefaultCompleteInInstances
+object CompleteIn
 
 trait Complete[F[_], R, A] extends CompleteIn[F, Any, R, A] {
   def complete(a: A): F[Response]
@@ -36,53 +36,4 @@ object Complete {
     new Contravariant[Complete[F, R, *]] {
       def contramap[A, B](fa: Complete[F, R, A])(f: B => A): Complete[F, R, B] = b => fa.complete(f(b))
     }
-}
-
-trait CompositeCompleteInInstances {
-  implicit def compositePureInstance[F[_], In, A, D](
-      implicit
-      decompose: Decompose.Aux[A, D],
-      composite: Lazy[CompositeComplete[F, In, A, D]]
-  ): CompleteIn[F, In, Composite[A], A] =
-    (ga, in) => composite.value.complete(ga, decompose.self, in)
-
-  implicit def compositeLiftInstance[F[_]: Monad, G[_], In, A, D](
-      implicit
-      decompose: Decompose.Aux[A, D],
-      composite: Lazy[CompositeComplete[F, In, A, D]],
-      lift: LiftHttp[F, G]
-  ): CompleteIn[F, In, Composite[A], G[A]] =
-    (ga, in) => lift(ga).flatMap(composite.value.complete(_, decompose.self, in))
-}
-
-trait CompositeComplete[F[_], In, A, D] {
-  def complete(a: A, d: D, in: In): F[Response]
-}
-
-object CompositeComplete {
-  implicit def lastComplete[F[_]: MonoidK, G[_], In, A]: CompositeComplete[F, In, A, Last[A]] =
-    (_, _, _) => MonoidK[F].empty[Response]
-
-  implicit def consComplete[F[_], In, A, H, T](
-      implicit
-      head: CompleteIn[F, In, H, H],
-      tail: CompositeComplete[F, In, A, T]
-  ): CompositeComplete[F, In, A, Cons[A, H, T]] =
-    (a, d, in) => d.tryHead(a).fold(tail.complete(a, d.next, in))(head.completeIn(_, in))
-}
-trait DefaultCompleteInInstances {
-  final implicit def notFoundCompleteInstance[F[_]: Applicative, G[_]]: Complete[F, NotFound.type, NotFound.type] =
-    message.emptyComplete(Status.NotFound)
-
-  final implicit def notFoundCompleteFInstance[F[_]: Applicative, G[_]](
-      implicit lift: LiftHttp[F, G]
-  ): Complete[F, NotFound.type, G[NotFound.type]] =
-    in => lift(in) *> Response(Status.NotFound).pure[F]
-
-  final implicit def unitCompleteInstance[F[_]: Applicative, G[_]]: Complete[F, Unit, Unit] = message.emptyComplete()
-
-  final implicit def unitCompleteFInstance[F[_]: Applicative, G[_]](
-      implicit lift: LiftHttp[F, G]
-  ): Complete[F, Unit, G[Unit]] =
-    in => lift(in) *> Response(Status.Ok).pure[F]
 }

@@ -1,36 +1,37 @@
 package ru.tinkoff.tschema
 package example
-import ru.tinkoff.tschema.custom
+import derevo.cats.show
+import derevo.derive
+import derevo.tethys.tethysWriter
 import ru.tinkoff.tschema.custom.AsResponse
+import ru.tinkoff.tschema.custom.derivation.{jsonError, plainError}
+import tschema.custom.syntax._
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import ru.tinkoff.tschema.finagle.{Complete, CompleteIn, LiftHttp, MkService, NoneCompleting, StringCompleting}
-import ru.tinkoff.tschema.swagger.MkSwagger
-import ru.tinkoff.tschema.custom.syntax._
-import ru.tinkoff.tschema.syntax._
+import ru.tinkoff.tschema.finagle.{NoneCompleting, StringCompleting}
+import ru.tinkoff.tschema.swagger.{SwaggerContent}
+import tschema.swagger.{Swagger}
+import tschema.finagle.MkService
+import tschema.swagger.MkSwagger
+import tschema.syntax._
 import zio.ZIO
+import AsResponse.Error
 
-sealed trait Receive[+A]
+@derive(SwaggerContent, Error)
+sealed trait KeySearching
 
-object Receive {
-  implicit def decompose[A] =
-    Decompose.make[Receive[A]] { case n @ NotFound => n } { case n @ BadKey(_) => n } { case Result(a) => a } result
-}
+@derive(Swagger, show, plainError(404))
+case class NotFound() extends KeySearching
 
-case object NotFound extends NoneCompleting(404) with Receive[Nothing]
-
-final case class BadKey(s: String) extends Receive[Nothing]
-
-object BadKey extends StringCompleting[BadKey]({ case BadKey(key) => s"key $key is baaaad" }, 404)
-
-final case class Result[A](x: A) extends Receive[A]
+@derive(Swagger, tethysWriter, jsonError(400))
+final case class BadKey(s: String) extends KeySearching
 
 object ReceiveModule extends ExampleModule {
 
   def api =
     tagPrefix("storage") |> queryParam[String]("key") |> ((
-      opPut |> body[String]('value) |> plain[Unit]
+      opPut |> body[String]("value") |> plain[Unit]
     ) <> (
-      opGet |> $$[Composite[Receive[String]]]
+      opGet |> jsonErr[KeySearching, String]
     ) <> (
       get |> operation("read") |> plainErr[None.type, String]
     ))
@@ -41,9 +42,8 @@ object ReceiveModule extends ExampleModule {
 
 object ReceiveService {
   def put(key: String, value: String): Example[Unit] = ZIO.accessM(_.storage.update(_ + (key -> value)).unit)
-  def get(key: String): Example[Receive[String]] =
-    if (key.isEmpty || key.startsWith("bad")) ZIO.succeed(BadKey(key))
-    else read(key).map(_.fold[Receive[String]](NotFound)(Result(_)))
-
+  def get(key: String): Example[Either[KeySearching, String]] =
+    (if (key.isEmpty || key.startsWith("bad")) ZIO.fail(BadKey(key))
+     else read(key).some.asError(NotFound())).either
   def read(key: String): Example[Option[String]] = ZIO.accessM(_.storage.get.map(_.get(key)))
 }

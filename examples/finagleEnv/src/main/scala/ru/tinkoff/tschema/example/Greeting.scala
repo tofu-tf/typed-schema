@@ -6,18 +6,18 @@ import cats.syntax.functor._
 import cats.{Applicative, Monad}
 import derevo.derive
 import derevo.tethys.tethysWriter
-import ru.tinkoff.tschema.custom.syntax._
+import tschema.custom.syntax._
 import ru.tinkoff.tschema.example.Greeting.Aloha
-import ru.tinkoff.tschema.finagle.{LiftHttp, MkService, RoutedPlus}
-import ru.tinkoff.tschema.swagger.{MkSwagger, Swagger}
-import ru.tinkoff.tschema.syntax._
-
+import ru.tinkoff.tschema.finagle.{LiftHttp, RoutedPlus}
+import tschema.finagle.MkService
+import tschema.swagger.{MkSwagger, Swagger}
+import tschema.syntax._
 
 class Greeting[H[_]: Monad: RoutedPlus: LiftHttp[*[_], F], F[_]: Monad: Alohas] extends ExampleModule[H] {
 
   def api =
-    (operation('hello) |> plain[String]) <>
-      (operation('aloha) |> json[Aloha])
+    (operation("hello") |> plain[String]) <>
+      (operation("aloha") |> json[Aloha])
 
   val route = MkService[H](api)(new Greeting.handler[F])
   val swag = MkSwagger(api)

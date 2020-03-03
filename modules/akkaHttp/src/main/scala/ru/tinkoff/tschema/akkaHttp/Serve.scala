@@ -138,6 +138,8 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
       }
     }
   }
+
+  def identity[T, In <: HList]: Check[T, In] = serveCheck(Directive.Empty)
 }
 
 private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstances1 with ServeAuthInstances {
@@ -175,17 +177,15 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def formFieldServe[name: Name, x: Param.PForm, In <: HList] =
     serveAdd[FormField[name, x], In, x, name](resolveParam[ParamSource.Form, name, x])
 
-  implicit def asServe[x, name, In <: HList, Head, old](
-      implicit serveInner: Serve.Aux[x, HNil, FieldType[old, Head] :: HNil]
-  ): Serve.Add[As[x, name], In, name, Head] =
-    serveInner.asInstanceOf[Serve.Add[As[x, name], In, name, Head]]
+  implicit def asServe[x, name, In <: HList, Head, old]: Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
+    Serve.identity.asInstanceOf[Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In]]
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
 
-  implicit def keyServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Key[name], In, Key[name]] =
+  implicit def keyServe[name, In <: HList]: Push[Key[name], In, Key[name]] =
     servePush(provide(Key.of[name]))
 
-  implicit def groupServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Group[name], In, Group[name]] =
+  implicit def groupServe[name, In <: HList]: Push[Group[name], In, Group[name]] =
     servePush(provide(Group.of[name]))
 }
 

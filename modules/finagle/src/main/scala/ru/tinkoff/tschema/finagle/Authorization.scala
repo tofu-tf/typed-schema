@@ -55,14 +55,14 @@ private[finagle] trait ServeAuthInstances { self: Serve.type =>
       implicit serve: Serve[Param, F, In, Out]): Serve[ApiKeyAuth[realm, Param], F, In, Out] =
     serve.as[ApiKeyAuth[realm, Param]]
 
-  private def authServe[F[_]: Routed: Monad, realm, name <: Symbol: Name, x, In <: HList, K <: Kind, atom](
+  private def authServe[F[_]: Routed: Monad, realm, name: Name, x, In <: HList, K <: Kind, atom](
       implicit auth: Authorization[K, F, x]): Add[atom, F, In, name, x] =
     add(Routed.request.flatMap(r => auth(r.authorization)))
 
-  implicit def basicAuthServe[F[_]: Routed: Monad, realm, name <: Symbol: Name, x: Authorization[Basic, F, *], In <: HList]
+  implicit def basicAuthServe[F[_]: Routed: Monad, realm, name : Name, x: Authorization[Basic, F, *], In <: HList]
     : Add[BasicAuth[realm, name, x], F, In, name, x] = authServe[F, realm, name, x, In, Basic, BasicAuth[realm, name, x]]
 
-  implicit def bearerAuthServe[F[_]: Routed: Monad, realm, name <: Symbol: Name, x: Authorization[Bearer, F, *], In <: HList]
+  implicit def bearerAuthServe[F[_]: Routed: Monad, realm, name : Name, x: Authorization[Bearer, F, *], In <: HList]
     : Add[BearerAuth[realm, name, x], F, In, name, x] = authServe[F, realm, name, x, In, Bearer, BearerAuth[realm, name, x]]
 }
 

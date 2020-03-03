@@ -8,9 +8,11 @@ import derevo.circe.{decoder, encoder}
 import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.param.{Param, ParamSource}
-import ru.tinkoff.tschema.swagger._
-import ru.tinkoff.tschema.syntax._
+import tschema.swagger.Swagger
+import tschema.swagger.MkSwagger
+import tschema.syntax._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import ru.tinkoff.tschema.swagger.SwaggerTypeable
 import ru.tinkoff.tschema.typeDSL.{As, QueryParam}
 import shapeless.labelled.FieldType
 import shapeless._
@@ -33,8 +35,8 @@ object definitions {
   case class Client(value: Int)
 
   def concat =
-    operation("concat") |> queryParam[String]('left)
-      .as("l") |> queryParam[String]('right).as("r") |> get |> complete[String]
+    operation("concat") |> queryParam[String]("left")
+      .as("l") |> queryParam[String]("right").as("r") |> get |> complete[String]
 
   def combine =
     get |> operation("combine") |> capture[Int]("y") |> $$[DebugParams[Combine]]
@@ -64,8 +66,7 @@ object TestModule extends ExampleModule {
 
   implicit lazy val clientFromParam: Param[ParamSource.All, Client] =
     Param.intParam.map(Client)
-  implicit val clientSwagger: SwaggerTypeable[Client] =
-    SwaggerTypeable.swaggerTypeableInteger.as[Client]
+  implicit val clientSwagger: Swagger[Client] =  Swagger[Int].as[Client]
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -97,6 +98,8 @@ object TestModule extends ExampleModule {
 
     def statsq(num: Seq[BigDecimal]) = stats(num)
   }
+
+  implicitly[SwaggerTypeable[Seq[BigDecimal]]]
 
   val swag = MkSwagger(api)
 

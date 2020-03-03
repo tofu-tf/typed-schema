@@ -23,17 +23,17 @@ trait CompleteIn[F[_], -In, Out, A] {
 
 object CompleteIn
 
-trait Complete[F[_], R, A] extends CompleteIn[F, Any, R, A] {
+trait Completing[F[_], R, A] extends CompleteIn[F, Any, R, A] {
   def complete(a: A): F[Response]
 
   def completeIn(a: A, in: Any): F[Response] = complete(a)
 
-  override def as[R1]: Complete[F, R1, A] = this.asInstanceOf[Complete[F, R1, A]]
+  override def as[R1]: Completing[F, R1, A] = this.asInstanceOf[Completing[F, R1, A]]
 }
 
-object Complete {
-  implicit def contravariant[F[_], R]: Contravariant[Complete[F, R, *]] =
-    new Contravariant[Complete[F, R, *]] {
-      def contramap[A, B](fa: Complete[F, R, A])(f: B => A): Complete[F, R, B] = b => fa.complete(f(b))
+object Completing {
+  implicit def contravariant[F[_], R]: Contravariant[Completing[F, R, *]] =
+    new Contravariant[Completing[F, R, *]] {
+      def contramap[A, B](fa: Completing[F, R, A])(f: B => A): Completing[F, R, B] = b => fa.complete(f(b))
     }
 }

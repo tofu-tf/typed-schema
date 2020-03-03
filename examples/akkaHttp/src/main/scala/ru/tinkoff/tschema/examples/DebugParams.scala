@@ -7,7 +7,7 @@ import io.circe.Encoder
 import derevo.circe.{decoder, encoder}
 import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.RoutableIn
-import ru.tinkoff.tschema.swagger.Swagger
+import tschema.swagger.Swagger
 import shapeless._
 import shapeless.labelled.FieldType
 

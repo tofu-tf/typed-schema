@@ -2,10 +2,12 @@ package ru.tinkoff.tschema
 package example
 
 import ru.tinkoff.tschema.finagle.Serve.Filter
-import ru.tinkoff.tschema.finagle.{MkService, Rejection, Routed, Serve}
+import ru.tinkoff.tschema.finagle.{Rejection, Routed, Serve}
+import tschema.finagle.MkService
 import ru.tinkoff.tschema.param.ParamSource.Query
-import ru.tinkoff.tschema.swagger.{SwaggerMapper, _}
-import syntax._
+import ru.tinkoff.tschema.swagger.{SwaggerMapper}
+import tschema.swagger.MkSwagger
+import tschema.syntax._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
 import cats.syntax.flatMap._
@@ -19,11 +21,12 @@ import cats.SemigroupK
 import com.twitter.finagle.http.{Request, Response}
 import ru.tinkoff.tschema.param.Param
 import tschema.common.Name
+import Routed.{uriParam, reject}
 
 object VersionModule extends ExampleModule {
-  def api = tagPrefix('versioned) |> (
-    (version('v1) |> get[String]) <>
-      (version('v2) |> get[Map[String, Int]]) <>
+  def api = tagPrefix("versioned") |> (
+    (version("v1") |> get[String]) <>
+      (version("v2") |> get[Map[String, Int]]) <>
       (version("v2.1") |> get[Vector[String]])
   )
 
@@ -43,7 +46,7 @@ object version {
   def wrongVersion(shouldBe: String, passed: String) =
     Rejection.malformedParam("version", s"passed version $passed shouldBe: $shouldBe", Query)
 
-  def apply[v](v: Witness.Aux[v]): version[v] :> Key[v] = new version[v] :> key(v)
+  def apply[v <: Singleton](v: Witness.Aux[v]): version[v] :> Key[v] = new :>
 
   implicit def versionServe[v: Name, In <: HList]: Filter[version[v], Http, In] =
     Serve.checkCont[version[v], Http, In] { cnt =>

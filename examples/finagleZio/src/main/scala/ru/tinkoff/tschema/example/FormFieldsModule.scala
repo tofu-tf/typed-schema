@@ -3,9 +3,9 @@ package example
 
 import derevo.derive
 import derevo.tethys.{tethysReader, tethysWriter}
-import ru.tinkoff.tschema.finagle.MkService
-import ru.tinkoff.tschema.swagger._
-import syntax._
+import tschema.finagle.MkService
+import tschema.swagger._
+import tschema.syntax._
 import finagle.tethysInstances._
 
 
@@ -15,10 +15,10 @@ object FormFieldsModule extends ExampleModule {
   final case class Person(name: String, age: Long)
 
   def api =
-    tag('formFields) |>
-      operation('person) |>
-      formField[String]('name) |>
-      formField[Long]('age) |>
+    tag("formFields") |>
+      operation("person") |>
+      formField[String]("name") |>
+      formField[Long]("age") |>
       put[Person]
 
   object handler {

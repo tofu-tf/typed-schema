@@ -182,7 +182,7 @@ object typeDSL {
   /**
     * transforms directive to rename provided parameter with given name
     */
-  final class As[directive, name] extends DSLAtom
+  final class As[name] extends DSLAtom
 
   /**
     * concatenates pair of paths into complete path

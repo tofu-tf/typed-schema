@@ -24,9 +24,9 @@ object FiltersModule extends ExampleModule {
   implicit val printer = io.circe.Printer.noSpaces.copy(dropNullValues = true)
 
   def api =
-    tagPrefix('filters) |>
-      keyPrefix('echo) |>
-      queryParam[Filters]('filt) |>
+    tagPrefix("filters") |>
+      keyPrefix("echo") |>
+      queryParam[Filters]("filt") |>
       get |>
       json[Filters]
 

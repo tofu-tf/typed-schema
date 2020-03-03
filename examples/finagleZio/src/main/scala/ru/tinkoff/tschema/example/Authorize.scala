@@ -7,9 +7,10 @@ import derevo.circe.{decoder, encoder}
 import derevo.derive
 import derevo.tethys.{tethysReader, tethysWriter}
 import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
-import ru.tinkoff.tschema.finagle.{Authorization, Credentials, MkService, Rejection, Routed, SimpleAuth, BearerToken}
-import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
-import ru.tinkoff.tschema.syntax._
+import ru.tinkoff.tschema.finagle.{Authorization, Credentials, Rejection, Routed, SimpleAuth, BearerToken}
+import tschema.swagger._
+import tschema.finagle._
+import tschema.syntax._
 import shapeless.{HNil, Witness}
 import cats.syntax.applicative._
 import ru.tinkoff.tschema.finagle.Credentials.secure_equals
@@ -21,7 +22,7 @@ import ru.tinkoff.tschema.finagle.tethysInstances._
 object Authorize extends ExampleModule {
 
   override def route: Http[Response] = MkService[Http](api)(handler)
-  override def swag: SwaggerBuilder  = MkSwagger(api)
+  override def swag: SwaggerBuilder = MkSwagger(api)
 
   final case class User(name: String, roles: List[String])
 
@@ -34,17 +35,19 @@ object Authorize extends ExampleModule {
     Map(
       "admin" -> ("adminadmin", List("admin")),
       "guest" -> ("guest", List())
-    ))
+    )
+  )
 
   val clients = Unapply(
     Map(
       "123456" -> Client("client", List("diamond card", "premium subscription"))
-    ))
+    )
+  )
 
   val sessions = Map(
     "x123" -> List(1, 2, 3),
-    "x12"  -> List(1, 2),
-    "y"    -> List.empty
+    "x12" -> List(1, 2),
+    "y" -> List.empty
   )
 
   implicit val userAuth: Authorization[Basic, Http, User] = SimpleAuth {
@@ -56,17 +59,17 @@ object Authorize extends ExampleModule {
   }
 
   def api =
-    tagPrefix('auth) |> ((
-      operation('roles) |> basicAuth[User]("users", 'user) |> get[List[String]]
+    tagPrefix("auth") |> ((
+      operation("roles") |> basicAuth[User]("users", "user") |> get[List[String]]
     ) <> (
-      operation('client) |> bearerAuth[Option[Client]]("clients", 'client) |> get[Client]
+      operation("client") |> bearerAuth[Option[Client]]("clients", "client") |> get[Client]
     ) <> (
-      operation('numbers) |> apiKeyAuth('sessionId, queryParam[Option[String]]('sessionId)) |> get[List[Int]]
+      operation("numbers") |> apiKeyAuth("sessionId", queryParam[Option[String]]("sessionId")) |> get[List[Int]]
     ))
 
   object handler {
-    def roles(user: User): List[String]               = user.roles
-    def client(client: Option[Client]): Client        = client.getOrElse(anonClient)
+    def roles(user:        User): List[String] = user.roles
+    def client(client:     Option[Client]): Client = client.getOrElse(anonClient)
     def numbers(sessionId: Option[String]): List[Int] = sessionId.flatMap(sessions.get).getOrElse(List(-1))
   }
 }

@@ -5,8 +5,8 @@ import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
-import ru.tinkoff.tschema.swagger._
-import syntax._
+import tschema.swagger._
+import tschema.syntax._
 
 object MultiParameters extends ExampleModule {
   final case class Child(childName: String, childAge: Int)
@@ -14,7 +14,7 @@ object MultiParameters extends ExampleModule {
   object Child {
     implicit val params: HttpParam[Child] = HttpParam.generate
     implicit val swagger: AsOpenApiParam[Child] = AsOpenApiParam.generate
-    implicit val typeable: SwaggerTypeable[Child] = MagnoliaSwagger.derive
+    implicit val typeable: Swagger[Child] = Swagger.instance
   }
 
   @derive(Swagger, HttpParam, AsOpenApiParam)

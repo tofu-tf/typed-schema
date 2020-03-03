@@ -3,9 +3,7 @@ import derevo.derive
 import derevo.tethys._
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import ru.tinkoff.tschema.param.{Param, ParamSource}
-import ru.tinkoff.tschema.swagger.{Swagger, SwaggerTypeable}
-
-
+import tschema.swagger.Swagger
 @derive(tethysReader, tethysWriter, Swagger)
 case class StatsRes(theMean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 
@@ -23,6 +21,6 @@ case class Client(value: Int)
 object Client {
   implicit lazy val clientFromParam: Param[ParamSource.All, Client] =
     Param.intParam.map(Client(_))
-  implicit val clientSwagger: SwaggerTypeable[Client] =
-    SwaggerTypeable.swaggerTypeableInteger.as[Client]
+  implicit val clientSwagger: Swagger[Client] =
+    Swagger[Int].as[Client]
 }

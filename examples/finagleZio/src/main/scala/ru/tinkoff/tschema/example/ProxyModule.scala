@@ -1,12 +1,12 @@
 package ru.tinkoff.tschema.example
 
-import ru.tinkoff.tschema.finagle.MkService
-import ru.tinkoff.tschema.swagger.{MkSwagger, Swagger}
+import tschema.finagle.MkService
+import tschema.swagger.{MkSwagger, Swagger}
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import cats.instances.string._
 import derevo.derive
 import derevo.tethys.tethysWriter
-import ru.tinkoff.tschema.syntax._
+import tschema.syntax._
 
 object ProxyModule extends ExampleModule {
 
@@ -20,10 +20,10 @@ object ProxyModule extends ExampleModule {
 
   def api =
     get |>
-      operation('proxy) |>
-      queryParam[String]('foo) |>
-      queryParam[String]('bar) |>
-      allQuery('rest) |>
+      operation("proxy") |>
+      queryParam[String]("foo") |>
+      queryParam[String]("bar") |>
+      allQuery("rest") |>
       $$[ProxyEcho]
 
   object handler {

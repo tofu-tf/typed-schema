@@ -7,10 +7,12 @@ import derevo.cats.show
 import derevo.derive
 import ru.tinkoff.tschema.custom.{AsResponse, ExceptResult, PlainResult}
 import ru.tinkoff.tschema.custom.syntax._
-import ru.tinkoff.tschema.finagle.{Complete, MkService, RoutedPlus}
+import ru.tinkoff.tschema.finagle.{Completing, RoutedPlus}
 import ru.tinkoff.tschema.param.HttpParam
-import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder, _}
-import syntax._
+import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
+import tschema.syntax._
+import tschema.swagger.{MkSwagger, Swagger}
+import tschema.finagle.MkService
 
 object MultiParams {
   @derive(Swagger, HttpParam, AsOpenApiParam, show)
@@ -23,8 +25,8 @@ object MultiParams {
 
   object Child {
     implicit val params: HttpParam[Child] = HttpParam.generate
-    implicit val swagger: AsOpenApiParam[Child] = AsOpenApiParam.generate
-    implicit val typeable: SwaggerTypeable[Child] = MagnoliaSwagger.derive
+    implicit val swaggerParam: AsOpenApiParam[Child] = AsOpenApiParam.instance
+    implicit val swagger: Swagger[Child] = Swagger.instance
   }
 
   object handler {
@@ -32,15 +34,12 @@ object MultiParams {
     def pageDescr(page: Option[Page]) = page
   }
 
-  implicitly[Complete[Http,  PlainResult[Page], Page]]
-  implicitly[AsResponse.Plain[Page]]
-
   def api =
-    tagPrefix('multi) |> ((
-      operation('describe) |> get |> queryParam[User]('user) |> plain[User]
+    tagPrefix("multi") |> ((
+      operation("describe") |> get |> queryParam[User]("user") |> plain[User]
     ) <|> (
-      operation('pageDescr) |> get |>
-        queryParam[Option[Page]]('page) |> plainOpt[Page]
+      operation("pageDescr") |> get |>
+        queryParam[Option[Page]]("page") |> plainOpt[Page]
     ))
 }
 

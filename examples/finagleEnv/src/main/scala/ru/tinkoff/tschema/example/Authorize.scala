@@ -9,8 +9,10 @@ import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer}
 import ru.tinkoff.tschema.finagle.Credentials.secure_equals
 import ru.tinkoff.tschema.finagle.util.Unapply
 import ru.tinkoff.tschema.finagle._
-import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
-import ru.tinkoff.tschema.syntax._
+import ru.tinkoff.tschema.swagger.SwaggerBuilder
+import tschema.swagger._
+import tschema.syntax._
+import tschema.finagle.MkService
 
 object Authorize {
 
@@ -42,11 +44,11 @@ object Authorize {
 
   def api =
     tagPrefix("auth") |> ((
-      operation('roles) |> basicAuth[User]("users", 'user) |> get |> json[List[String]]
+      operation("roles") |> basicAuth[User]("users", "user") |> get |> json[List[String]]
     ) <> (
-      operation('client) |> bearerAuth[Option[Client]]("clients", 'client) |> get |> json[Client]
+      operation("client") |> bearerAuth[Option[Client]]("clients", "client") |> get |> json[Client]
     ) <> (
-      operation('numbers) |> apiKeyAuth('sessionId, queryParam[Option[String]]('sessionId)) |> get |> json[List[Int]]
+      operation("numbers") |> apiKeyAuth("sessionId", queryParam[Option[String]]("sessionId")) |> get |> json[List[Int]]
     ))
 
   object handler {

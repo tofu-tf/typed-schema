@@ -44,8 +44,6 @@ private[akkaHttp] trait ServeTypes {
   type Check[T, In <: HList]           = Serve[T, In] { type Out = In }
   type Add[T, In <: HList, key, value] = Serve[T, In] { type Out = FieldType[key, value] :: In }
   type Push[T, In <: HList, value]     = Serve[T, In] { type Out = value :: In }
-  class key[name] protected[akkaHttp] ()
-  class group[name] protected[akkaHttp] ()
 }
 
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
@@ -156,14 +154,14 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def queryParamServe[name: Name, x: Param.PQuery, In <: HList] =
     serveAdd[QueryParam[name, x], In, x, name](resolveParam[ParamSource.Query, name, x])
 
-  implicit def queryFlagServe[name: Name: Witness.Aux, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
+  implicit def queryFlagServe[name: Name, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
     parameterMap.map(_.contains(Name[name].string))
   )
 
   implicit def captureServe[name: Name, x: Param.PPath, In <: HList] =
     serveAdd[Capture[name, x], In, x, name](resolveParam[ParamSource.Path, name, x])
 
-  implicit def reqBodyServe[name: Witness.Aux, x: FromRequestUnmarshaller, In <: HList] =
+  implicit def reqBodyServe[name: Name, x: FromRequestUnmarshaller, In <: HList] =
     serveAdd[ReqBody[name, x], In, x, name] {
       entity(as[x])
     }
@@ -184,11 +182,11 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
 
-  implicit def keyServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Key[name], In, key[name]] =
-    servePush(provide(new key[name]))
+  implicit def keyServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Key[name], In, Key[name]] =
+    servePush(provide(Key.of[name]))
 
-  implicit def groupServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Group[name], In, group[name]] =
-    servePush(provide(new group[name]))
+  implicit def groupServe[name, In <: HList](implicit w: Witness.Aux[name]): Push[Group[name], In, Group[name]] =
+    servePush(provide(Group.of[name]))
 }
 
 final case class MethodCheck[T](method: HttpMethod)

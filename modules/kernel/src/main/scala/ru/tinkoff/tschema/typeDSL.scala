@@ -29,9 +29,19 @@ object typeDSL {
     */
   class Key[key] extends DSLAtom
 
+  object Key {
+    private val anyKey: Key[Any] = new Key
+    def of[key]: Key[key]        = anyKey.asInstanceOf[Key[key]]
+  }
+
   /**
     * naming intermediate group of methods */
   class Group[key] extends DSLAtom
+
+  object Group {
+    private val anyGroup: Group[Any] = new Group
+    def of[key]: Group[key]          = anyGroup.asInstanceOf[Group[key]]
+  }
 
   /**
     * return query params as Map[String, String]

@@ -28,7 +28,7 @@ object Version {
 
   val simulacrum = "1.0.0"
 
-  val magnolia = "0.12.6"
+  val magnolia = "0.12.8"
 
   val zio = "1.0.0-RC17"
 

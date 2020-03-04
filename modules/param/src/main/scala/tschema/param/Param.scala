@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.param
+package tschema.param
 
 import java.util.UUID
 
@@ -11,11 +11,10 @@ import cats.syntax.parallel._
 import cats.syntax.traverse._
 import derevo.Derivation
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import ru.tinkoff.tschema.param.HttpParam.tryParam
-import ru.tinkoff.tschema.param.Param.{MultiResult, Result, SingleResult}
-import ru.tinkoff.tschema.param.ParamSource.All
+import tschema.param.HttpParam.tryParam
+import tschema.param.Param.{MultiResult, Result, SingleResult}
+import tschema.param.ParamSource.All
 
-import scala.language.higherKinds
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
@@ -102,7 +101,7 @@ object MultiParam {
     }
 }
 
-trait MultiParamReq[S >: All <: ParamSource, A] extends MultiParam[S, A] {
+trait MultiParamReq[+S >: All <: ParamSource, A] extends MultiParam[S, A] {
   def applyReq(values: List[CharSequence]): MultiResult[A]
   def applyOpt(values: List[Option[CharSequence]]): MultiResult[A] =
     values

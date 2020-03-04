@@ -3,7 +3,7 @@ package examples
 import akka.http.scaladsl.server.Route
 import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
-import ru.tinkoff.tschema.param.HttpParam
+import tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
 import tschema.swagger._
 import tschema.syntax._

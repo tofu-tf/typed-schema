@@ -7,7 +7,7 @@ import com.twitter.finagle.http
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status._
 import ru.tinkoff.tschema.finagle.Rejection.{MalformedParam, MissingParam}
-import ru.tinkoff.tschema.param.ParamSource
+import tschema.param.ParamSource
 
 final case class Rejection(
     priority: Double,

@@ -7,7 +7,7 @@ import io.circe.derivation.renaming.snakeCase
 import derevo.circe.{decoder, encoder}
 import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
-import ru.tinkoff.tschema.param.{Param, ParamSource}
+import tschema.param.{Param, ParamSource}
 import tschema.swagger.Swagger
 import tschema.swagger.MkSwagger
 import tschema.syntax._

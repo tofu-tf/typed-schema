@@ -10,7 +10,7 @@ import cats.syntax.semigroupk._
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.finagle.Serve.Filter
 import ru.tinkoff.tschema.finagle.{Rejection, Routed, RoutedPlus, Serve}
-import ru.tinkoff.tschema.param.ParamSource.Query
+import tschema.param.ParamSource.Query
 import ru.tinkoff.tschema.swagger.SwaggerMapper
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}

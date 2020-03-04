@@ -6,7 +6,7 @@ import cats.instances.list._
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import com.twitter.finagle.http.{Request, Response}
-import ru.tinkoff.tschema.param._
+import tschema.param._
 import shapeless._
 import shapeless.labelled.{FieldType, field}
 

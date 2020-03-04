@@ -17,8 +17,8 @@ import cats.instances.list._
 import cats.instances.option._
 import cats.instances.either._
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
-import ru.tinkoff.tschema.param.ParamSource.All
-import ru.tinkoff.tschema.param.{MissingParamError, MultiParam, MultiParamError, Param, ParamError, ParamSource, ParseParamError, SingleParam, SingleParamError}
+import tschema.param.ParamSource.All
+import tschema.param.{MissingParamError, MultiParam, MultiParamError, Param, ParamError, ParamSource, ParseParamError, SingleParam, SingleParamError}
 import shapeless.ops.record.Selector
 import tschema.common.Name
 

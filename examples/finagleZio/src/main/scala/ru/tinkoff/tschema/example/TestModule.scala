@@ -4,7 +4,7 @@ import derevo.derive
 import derevo.tethys._
 import tschema.finagle.MkService
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import ru.tinkoff.tschema.param.{HttpParam, Param, ParamSource}
+import tschema.param.{HttpParam, Param, ParamSource}
 import tschema.swagger._
 import tschema.syntax._
 import zio.ZIO

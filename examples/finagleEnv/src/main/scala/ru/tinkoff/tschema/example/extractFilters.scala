@@ -9,7 +9,7 @@ import tschema.finagle.MkService
 import tschema.swagger._
 import tschema.syntax._
 import ru.tinkoff.tschema.example.FiltersModule.{api, handler}
-import ru.tinkoff.tschema.param.HttpParam
+import tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.AsOpenApiParam
 import tschema.custom.syntax._
 

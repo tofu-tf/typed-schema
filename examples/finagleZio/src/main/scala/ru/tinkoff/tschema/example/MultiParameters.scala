@@ -4,7 +4,7 @@ package example
 import derevo.cats.show
 import derevo.derive
 import tschema.finagle.MkService
-import ru.tinkoff.tschema.param.HttpParam
+import tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
 import tschema.swagger._
 import tschema.syntax._

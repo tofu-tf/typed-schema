@@ -3,7 +3,7 @@ package ru.tinkoff.tschema.akkaHttp
 import akka.http.scaladsl.server.{Directives, MissingQueryParamRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ru.tinkoff.tschema.akkaHttp.MultiParamSpec.{Page, route}
-import ru.tinkoff.tschema.param.HttpParam
+import tschema.param.HttpParam
 import shapeless.Witness
 
 import scala.language.reflectiveCalls

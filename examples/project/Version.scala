@@ -7,7 +7,7 @@ object Version {
 
   val scalaTags = "0.8.5"
 
-  val catsCore = "2.0.0"
+  val catsCore = "2.1.1"
 
   val typedSchema = "0.11.0-RC2"
 

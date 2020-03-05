@@ -1,7 +1,6 @@
 package tschema
 
 import ru.tinkoff.tschema.typeDSL._
-import shapeless.Witness
 
 object syntax {
   def prefix[s <: Singleton](s: s)      = new Prefix[s]
@@ -52,7 +51,7 @@ object syntax {
       override def make[s]: ReqBody[s, x] = new ReqBody
     })
 
-  def reqBody[x] = new ReqBody[Witness.`'body`.T, x]
+  def reqBody[x] = new ReqBody["body", x]
 
   abstract class Maker[x, T[_, _]] {
     def make[s]: T[s, x]

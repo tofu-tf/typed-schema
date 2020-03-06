@@ -1,4 +1,4 @@
-package tschema.param
+package ru.tinkoff.tschema.param
 
 import java.util.UUID
 
@@ -11,9 +11,9 @@ import cats.syntax.parallel._
 import cats.syntax.traverse._
 import derevo.Derivation
 import magnolia.{CaseClass, Magnolia, SealedTrait}
-import tschema.param.HttpParam.tryParam
-import tschema.param.Param.{MultiResult, Result, SingleResult}
-import tschema.param.ParamSource.All
+import ru.tinkoff.tschema.param.HttpParam.tryParam
+import ru.tinkoff.tschema.param.Param.{MultiResult, Result, SingleResult}
+import ru.tinkoff.tschema.param.ParamSource.All
 
 import scala.util.control.NonFatal
 import scala.util.matching.Regex

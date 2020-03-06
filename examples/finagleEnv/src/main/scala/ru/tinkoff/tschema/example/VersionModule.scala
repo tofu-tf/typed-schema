@@ -10,15 +10,15 @@ import cats.syntax.semigroupk._
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.finagle.Serve.Filter
 import ru.tinkoff.tschema.finagle.{Rejection, Routed, RoutedPlus, Serve}
-import tschema.param.ParamSource.Query
+import ru.tinkoff.tschema.param.ParamSource.Query
 import ru.tinkoff.tschema.swagger.SwaggerMapper
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
-import tschema.common.Name
-import tschema.custom.syntax._
-import tschema.finagle.MkService
-import tschema.swagger.MkSwagger
-import tschema.syntax._
+import ru.tinkoff.tschema.common.Name
+import ru.tinkoff.tschema.custom.syntax._
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.swagger.MkSwagger
+import syntax._
 
 class VersionModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import VersionModule._

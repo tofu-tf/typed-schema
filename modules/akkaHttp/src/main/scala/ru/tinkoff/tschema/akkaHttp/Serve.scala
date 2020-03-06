@@ -17,10 +17,10 @@ import cats.instances.list._
 import cats.instances.option._
 import cats.instances.either._
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
-import tschema.param.ParamSource.All
-import tschema.param.{MissingParamError, MultiParam, MultiParamError, Param, ParamError, ParamSource, ParseParamError, SingleParam, SingleParamError}
+import ru.tinkoff.tschema.param.ParamSource.All
+import ru.tinkoff.tschema.param.{MissingParamError, MultiParam, MultiParamError, Param, ParamError, ParamSource, ParseParamError, SingleParam, SingleParamError}
+import ru.tinkoff.tschema.common.Name
 import shapeless.ops.record.Selector
-import tschema.common.Name
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.{ExecutionContext, Future}

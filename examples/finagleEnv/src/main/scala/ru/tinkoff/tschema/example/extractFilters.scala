@@ -5,13 +5,13 @@ import cats.Monad
 import derevo.derive
 import derevo.tethys.tethysWriter
 import ru.tinkoff.tschema.finagle.RoutedPlus
-import tschema.finagle.MkService
-import tschema.swagger._
-import tschema.syntax._
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.swagger._
+import syntax._
 import ru.tinkoff.tschema.example.FiltersModule.{api, handler}
-import tschema.param.HttpParam
+import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.AsOpenApiParam
-import tschema.custom.syntax._
+import ru.tinkoff.tschema.custom.syntax._
 
 @derive(tethysWriter, AsOpenApiParam, HttpParam)
 case class Filters(foo: Option[String], bar: Option[Int])

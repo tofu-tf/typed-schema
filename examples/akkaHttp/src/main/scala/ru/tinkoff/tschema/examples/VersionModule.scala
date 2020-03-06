@@ -8,7 +8,7 @@ import ru.tinkoff.tschema.swagger.{SwaggerMapper, _}
 import syntax._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
-import tschema.common.Name
+import ru.tinkoff.tschema.common.Name
 
 object VersionModule extends ExampleModule {
   def api = tagPrefix("versioned") |> (
@@ -35,7 +35,7 @@ object version {
 
   case class WrongVersionRejection(shouldBe: String, passed: String) extends Rejection
 
-  def apply[v](v: Witness.Aux[v]): version[v] :> Key[v] = new version[v] :> key(v)
+  def apply[v](v: Witness.Aux[v]): version[v] :> Key[v] = new :>
 
   implicit def versionServe[v : Name, In <: HList]: Serve.Aux[version[v], In, In] = Serve.serveCheck {
     Directive { f =>

@@ -1,4 +1,4 @@
-package tschema.swagger
+package ru.tinkoff.tschema.swagger
 
 import cats.Eval
 import cats.instances.list._

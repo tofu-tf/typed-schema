@@ -2,8 +2,8 @@ package ru.tinkoff.tschema.example.sample
 import derevo.derive
 import derevo.tethys._
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import tschema.param.{Param, ParamSource}
-import tschema.swagger.Swagger
+import ru.tinkoff.tschema.param.{Param, ParamSource}
+import ru.tinkoff.tschema.swagger.Swagger
 @derive(tethysReader, tethysWriter, Swagger)
 case class StatsRes(theMean: BigDecimal, disperse: BigDecimal, median: BigDecimal)
 

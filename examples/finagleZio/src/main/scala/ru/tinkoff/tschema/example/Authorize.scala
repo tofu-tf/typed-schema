@@ -8,9 +8,9 @@ import derevo.derive
 import derevo.tethys.{tethysReader, tethysWriter}
 import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
 import ru.tinkoff.tschema.finagle.{Authorization, Credentials, Rejection, Routed, SimpleAuth, BearerToken}
-import tschema.swagger._
-import tschema.finagle._
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger._
+import ru.tinkoff.tschema.finagle._
+import ru.tinkoff.tschema.syntax._
 import shapeless.{HNil, Witness}
 import cats.syntax.applicative._
 import ru.tinkoff.tschema.finagle.Credentials.secure_equals

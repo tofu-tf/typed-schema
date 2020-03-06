@@ -4,7 +4,7 @@ package example
 import derevo.derive
 import derevo.tethys.tethysWriter
 import ru.tinkoff.tschema.finagle.MkService
-import tschema.param.HttpParam
+import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{SwaggerTypeable, _}
 import ru.tinkoff.tschema.custom.syntax._
 import syntax._

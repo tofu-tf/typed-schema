@@ -5,7 +5,7 @@ import cats.{Applicative, Functor}
 import ru.tinkoff.tschema.finagle.{Completing, LiftHttp}
 import ru.tinkoff.tschema.swagger.{SwaggerPrimitive}
 import ru.tinkoff.tschema.typeDSL
-import tschema.swagger.MkSwagger
+import ru.tinkoff.tschema.swagger.MkSwagger
 class PlainResult[A]
 
 object PlainResult {

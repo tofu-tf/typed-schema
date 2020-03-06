@@ -8,8 +8,8 @@ import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
-import tschema.swagger.{Swagger, MkSwagger}
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger.{Swagger, MkSwagger}
+import ru.tinkoff.tschema.syntax._
 import ru.tinkoff.tschema.typeDSL.QueryParam
 import shapeless.{HNil, Witness}
 

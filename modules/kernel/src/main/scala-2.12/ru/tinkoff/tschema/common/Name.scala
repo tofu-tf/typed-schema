@@ -1,4 +1,4 @@
-package tschema.common
+package ru.tinkoff.tschema.common
 
 import shapeless.Witness
 
@@ -17,6 +17,6 @@ object Name {
 
   implicit def symbolName[name <: Symbol](implicit witness: Witness.Aux[name]): Name[name] =
     new Name[name] {
-      val string: String = witness.value.value
+      val string: String = witness.value.name
     }
 }

@@ -18,7 +18,7 @@ import cats.instances.list._
 import derevo.Derivation
 import enumeratum.values.{ValueEnum, ValueEnumEntry}
 import tofu.optics.Contains
-import tschema.common.Name
+import ru.tinkoff.tschema.common.Name
 
 import scala.collection.{immutable, mutable}
 import scala.reflect.runtime.universe.TypeTag

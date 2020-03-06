@@ -9,8 +9,8 @@ import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.examples.SpecialAuth.validateAuth
 import ru.tinkoff.tschema.swagger.{SwaggerOps, SwaggerMapper}
-import tschema.swagger._
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger._
+import syntax._
 import ru.tinkoff.tschema.typeDSL.{DSLAtom, DSLAtomAuth}
 import shapeless.ops.record.Selector
 import shapeless.{HList, Witness => W}

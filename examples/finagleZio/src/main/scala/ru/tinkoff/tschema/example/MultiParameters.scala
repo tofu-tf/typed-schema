@@ -3,11 +3,11 @@ package example
 
 import derevo.cats.show
 import derevo.derive
-import tschema.finagle.MkService
-import tschema.param.HttpParam
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
-import tschema.swagger._
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger._
+import syntax._
 import ru.tinkoff.tschema.finagle.showInstances._
 import cats.instances.string._
 import cats.instances.int._

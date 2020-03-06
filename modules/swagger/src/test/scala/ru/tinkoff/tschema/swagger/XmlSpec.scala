@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema
 package swagger
 
-import tschema.syntax._
+import syntax._
 import SwaggerTypeable.deriveNamedTypeable
 import io.circe.syntax._
 import cats.syntax.option._

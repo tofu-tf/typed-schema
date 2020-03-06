@@ -4,8 +4,8 @@ import ForAllTypes.Checker
 import org.scalacheck.Arbitrary
 import org.scalactic.Equality
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-import tschema.param.ParamSource._
-import tschema.param.{Param, ParamSource, SingleParam}
+import ru.tinkoff.tschema.param.ParamSource._
+import ru.tinkoff.tschema.param.{Param, ParamSource, SingleParam}
 import shapeless._
 import scala.reflect.runtime.universe._
 

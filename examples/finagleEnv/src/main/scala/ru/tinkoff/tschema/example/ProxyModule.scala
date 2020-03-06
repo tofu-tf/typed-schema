@@ -6,10 +6,10 @@ import derevo.derive
 import derevo.tethys.tethysWriter
 import ru.tinkoff.tschema.finagle.RoutedPlus
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import tschema.swagger._
-import tschema.custom.syntax._
-import tschema.finagle.MkService
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger._
+import ru.tinkoff.tschema.custom.syntax._
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.syntax._
 
 class ProxyModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import ProxyModule._

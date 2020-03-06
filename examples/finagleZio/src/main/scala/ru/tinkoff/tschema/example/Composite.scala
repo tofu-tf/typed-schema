@@ -5,14 +5,14 @@ import derevo.derive
 import derevo.tethys.tethysWriter
 import ru.tinkoff.tschema.custom.AsResponse
 import ru.tinkoff.tschema.custom.derivation.{jsonError, plainError}
-import tschema.custom.syntax._
+import ru.tinkoff.tschema.custom.syntax._
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import ru.tinkoff.tschema.finagle.{NoneCompleting, StringCompleting}
 import ru.tinkoff.tschema.swagger.{SwaggerContent}
-import tschema.swagger.{Swagger}
-import tschema.finagle.MkService
-import tschema.swagger.MkSwagger
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger.{Swagger}
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.swagger.MkSwagger
+import syntax._
 import zio.ZIO
 import AsResponse.Error
 

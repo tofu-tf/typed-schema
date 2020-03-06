@@ -5,7 +5,7 @@ import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToResponseMarsha
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
 import akka.http.scaladsl.server.MethodRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import tschema.syntax._
+import syntax._
 
 import scala.concurrent.Future
 import org.scalatest.matchers.should.Matchers

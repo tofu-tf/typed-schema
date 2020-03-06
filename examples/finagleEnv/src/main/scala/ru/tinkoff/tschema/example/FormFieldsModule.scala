@@ -7,9 +7,9 @@ import derevo.tethys.{tethysReader, tethysWriter}
 import finagle.tethysInstances._
 import ru.tinkoff.tschema.custom.syntax._
 import ru.tinkoff.tschema.finagle.RoutedPlus
-import tschema.swagger._
-import tschema.syntax._
-import tschema.finagle.MkService
+import ru.tinkoff.tschema.swagger._
+import syntax._
+import ru.tinkoff.tschema.finagle.MkService
 
 class FormFieldsModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import FormFieldsModule._

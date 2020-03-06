@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema.swagger.testDomain
 import derevo.derive
 import ru.tinkoff.tschema.swagger.AsOpenApiParam
-import tschema.swagger.Swagger
+import ru.tinkoff.tschema.swagger.Swagger
 
 trait WeirdThing
 

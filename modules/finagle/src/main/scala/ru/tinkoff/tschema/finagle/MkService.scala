@@ -1,6 +1,4 @@
-package tschema.finagle
-import ru.tinkoff.tschema.finagle._
-
+package ru.tinkoff.tschema.finagle
 import cats.{FlatMap, Monad}
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.macros.MakerMacro

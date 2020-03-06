@@ -15,13 +15,13 @@ import cats.{Applicative, Apply, Defer, FlatMap, Functor, Monad, StackSafeMonad}
 import com.twitter.finagle.http
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.finagle.Rejection.missingParam
-import tschema.param.ParamSource.{All, Query}
-import tschema.param._
+import ru.tinkoff.tschema.param.ParamSource.{All, Query}
+import ru.tinkoff.tschema.param._
+import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.typeDSL.{Delete, Get, Head, Options, Post, Put, QueryParams}
 import ru.tinkoff.tschema.utils.cont
 import shapeless._
 import shapeless.labelled.{FieldType, field}
-import tschema.common.Name
 
 import scala.tools.nsc.ast.parser.Patch
 

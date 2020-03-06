@@ -1,4 +1,4 @@
-package tschema
+package ru.tinkoff.tschema
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 

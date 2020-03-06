@@ -3,7 +3,7 @@ package ru.tinkoff.tschema.akkaHttp
 import akka.http.scaladsl.server.{Directives, MissingQueryParamRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ru.tinkoff.tschema.akkaHttp.MultiParamSpec.{Page, route}
-import tschema.param.HttpParam
+import ru.tinkoff.tschema.param.HttpParam
 import shapeless.Witness
 
 import scala.language.reflectiveCalls
@@ -70,7 +70,7 @@ object MultiParamSpec {
   }
 
   val api = {
-    import tschema.syntax._
+    import ru.tinkoff.tschema.syntax._
     (operation("required") |> queryParam[Page]("page") |> complete[String]) <|>
       (operation("optional") |> queryParam[Option[Page]]("page") |> complete[String])
   }

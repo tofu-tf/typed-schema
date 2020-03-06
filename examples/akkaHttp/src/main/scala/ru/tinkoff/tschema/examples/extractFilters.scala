@@ -5,7 +5,7 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import derevo.circe.{decoder, encoder}
 import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.MkRoute
-import tschema.param.HttpParam
+import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{SwaggerTypeable, _}
 import syntax._
 

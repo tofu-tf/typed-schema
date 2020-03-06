@@ -8,12 +8,13 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import ru.tinkoff.tschema.syntax
 
 class ServeSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
   trait Small
 
-  import tschema.syntax._
-  val dsl = tschema.syntax
+  import ru.tinkoff.tschema.syntax._
+  val dsl = syntax
 
   val intAnswer = 42
 

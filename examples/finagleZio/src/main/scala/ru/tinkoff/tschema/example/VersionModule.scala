@@ -3,11 +3,11 @@ package example
 
 import ru.tinkoff.tschema.finagle.Serve.Filter
 import ru.tinkoff.tschema.finagle.{Rejection, Routed, Serve}
-import tschema.finagle.MkService
-import tschema.param.ParamSource.Query
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.param.ParamSource.Query
 import ru.tinkoff.tschema.swagger.{SwaggerMapper}
-import tschema.swagger.MkSwagger
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger.MkSwagger
+import syntax._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
 import cats.syntax.flatMap._
@@ -19,8 +19,8 @@ import cats.instances.string._
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import cats.SemigroupK
 import com.twitter.finagle.http.{Request, Response}
-import tschema.param.Param
-import tschema.common.Name
+import ru.tinkoff.tschema.param.Param
+import ru.tinkoff.tschema.common.Name
 import Routed.{uriParam, reject}
 
 object VersionModule extends ExampleModule {

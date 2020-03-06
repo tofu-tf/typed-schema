@@ -32,7 +32,7 @@ object magicParam {
 }
 
 object InputReadSuite {
-  import tschema.syntax._
+  import syntax._
   def api = get |> operation("magic") |> magicParam("hello") |> $$[String]
   object handler {
     def magic(hello: MagicalInput) = s"Hello, ${hello.value}!"

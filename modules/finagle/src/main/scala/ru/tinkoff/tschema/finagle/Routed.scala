@@ -9,7 +9,7 @@ import cats.{Apply, Foldable, Monad, MonoidK}
 import com.twitter.finagle.http.{HttpMuxer, Request, Response, Route}
 import com.twitter.finagle.{Service, http}
 import ru.tinkoff.tschema.finagle.Rejection.notFound
-import tschema.param.{Param, ParamSource}
+import ru.tinkoff.tschema.param.{Param, ParamSource}
 
 import scala.annotation.implicitNotFound
 import scala.util.matching.Regex

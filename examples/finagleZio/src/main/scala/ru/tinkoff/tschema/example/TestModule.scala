@@ -2,11 +2,11 @@ package ru.tinkoff.tschema.example
 
 import derevo.derive
 import derevo.tethys._
-import tschema.finagle.MkService
+import ru.tinkoff.tschema.finagle.MkService
 import ru.tinkoff.tschema.finagle.tethysInstances._
-import tschema.param.{HttpParam, Param, ParamSource}
-import tschema.swagger._
-import tschema.syntax._
+import ru.tinkoff.tschema.param.{HttpParam, Param, ParamSource}
+import ru.tinkoff.tschema.swagger._
+import ru.tinkoff.tschema.syntax._
 import zio.ZIO
 
 object definitions {

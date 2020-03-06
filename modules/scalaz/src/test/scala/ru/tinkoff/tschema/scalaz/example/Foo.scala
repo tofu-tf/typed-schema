@@ -1,5 +1,5 @@
 package ru.tinkoff.tschema.scalaz.example
-import tschema.param.{HttpParam, Param}
+import ru.tinkoff.tschema.param.{HttpParam, Param}
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, MagnoliaSwagger, SwaggerTypeable}
 import scalaz.deriving
 

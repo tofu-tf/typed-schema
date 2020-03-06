@@ -10,7 +10,7 @@ import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
 import ru.tinkoff.tschema.typeDSL.{ApiKeyAuth, BasicAuth, BearerAuth, CanHoldApiKey}
 import shapeless.HList
 import ru.tinkoff.tschema.finagle.Rejection.unauthorized
-import tschema.common.Name
+import ru.tinkoff.tschema.common.Name
 
 import scala.annotation.tailrec
 

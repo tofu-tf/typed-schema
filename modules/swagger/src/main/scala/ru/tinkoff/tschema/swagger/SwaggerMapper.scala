@@ -22,7 +22,7 @@ import ru.tinkoff.tschema.utils.subsets._
 import tofu.optics.chain
 import tofu.optics.tags.at
 import shapeless.{Lazy, Witness}
-import tschema.common.Name
+import ru.tinkoff.tschema.common.Name
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap

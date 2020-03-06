@@ -1,4 +1,4 @@
-package tschema.common
+package ru.tinkoff.tschema.common
 
 final class Name[name](val string: String) {
   def symbol: Symbol = Symbol(string)

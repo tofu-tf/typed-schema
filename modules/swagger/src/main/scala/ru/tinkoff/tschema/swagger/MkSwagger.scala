@@ -1,4 +1,4 @@
-package tschema.swagger
+package ru.tinkoff.tschema.swagger
 
 import cats.instances.map._
 import cats.syntax.option._

@@ -1,10 +1,10 @@
-package tschema.common
+package ru.tinkoff.tschema.common
 
 import ru.tinkoff.tschema.common.Find
 import ru.tinkoff.tschema.typeDSL.Key
 import shapeless.tag.Tagged
 import shapeless.{DepFn0, HList, Witness}
-import tschema.common.FindKey.Aux
+import ru.tinkoff.tschema.common.FindKey.Aux
 
 trait FindKey[Params <: HList] extends DepFn0 {
   type Out <: String

@@ -5,8 +5,8 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import derevo.circe.{decoder, encoder}
 import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.MkRoute
-import tschema.swagger._
-import tschema.syntax._
+import ru.tinkoff.tschema.swagger._
+import syntax._
 
 object FormFieldsModule extends ExampleModule {
   @derive(encoder, decoder, Swagger)

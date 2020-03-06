@@ -1,4 +1,4 @@
-package tschema.param
+package ru.tinkoff.tschema.param
 import derevo.derive
 
 object ParamDerivation {

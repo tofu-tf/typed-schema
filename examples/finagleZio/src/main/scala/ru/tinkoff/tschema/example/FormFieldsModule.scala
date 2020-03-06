@@ -3,9 +3,9 @@ package example
 
 import derevo.derive
 import derevo.tethys.{tethysReader, tethysWriter}
-import tschema.finagle.MkService
-import tschema.swagger._
-import tschema.syntax._
+import ru.tinkoff.tschema.finagle.MkService
+import ru.tinkoff.tschema.swagger._
+import syntax._
 import finagle.tethysInstances._
 
 

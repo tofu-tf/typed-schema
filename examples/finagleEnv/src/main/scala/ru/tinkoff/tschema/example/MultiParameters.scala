@@ -8,11 +8,11 @@ import derevo.derive
 import ru.tinkoff.tschema.custom.{AsResponse, ExceptResult, PlainResult}
 import ru.tinkoff.tschema.custom.syntax._
 import ru.tinkoff.tschema.finagle.{Completing, RoutedPlus}
-import tschema.param.HttpParam
+import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
-import tschema.syntax._
-import tschema.swagger.{MkSwagger, Swagger}
-import tschema.finagle.MkService
+import syntax._
+import ru.tinkoff.tschema.swagger.{MkSwagger, Swagger}
+import ru.tinkoff.tschema.finagle.MkService
 
 object MultiParams {
   @derive(Swagger, HttpParam, AsOpenApiParam, show)

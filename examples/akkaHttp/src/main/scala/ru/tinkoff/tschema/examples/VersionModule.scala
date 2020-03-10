@@ -8,11 +8,12 @@ import ru.tinkoff.tschema.swagger.{SwaggerMapper, _}
 import syntax._
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
+import ru.tinkoff.tschema.common.Name
 
 object VersionModule extends ExampleModule {
-  def api = tagPrefix('versioned) |> (
-    (version('v1) |> get[String]) <>
-      (version('v2) |> get[Map[String, Int]]) <>
+  def api = tagPrefix("versioned") |> (
+    (version("v1") |> get[String]) <>
+      (version("v2") |> get[Map[String, Int]]) <>
       (version(Symbol("v2.1")) |> get[Vector[String]])
     )
 
@@ -23,7 +24,7 @@ object VersionModule extends ExampleModule {
   }
 
   val route = MkRoute(api)(service)
-  val swag = api.mkSwagger
+  val swag = MkSwagger(api)
 }
 
 final class version[v] extends DSLAtom
@@ -34,18 +35,18 @@ object version {
 
   case class WrongVersionRejection(shouldBe: String, passed: String) extends Rejection
 
-  def apply[v <: Symbol](v: Witness.Aux[v]): version[v] :> Key[v] = new version[v] :> key(v)
+  def apply[v](v: Witness.Aux[v]): version[v] :> Key[v] = new :>
 
-  implicit def versionServe[v <: Symbol, In <: HList](implicit w: Witness.Aux[v]): Serve.Aux[version[v], In, In] = Serve.serveCheck {
+  implicit def versionServe[v : Name, In <: HList]: Serve.Aux[version[v], In, In] = Serve.serveCheck {
     Directive { f =>
       parameter("version") { v =>
-        if (v == w.value.name) f(())
-        else reject(WrongVersionRejection(w.value.name, v))
+        if (v == Name[v].string) f(())
+        else reject(WrongVersionRejection(Name[v].string, v))
       } ~
-        pathPrefix(w.value.name) {
+        pathPrefix(Name[v].string) {
           f(())
         }
     }
   }
-  implicit def versionSwagger[v <: Symbol](implicit w: Witness.Aux[v]): SwaggerMapper[version[v]] = SwaggerMapper[Prefix[v]].as[version[v]]
+  implicit def versionSwagger[v: Name]: SwaggerMapper[version[v]] = SwaggerMapper[Prefix[v]].as[version[v]]
 }

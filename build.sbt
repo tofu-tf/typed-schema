@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.12.0"
+val pubVersion = "0.12.1"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -101,8 +101,6 @@ val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaH
 val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka % Test
 val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
 val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
-val scalazDeriving  = "org.scalaz"        %% "scalaz-deriving"   % Version.scalazDeriving
-val scalazDMacro    = "org.scalaz"        %% "deriving-macro"    % Version.scalazDeriving
 val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
 val swaggerUILib    = "org.webjars.npm"   % "swagger-ui-dist"    % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
@@ -178,7 +176,9 @@ lazy val param = project
   .settings(
     commonSettings,
     moduleName := "typed-schema-param",
-    magnolia
+    libraryDependencies += derevo,
+    magnolia,
+    paradise,
   )
 
 lazy val macros = project
@@ -198,11 +198,11 @@ lazy val swagger = project
     commonSettings,
     simulacrumSettings,
     moduleName := "typed-schema-swagger",
-    libraryDependencies ++= enumeratum :: enumeratumCirce :: Nil,
+    libraryDependencies ++= enumeratum :: derevo :: enumeratumCirce :: Nil,
     magnolia,
     tofuOptics,
     paradise,
-    circe
+    circe,
   )
 
 lazy val akkaHttp = project

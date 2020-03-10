@@ -1,6 +1,9 @@
 package ru.tinkoff.tschema.custom
-import ru.tinkoff.tschema.syntax.{Maker, MkComplex}
+
+import ru.tinkoff.tschema.custom._
+
 import ru.tinkoff.tschema.typeDSL._
+import ru.tinkoff.tschema.syntax.{Maker, MkComplex}
 
 object syntax {
   def json[A]: Complete[JsonResult[A]] = new Complete
@@ -10,6 +13,12 @@ object syntax {
   def bin[CT, A]: Complete[BinResult[CT, A]] = new Complete
 
   def err[E, A]: Complete[ExceptResult[E, A]] = new Complete
+
+  def jsonOpt[A]: Complete[ExceptResult[None.type, JsonResult[A]]] = new Complete
+
+  def plainOpt[A]: Complete[ExceptResult[None.type, PlainResult[A]]] = new Complete
+
+  def binOpt[CT, A]: Complete[ExceptResult[None.type, BinResult[CT, A]]] = new Complete
 
   def jsonErr[E, A]: Complete[ExceptResult[E, JsonResult[A]]] = new Complete
 

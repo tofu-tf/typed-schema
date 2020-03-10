@@ -1,4 +1,7 @@
 package ru.tinkoff.tschema.swagger.testDomain
+import derevo.derive
+import ru.tinkoff.tschema.swagger.AsOpenApiParam
+import ru.tinkoff.tschema.swagger.Swagger
 
 trait WeirdThing
 
@@ -11,3 +14,11 @@ final case class OuterStuff(foo: Int, inner: List[InnerStuff]) extends LotOfVari
 final case class TopStuff(vars: LotOfVariants)                 extends LotOfVariants
 
 final case class InnerStuff(shouldFind: String, shouldNotFind: WeirdThing, outer: Option[OuterStuff])
+
+
+@derive(Swagger, AsOpenApiParam)
+case class Person(
+  name: String,
+  lastName: Option[String],
+  child: Option[Person]
+)

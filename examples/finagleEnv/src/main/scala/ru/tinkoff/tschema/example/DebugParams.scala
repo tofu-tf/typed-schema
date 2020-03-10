@@ -2,14 +2,12 @@ package ru.tinkoff.tschema.example
 
 import cats.{Functor, Monad}
 import io.circe.Encoder
-import org.manatki.derevo
-import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
+import derevo.tethys.{tethysReader, tethysWriter}
 import ru.tinkoff.tschema.finagle.{LiftHttp, Routed}
-//import io.circe.syntax._
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
-import org.manatki.derevo.derive
-import org.manatki.derevo.tschemaInstances.swagger
+import ru.tinkoff.tschema.swagger.Swagger
 import ru.tinkoff.tschema.common.Name
+import derevo.circe.{decoder, encoder}
+import derevo.derive
 import ru.tinkoff.tschema.finagle.CompleteIn
 import ru.tinkoff.tschema.finagle.util.message
 import shapeless._
@@ -20,7 +18,7 @@ import cats.syntax.functor._
 import tethys._
 import tethys.jackson._
 
-@derive(tethysWriter, tethysReader, swagger)
+@derive(tethysWriter, tethysReader, Swagger)
 final case class DebugParams[T](value: T, params: Map[String, String])
 
 object DebugParams {

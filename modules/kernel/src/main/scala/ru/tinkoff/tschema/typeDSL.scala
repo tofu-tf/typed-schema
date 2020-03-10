@@ -29,9 +29,19 @@ object typeDSL {
     */
   class Key[key] extends DSLAtom
 
+  object Key {
+    private val anyKey: Key[Any] = new Key
+    def of[key]: Key[key]        = anyKey.asInstanceOf[Key[key]]
+  }
+
   /**
     * naming intermediate group of methods */
   class Group[key] extends DSLAtom
+
+  object Group {
+    private val anyGroup: Group[Any] = new Group
+    def of[key]: Group[key]          = anyGroup.asInstanceOf[Group[key]]
+  }
 
   /**
     * return query params as Map[String, String]
@@ -172,7 +182,7 @@ object typeDSL {
   /**
     * transforms directive to rename provided parameter with given name
     */
-  final class As[directive, name] extends DSLAtom
+  final class As[name] extends DSLAtom
 
   /**
     * concatenates pair of paths into complete path

@@ -1,10 +1,10 @@
 package ru.tinkoff.tschema.finagle
-import cats.syntax.semigroupk._
-import cats.{FlatMap, Monad, SemigroupK}
+import cats.{FlatMap, Monad}
 import com.twitter.finagle.http.Response
 import ru.tinkoff.tschema.macros.MakerMacro
 import ru.tinkoff.tschema.typeDSL.DSLDef
 import shapeless.HList
+import cats.syntax.semigroupk._
 
 object MkService {
   def apply[F[_]] = new MkApply[F]

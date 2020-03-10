@@ -1,11 +1,11 @@
 package ru.tinkoff.tschema
 package examples
 import akka.http.scaladsl.server.Route
+import derevo.derive
 import ru.tinkoff.tschema.akkaHttp.{MkRoute, Serve}
 import ru.tinkoff.tschema.param.HttpParam
 import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
 import ru.tinkoff.tschema.swagger._
-import scalaz.deriving
 import syntax._
 
 object MultiParameters extends ExampleModule {
@@ -14,13 +14,13 @@ object MultiParameters extends ExampleModule {
   object Child {
     implicit val params: HttpParam[Child] = HttpParam.generate
     implicit val swagger: AsOpenApiParam[Child] = AsOpenApiParam.generate
-    implicit val typeable: SwaggerTypeable[Child] = MagnoliaSwagger.derive
+    implicit val typeable: Swagger[Child] = Swagger.instance
   }
 
-  @deriving(SwaggerTypeable, HttpParam, AsOpenApiParam)
+  @derive(Swagger, HttpParam, AsOpenApiParam)
   final case class User(name: String, age: Int, child: Child)
 
-  @deriving(HttpParam, AsOpenApiParam)
+  @derive(HttpParam, AsOpenApiParam)
   final case class Page(from: Int, count: Int, opt: Option[String])
 
 
@@ -31,11 +31,11 @@ object MultiParameters extends ExampleModule {
 
 
   def api =
-    tagPrefix('multi) |> ((
-      operation('describe) |> get |> queryParam[User]('user) |> $$[String]
+    tagPrefix("multi") |> ((
+      operation("describe") |> get |> queryParam[User]("user") |> $$[String]
     ) <|> (
-      operation('pageDescr) |> get |>
-        queryParam[Option[Page]]('page) |> $$[String]
+      operation("pageDescr") |> get |>
+        queryParam[Option[Page]]("page") |> $$[String]
     ))
 
   object handler {

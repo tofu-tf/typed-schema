@@ -2,13 +2,14 @@ package ru.tinkoff.tschema
 package example
 
 import cats.Monad
-import org.manatki.derevo.derive
-import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
-import org.manatki.derevo.tschemaInstances.swagger
-import ru.tinkoff.tschema.finagle.{MkService, RoutedPlus}
+import derevo.derive
+import derevo.tethys.{tethysReader, tethysWriter}
+import finagle.tethysInstances._
+import ru.tinkoff.tschema.custom.syntax._
+import ru.tinkoff.tschema.finagle.RoutedPlus
 import ru.tinkoff.tschema.swagger._
 import syntax._
-import finagle.tethysInstances._
+import ru.tinkoff.tschema.finagle.MkService
 
 class FormFieldsModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import FormFieldsModule._
@@ -18,15 +19,15 @@ class FormFieldsModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
 }
 
 object FormFieldsModule {
-  @derive(tethysWriter, tethysReader, swagger)
+  @derive(tethysWriter, tethysReader, Swagger)
   final case class Person(name: String, age: Long)
 
   def api =
-    tag('formFields) |>
-      operation('person) |>
-      formField[String]('name) |>
-      formField[Long]('age) |>
-      put[Person]
+    tag("formFields") |>
+      operation("person") |>
+      formField[String]("name") |>
+      formField[Long]("age") |>
+      put |> json[Person]
 
   object handler {
     def person(name: String, age: Long): Person = Person(name, age)

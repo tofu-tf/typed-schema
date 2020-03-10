@@ -39,11 +39,11 @@ object XmlSpec {
   case class Book(id: Int, author: String, title: String, tags: List[String])
   implicit val bookSwagger: SwaggerTypeable[Book] =
     deriveNamedTypeable[Book]
-      .xmlFld('id ->> xmlOpts(attribute = true))
+      .xmlFld(Symbol("id") ->> xmlOpts(attribute = true))
       .xmlFields("tags" -> xmlOpts(name = "tag".some, wrapped = true))
       .xml(name = "book".some)
 
-  def api = prefix("xml") :> get[Book]
+  def api = prefix("xml") |> key("foo") |>  get |> $$[Book]
 
-  val swagger = api.mkSwagger
+  val swagger = MkSwagger(api)
 }

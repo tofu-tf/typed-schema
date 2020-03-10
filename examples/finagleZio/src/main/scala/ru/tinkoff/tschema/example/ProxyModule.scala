@@ -1,18 +1,17 @@
 package ru.tinkoff.tschema.example
 
 import ru.tinkoff.tschema.finagle.MkService
-import ru.tinkoff.tschema.swagger.MkSwagger
+import ru.tinkoff.tschema.swagger.{MkSwagger, Swagger}
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import cats.instances.string._
-import org.manatki.derevo.derive
-import org.manatki.derevo.tethysInstances.tethysWriter
-import org.manatki.derevo.tschemaInstances.swagger
+import derevo.derive
+import derevo.tethys.tethysWriter
+import ru.tinkoff.tschema.syntax._
 
 object ProxyModule extends ExampleModule {
 
-  import ru.tinkoff.tschema.syntax._
 
-  @derive(tethysWriter, swagger)
+  @derive(tethysWriter, Swagger)
   final case class ProxyEcho(
       foo: String,
       bar: String,
@@ -21,10 +20,10 @@ object ProxyModule extends ExampleModule {
 
   def api =
     get |>
-      operation('proxy) |>
-      queryParam[String]('foo) |>
-      queryParam[String]('bar) |>
-      allQuery('rest) |>
+      operation("proxy") |>
+      queryParam[String]("foo") |>
+      queryParam[String]("bar") |>
+      allQuery("rest") |>
       $$[ProxyEcho]
 
   object handler {

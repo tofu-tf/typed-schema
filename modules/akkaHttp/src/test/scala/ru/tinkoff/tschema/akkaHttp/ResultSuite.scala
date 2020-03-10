@@ -5,7 +5,7 @@ import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToResponseMarsha
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
 import akka.http.scaladsl.server.MethodRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ru.tinkoff.tschema.syntax._
+import syntax._
 
 import scala.concurrent.Future
 import org.scalatest.matchers.should.Matchers
@@ -30,8 +30,8 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
     }
   }
 
-  def helloApi = (keyPrefix('test) |> get[String]) <> (keyPrefix('testAsync) |> get[String]) <>
-      (keyPrefix('testCapture) |> get |> capture[String]('name) |> capture[Int]('age) |> $$[String])
+  def helloApi = (keyPrefix("test") |> get |> $$[String]) <> (keyPrefix("testAsync") |> get |> $$[String]) <>
+      (keyPrefix("testCapture") |> get |> capture[String]("name") |> capture[Int]("age") |> $$[String])
 
   val helloRoute = MkRoute(helloApi)(hello)
 
@@ -85,11 +85,11 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
     Marshaller.strict(_ => Marshalling.WithFixedContentType(ContentTypes.NoContentType, () => HttpResponse()))
 
   def methodApi =
-    (keyPrefix('getting) |> get[Unit]) <>
-      (keyPrefix('putting) |> put[Unit]) <>
-      (keyPrefix('posting) |> post[Unit]) <>
-      (keyPrefix('deleting) |> delete[Unit]) <>
-      (keyPrefix('completing) |> syntax.complete[Unit])
+    (keyPrefix("getting") |> get[Unit]) <>
+      (keyPrefix("putting") |> put[Unit]) <>
+      (keyPrefix("posting") |> post[Unit]) <>
+      (keyPrefix("deleting") |> delete[Unit]) <>
+      (keyPrefix("completing") |> $$[Unit])
 
   val methodRoute = MkRoute(methodApi)(methods)
 

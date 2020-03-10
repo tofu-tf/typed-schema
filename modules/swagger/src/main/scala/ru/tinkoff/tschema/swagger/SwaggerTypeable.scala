@@ -15,9 +15,12 @@ import magnolia.{CaseClass, Magnolia, SealedTrait, TypeName}
 import cats.syntax.traverse._
 import cats.instances.vector._
 import cats.instances.list._
+import derevo.Derivation
 import enumeratum.values.{ValueEnum, ValueEnumEntry}
 import tofu.optics.Contains
+import ru.tinkoff.tschema.common.Name
 
+import scala.collection.{immutable, mutable}
 import scala.reflect.runtime.universe.TypeTag
 
 trait SwaggerTypeable[T] {
@@ -61,15 +64,15 @@ trait SwaggerTypeable[T] {
     updateTyp(SwaggerType.objProp.update(_, _.xmlFields(fieldOpts: _*)))
 
   //Safe versions
-  def descr[S <: Symbol, L <: HList](
+  def descr[S: Name, L <: HList](
       fld: FieldType[S, String]
-  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
-    describeFields(witness.value.name -> fld)
+  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S]) =
+    describeFields(Name[S].string -> fld)
 
-  def xmlFld[S <: Symbol, L <: HList](
+  def xmlFld[S: Name, L <: HList](
       fld: FieldType[S, SwaggerXMLOptions]
-  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S], witness: Witness.Aux[S]) =
-    xmlFields(witness.value.name -> fld)
+  )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S]) =
+    xmlFields(Name[S].string -> fld)
 
   def withMediaType(mediaType: MediaType): SwaggerTypeable[T] = updateTyp(_.withMediaType(mediaType))
 }
@@ -89,12 +92,10 @@ trait LowLevelSwaggerTypeable {
 
   @inline final def unwrap[X[_], T](implicit item: SwaggerTypeable[T]): SwaggerTypeable[X[T]] = item.as[X[T]]
 
-  final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]] = seq[Seq, T]
-  final implicit def immutableseqTypeable[T: SwaggerTypeable]: SwaggerTypeable[collection.immutable.Seq[T]] =
-    seq[collection.immutable.Seq, T]
+  final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]]     = seq[Seq, T]
 }
 
-trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances {
+trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances with AdditionalSwaggerInstances {
   final implicit val swaggerTypeableInteger: SwaggerTypeable[Int]   = make[Int](SwaggerPrimitive.integer)
   final implicit val swaggerTypeableLong: SwaggerTypeable[Long]     = make[Long](SwaggerPrimitive.long)
   final implicit val swaggerTypeableFloat: SwaggerTypeable[Float]   = make[Float](SwaggerPrimitive.float)
@@ -327,74 +328,4 @@ object DescribeTypeable {
     override def element(name: String) = map.get(name)
     override val whole                 = Some(wholeDescr)
   }
-}
-
-object MagnoliaSwagger {
-  type Typeclass[T] = SwaggerTypeable[T]
-
-  private def calcTypeName(name: TypeName, cfg: Config, seen: Set[TypeName] = Set()): String =
-    if (seen(name)) "#"
-    else {
-      val selfName: String = cfg.nameMod(if (cfg.useShortName) name.short else name.full)
-      if (!cfg.mangleTypeParams || name.typeArguments.isEmpty) selfName
-      else
-        name.typeArguments.iterator
-          .map(calcTypeName(_, cfg, seen + name))
-          .mkString(
-            selfName + "[",
-            ", ",
-            "]"
-          )
-    }
-
-  def combine[T](caseClass: CaseClass[Typeclass, T])(
-      implicit cfg: Config = SwaggerTypeable.defaultConfig,
-      desc: DescribeTypeable[T] = DescribeTypeable.empty[T]
-  ): Typeclass[T] =
-    new Typeclass[T] {
-      lazy val typ: SwaggerType =
-        SwaggerRef(
-          name = calcTypeName(caseClass.typeName, cfg),
-          descr = desc.whole,
-          typ = Eval.now(
-            SwaggerObject(
-              properties = caseClass.parameters.map { param =>
-                SwaggerProperty(
-                  name = cfg.propMod(param.label),
-                  description = desc.element(param.label),
-                  typ = Eval.later(param.typeclass.typ)
-                )
-              }.toVector,
-              required = Eval.later(caseClass.parameters.toVector.collect {
-                case prop if !prop.typeclass.optional => cfg.propMod(prop.label)
-              })
-            )
-          )
-        )
-    }
-
-  def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(
-      implicit cfg: Config = SwaggerTypeable.defaultConfig,
-      desc: DescribeTypeable[T] = DescribeTypeable.empty[T]
-  ): Typeclass[T] =
-    new Typeclass[T] {
-      lazy val typ: SwaggerType =
-        SwaggerRef(
-          name = calcTypeName(sealedTrait.typeName, cfg),
-          descr = desc.whole,
-          typ = Eval.now(
-            SwaggerOneOf(
-              alts = sealedTrait.subtypes.map { sub =>
-                cfg.altMod(sub.typeName.short).some -> Eval.later(sub.typeclass.typ)
-              }.toVector,
-              discriminator = cfg.discriminator
-            )
-          )
-        )
-    }
-
-  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeable[List[T]] = seq[List, T]
-
-  implicit def derivedInstance[T]: Typeclass[T] = macro Magnolia.gen[T]
-  def derive[T]: Typeclass[T] = macro Magnolia.gen[T]
 }

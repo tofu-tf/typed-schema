@@ -62,14 +62,14 @@ object syntax {
   }
 
   implicit class TypeApiOps[x <: DSLDef](x: => x) {
-    def ~[y](y: => y): x <|> y                         = new <|>(x, y)
-    def <|>[y](y: => y): x <|> y                       = new <|>(x, y)
-    def <>[y](y: => y): x <|> y                        = new <|>(x, y)
-    def :>[y](y: => y): x :> y                         = new :>
-    def |>[y](y: => y): x :> y                         = new :>
-    def &[y](y: => y): x :> y                          = new :>
-    def apply[y](y: => y): x :> y                      = new :>
-    def as[name](name: Witness.Aux[name]): As[x, name] = new As
+    def ~[y](y: => y): x <|> y                           = new <|>(x, y)
+    def <|>[y](y: => y): x <|> y                         = new <|>(x, y)
+    def <>[y](y: => y): x <|> y                          = new <|>(x, y)
+    def :>[y](y: => y): x :> y                           = new :>
+    def |>[y](y: => y): x :> y                           = new :>
+    def &[y](y: => y): x :> y                            = new :>
+    def apply[y](y: => y): x :> y                        = new :>
+    def as[name](name: Witness.Aux[name]): x :> As[name] = new :>
   }
 
   implicit class ResultMaker[x <: DSLMethod](x: => x) {
@@ -112,12 +112,4 @@ object syntax {
 
   def apiKeyAuth[realm, Param <: CanHoldApiKey](realm: Witness.Aux[realm], param: Param): ApiKeyAuth[realm, Param] =
     new ApiKeyAuth
-
-  implicit class CompleteOps[x](c: Complete[x]) {
-    def ? : Complete[Composite[Option[x]]]  = new Complete
-    def opt: Complete[Composite[Option[x]]] = ?
-
-    def ||[y](cmpl: Complete[y]): Complete[Composite[Either[x, y]]] = new Complete
-    def or[y](cmpl: Complete[y]): Complete[Composite[Either[x, y]]] = new Complete
-  }
 }

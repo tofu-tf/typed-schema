@@ -4,7 +4,6 @@ import akka.http.scaladsl.server.{Directives, MissingQueryParamRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ru.tinkoff.tschema.akkaHttp.MultiParamSpec.{Page, route}
 import ru.tinkoff.tschema.param.HttpParam
-import ru.tinkoff.tschema.syntax
 import shapeless.Witness
 
 import scala.language.reflectiveCalls
@@ -71,9 +70,9 @@ object MultiParamSpec {
   }
 
   val api = {
-    import syntax._
-    (operation("required") |> queryParam[Page]('page) |> complete[String]) <|>
-      (operation('optional) |> queryParam[Option[Page]]("page") |> complete[String])
+    import ru.tinkoff.tschema.syntax._
+    (operation("required") |> queryParam[Page]("page") |> complete[String]) <|>
+      (operation("optional") |> queryParam[Option[Page]]("page") |> complete[String])
   }
   val route = MkRoute(api)(new {
     def required(page: Page): String         = page.toString

@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.example
 
-import Swagger._
 import cats.effect.ExitCode
 import cats.effect.concurrent.Ref
 import cats.instances.list._
@@ -11,7 +10,7 @@ import com.twitter.finagle.http.Response
 import com.twitter.util.{Await, Duration}
 import monix.eval.{Task, TaskApp}
 import ru.tinkoff.tschema.example.sample.SampleModule
-import ru.tinkoff.tschema.finagle.Runnable
+import ru.tinkoff.tschema.finagle.RunHttp
 import tofu.Void
 
 object Server extends TaskApp {
@@ -27,10 +26,10 @@ object Server extends TaskApp {
       new Authorize
     )
 
-  val svc: Http[Response] = modules.foldMapK(_.route) <+> Swagger.route
+  val svc: Http[Response] = modules.foldMapK(_.route) <+> ExampleSwagger.route
 
   val server = for {
-    srv <- Runnable.run[Example](svc)
+    srv <- RunHttp.run[Example](svc)
     list <- Example.delay(finagle.Http.serve("0.0.0.0:9191", srv))
     _ <- Example.delay(println(s"started at ${list.boundAddress}"))
     _ <- Example.delay(Await.ready(list, Duration.Top)).fork
@@ -45,5 +44,3 @@ object Server extends TaskApp {
         .run(ExampleEnv("lol", ref))
     } yield ExitCode.Success
 }
-
-

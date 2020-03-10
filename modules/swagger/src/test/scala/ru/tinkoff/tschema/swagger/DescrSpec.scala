@@ -5,12 +5,13 @@ import shapeless.syntax.singleton._
 import shapeless.test.illTyped
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import ru.tinkoff.tschema.swagger.Swagger
 
 class DescrSpec extends AnyFlatSpec with Matchers {
   "descr" should "set description for existing field" in assert(
-    SwaggerTypeable
-      .deriveNamedTypeable[Foo]
-      .descr('x ->> xDescr)
+    Swagger
+      .instance[Foo]
+      .descr(Symbol("x") ->> xDescr)
       .typ
       .asInstanceOf[SwaggerRef]
       .typ

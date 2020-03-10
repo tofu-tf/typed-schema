@@ -14,10 +14,10 @@ import cats.syntax.applicative._
 import cats.{Applicative, Apply, Defer, FlatMap, Functor, Monad, StackSafeMonad}
 import com.twitter.finagle.http
 import com.twitter.finagle.http.Response
-import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.finagle.Rejection.missingParam
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
+import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.typeDSL.{Delete, Get, Head, Options, Post, Put, QueryParams}
 import ru.tinkoff.tschema.utils.cont
 import shapeless._
@@ -31,16 +31,18 @@ trait Serve[T, F[_], In, Out] {
   def as[U]: Serve[U, F, In, Out] = this.asInstanceOf[Serve[U, F, In, Out]]
 }
 
-object Serve extends ServeAuthInstances with ServeParamsInstances 
-  with ServeReqBodyInstances with ServeFunctions with ServeCatsInstance with ServeMethodInstances {
+object Serve
+    extends ServeAuthInstances with ServeParamsInstances with ServeReqBodyInstances with ServeFunctions
+    with ServeCatsInstance with ServeMethodInstances {
 
   import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
   type Add[T, F[_], In <: HList, name, V] = Serve[T, F, In, FieldType[name, V] :: In]
 
   implicit class ServeOps[T, F[_], In <: HList, Out](val serve: Serve[T, F, In, Out]) extends AnyVal {
-    def add[key](implicit F: Functor[F]): Add[T, F, In, key, Out] = (in, f) => serve.process(in, a => f(field[key](a) :: in))
-    def filter[key](implicit F: Functor[F]): Filter[T, F, In]     = (in, f) => serve.process(in, _ => f(in))
+    def add[key](implicit F: Functor[F]): Add[T, F, In, key, Out] = (in, f) =>
+      serve.process(in, a => f(field[key](a) :: in))
+    def filter[key](implicit F: Functor[F]): Filter[T, F, In] = (in, f) => serve.process(in, _ => f(in))
 
   }
 
@@ -56,33 +58,35 @@ object Serve extends ServeAuthInstances with ServeParamsInstances
       case multi: MultiParam[S, A] =>
         (in, k) =>
           cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
-            directives.direct(w.string, multi.applyOpt(ls), in, k))
+            directives.direct(w.string, multi.applyOpt(ls), in, k)
+          )
     }
 
   implicit def queryParamServe[F[_]: Routed: Monad, name: Name, x: Param.PQuery, In <: HList]
-    : Add[QueryParam[name, x], F, In, name, x] = resolveParam[F, ParamSource.Query, name, x, QueryParam[name, x], In]
+      : Add[QueryParam[name, x], F, In, name, x] = resolveParam[F, ParamSource.Query, name, x, QueryParam[name, x], In]
 
-  implicit def allQueryServe[F[_]: Routed: Monad, name, In <: HList]: Add[AllQuery[name], F, In, name, Map[String, String]] =
+  implicit def allQueryServe[F[_]: Routed: Monad, name, In <: HList]
+      : Add[AllQuery[name], F, In, name, Map[String, String]] =
     add(Routed.request[F].map(_.params))
 
-  implicit def queryFlagServe[F[_]: Routed: Monad, name : Name, x, In <: HList]
-    : Add[QueryFlag[name], F, In, name, Boolean] =
+  implicit def queryFlagServe[F[_]: Routed: Monad, name: Name, x, In <: HList]
+      : Add[QueryFlag[name], F, In, name, Boolean] =
     add[QueryFlag[name], F, In, Boolean, name](Routed.request[F].map(_.params.contains(Name[name].string)))
 
   implicit def captureServe[F[_]: Routed: Monad, name: Name, x: Param.PPath, In <: HList]
-    : Add[Capture[name, x], F, In, name, x] =
+      : Add[Capture[name, x], F, In, name, x] =
     resolveParam[F, ParamSource.Path, name, x, Capture[name, x], In]
 
   implicit def headerServe[F[_]: Routed: Monad, name: Name, x: Param.PHeader, In <: HList]
-    : Add[Header[name, x], F, In, name, x] =
+      : Add[Header[name, x], F, In, name, x] =
     resolveParam[F, ParamSource.Header, name, x, Header[name, x], In]
 
   implicit def cookieServe[F[_]: Routed: Monad, name: Name, x: Param.PCookie, In <: HList]
-    : Add[Cookie[name, x], F, In, name, x] =
+      : Add[Cookie[name, x], F, In, name, x] =
     resolveParam[F, ParamSource.Cookie, name, x, Cookie[name, x], In]
 
   implicit def formFieldServe[F[_]: Routed: Monad, name: Name, x: Param.PForm, In <: HList]
-    : Add[FormField[name, x], F, In, name, x] =
+      : Add[FormField[name, x], F, In, name, x] =
     resolveParam[F, ParamSource.Form, name, x, FormField[name, x], In]
 
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
@@ -92,17 +96,16 @@ object Serve extends ServeAuthInstances with ServeParamsInstances
   implicit def serveGroup[F[_], key, In]: Filter[Group[key], F, In] = ignore
   implicit def serveMeta[F[_], U <: Meta, In]: Filter[U, F, In]     = ignore
 
-  implicit def asServe[x, name, F[_], In <: HList, Head, old, Rest <: HList](
-      implicit serveInner: Serve[x, F, In, FieldType[old, Head] :: Rest])
-    : Serve[As[x, name], F, In, FieldType[name, Head] :: Rest] =
-    serveInner.asInstanceOf[Serve[As[x, name], F, In, FieldType[name, Head] :: Rest]]
+  implicit def asServe[x, name, F[_], In <: HList, Head, old]
+      : Serve[As[name], F, FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
+    Serve.ignore.asInstanceOf[Serve[As[name], F, FieldType[old, Head] :: In, FieldType[name, Head] :: In]]
 }
 
 private[finagle] trait ServeReqBodyInstances extends ServeReqBodyInstances1 { self: Serve.type =>
   import ru.tinkoff.tschema.typeDSL.ReqBody
 
   implicit def bodyOptServe[F[_]: FlatMap, name, A, In <: HList](
-    implicit A: ParseBody[F, A]
+      implicit A: ParseBody[F, A]
   ): Add[ReqBody[name, Option[A]], F, In, name, Option[A]] =
     add[ReqBody[name, Option[A]], F, In, Option[A], name](A.parseOpt())
 }
@@ -111,28 +114,33 @@ private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
   import ru.tinkoff.tschema.typeDSL.ReqBody
 
   implicit def bodyServe[F[_]: FlatMap, name, A, In <: HList](
-      implicit A: ParseBody[F, A]): Add[ReqBody[name, A], F, In, name, A] =
+      implicit A: ParseBody[F, A]
+  ): Add[ReqBody[name, A], F, In, name, A] =
     add[ReqBody[name, A], F, In, A, name](A.parse())
 }
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>
 
   implicit def queryParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](
-      implicit param: SingleParam[ParamSource.Query, x]) =
+      implicit param: SingleParam[ParamSource.Query, x]
+  ) =
     add[QueryParams[name, x], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = false))
 
   implicit def queryOptParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](
-      implicit param: SingleParam[ParamSource.Query, x]) =
+      implicit param: SingleParam[ParamSource.Query, x]
+  ) =
     add[QueryParams[name, Option[x]], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = true))
 
-  private def extractQueryParams[F[_]: Routed: Monad, name: Name, x](allowEmpty: Boolean)(
-      implicit param: SingleParam[ParamSource.Query, x]): F[List[x]] =
+  private def extractQueryParams[F[_]: Routed: Monad, name: Name, x](
+      allowEmpty: Boolean
+  )(implicit param: SingleParam[ParamSource.Query, x]): F[List[x]] =
     Routed.request.flatMap { req =>
       val name = Name[name].string
       val dir  = ParamDirectives[Query]
       req.params.getAll(name) match {
-        case it if it.nonEmpty || allowEmpty => it.toList.traverse(s => dir.provideOrReject(name, param.applyOpt(Some(s))))
-        case _                               => Routed.reject(missingParam(name, Query))
+        case it if it.nonEmpty || allowEmpty =>
+          it.toList.traverse(s => dir.provideOrReject(name, param.applyOpt(Some(s))))
+        case _ => Routed.reject(missingParam(name, Query))
       }
     }
 
@@ -150,8 +158,9 @@ private[finagle] trait ServeFunctions { self: Serve.type =>
   def checkCont[T, F[_]: Apply, In](fr: F[Response] => F[Response]): Filter[T, F, In] = (in, f) => fr(f(in))
   def checkIn[T, F[_]: Apply, In](f: In => F[Unit]): Filter[T, F, In]                 = (in, g) => f(in) *> g(in)
 
-  def add[T, F[_]: FlatMap, In <: HList, A, key](fa: F[A]): Add[T, F, In, key, A]        = provide[T, F, In, A](fa).add[key]
-  def addIn[T, F[_]: FlatMap, In <: HList, A, key](f: In => F[A]): Add[T, F, In, key, A] = provideIn[T, F, In, A](f).add[key]
+  def add[T, F[_]: FlatMap, In <: HList, A, key](fa: F[A]): Add[T, F, In, key, A] = provide[T, F, In, A](fa).add[key]
+  def addIn[T, F[_]: FlatMap, In <: HList, A, key](f: In => F[A]): Add[T, F, In, key, A] =
+    provideIn[T, F, In, A](f).add[key]
 
   def resource[T, F[_]: BracketThrow, In, A, key](r: Resource[F, A]): Serve[T, F, In, A]         = (_, f) => r.use(f)
   def resourceIn[T, F[_]: BracketThrow, In, A, key](r: In => Resource[F, A]): Serve[T, F, In, A] = r(_).use(_)

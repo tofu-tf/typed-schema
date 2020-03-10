@@ -11,4 +11,6 @@ package object swagger {
     def swaggerMapper(implicit mapper: SwaggerMapper[x]): SwaggerMapper[x] = mapper
   }
 
+  type Swagger[A] = SwaggerTypeable[A]
+  val MagnoliaSwagger: Swagger.type = Swagger
 }

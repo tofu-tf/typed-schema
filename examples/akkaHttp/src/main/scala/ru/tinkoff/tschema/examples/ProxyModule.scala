@@ -8,10 +8,10 @@ object ProxyModule extends ExampleModule {
 
   def api =
     get |>
-      operation('proxy) |>
-      queryParam[String]('foo) |>
-      queryParam[String]('bar) |>
-      allQuery('rest) |>
+      operation("proxy") |>
+      queryParam[String]("foo") |>
+      queryParam[String]("bar") |>
+      allQuery("rest") |>
       $$[String]
 
 

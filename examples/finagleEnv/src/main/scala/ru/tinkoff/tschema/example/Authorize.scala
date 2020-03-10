@@ -1,39 +1,24 @@
 package ru.tinkoff.tschema.example
 
-import cats.{Applicative, Monad}
+import cats.Monad
 import com.twitter.finagle.http.Response
-import com.twitter.util.Base64StringEncoder
-import org.manatki.derevo.circeDerivation.{decoder, encoder}
-import org.manatki.derevo.derive
-import org.manatki.derevo.tethysInstances.{tethysReader, tethysWriter}
-import org.manatki.derevo.tschemaInstances._
-import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
-import ru.tinkoff.tschema.finagle.{
-  Authorization,
-  BearerToken,
-  Credentials,
-  LiftHttp,
-  MkService,
-  Rejection,
-  Routed,
-  RoutedPlus,
-  SimpleAuth
-}
-import ru.tinkoff.tschema.swagger.{SwaggerBuilder, _}
-import ru.tinkoff.tschema.syntax._
-import shapeless.{HNil, Witness}
-import cats.syntax.applicative._
+import derevo.derive
+import derevo.tethys.{tethysReader, tethysWriter}
+import ru.tinkoff.tschema.custom.syntax._
+import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer}
 import ru.tinkoff.tschema.finagle.Credentials.secure_equals
 import ru.tinkoff.tschema.finagle.util.Unapply
-
-import scala.annotation.tailrec
-import ru.tinkoff.tschema.finagle.tethysInstances._
+import ru.tinkoff.tschema.finagle._
+import ru.tinkoff.tschema.swagger.SwaggerBuilder
+import ru.tinkoff.tschema.swagger._
+import ru.tinkoff.tschema.syntax._
+import ru.tinkoff.tschema.finagle.MkService
 
 object Authorize {
 
   final case class User(name: String, roles: List[String])
 
-  @derive(tethysWriter, tethysReader, swagger)
+  @derive(tethysWriter, tethysReader, Swagger)
   final case class Client(name: String, products: List[String])
 
   val anonClient = Client("anon", List.empty)
@@ -58,12 +43,12 @@ object Authorize {
   )
 
   def api =
-    tagPrefix('auth) |> ((
-      operation('roles) |> basicAuth[User]("users", 'user) |> get[List[String]]
+    tagPrefix("auth") |> ((
+      operation("roles") |> basicAuth[User]("users", "user") |> get |> json[List[String]]
     ) <> (
-      operation('client) |> bearerAuth[Option[Client]]("clients", 'client) |> get[Client]
+      operation("client") |> bearerAuth[Option[Client]]("clients", "client") |> get |> json[Client]
     ) <> (
-      operation('numbers) |> apiKeyAuth('sessionId, queryParam[Option[String]]('sessionId)) |> get[List[Int]]
+      operation("numbers") |> apiKeyAuth("sessionId", queryParam[Option[String]]("sessionId")) |> get |> json[List[Int]]
     ))
 
   object handler {

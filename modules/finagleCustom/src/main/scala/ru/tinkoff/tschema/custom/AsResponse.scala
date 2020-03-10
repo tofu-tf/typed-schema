@@ -2,10 +2,14 @@ package ru.tinkoff.tschema.custom
 import cats.Show
 import com.twitter.finagle.http.{Response, Status, Version}
 import com.twitter.io.{Buf, Reader}
+import derevo.Derivation
 import io.circe.{Encoder, Printer}
+import magnolia.{CaseClass, Magnolia, SealedTrait}
 import ru.tinkoff.tschema.ResponseStatus
 import ru.tinkoff.tschema.finagle.util.message.{jsonResponse, stringResponse}
 import tethys.writers.tokens.TokenWriterProducer
+
+import scala.annotation.implicitNotFound
 
 sealed trait EntityFormat
 
@@ -23,7 +27,7 @@ trait AsResponse[Fmt, A] {
   def apply(a: A): Response
 }
 
-object AsResponse extends AsResponseInstances {
+object AsResponse extends AsResponseInstances with AsResponseDerivation {
   type Json[A]       = AsResponse[EntityFormat.Json, A]
   type Plain[A]      = AsResponse[EntityFormat.Plain, A]
   type Binary[CT, A] = AsResponse[EntityFormat.Binary[CT], A]
@@ -86,4 +90,27 @@ trait AsResponseInstances {
   implicit def showAsResponse[A: Show]: AsResponse.Plain[A] = a => stringResponse(a.show)
 }
 
+trait AsResponseDerivation {
+  object Error extends AsResponseMagnolia[EntityFormat.Error] with Derivation[AsResponse.Error]
+  object Plain extends AsResponseMagnolia[EntityFormat.Plain] with Derivation[AsResponse.Plain]
+  object XML   extends AsResponseMagnolia[EntityFormat.XML] with Derivation[AsResponse.XML]
+  object Json  extends AsResponseMagnolia[EntityFormat.Json] with Derivation[AsResponse.Json]
+}
+
 abstract class ErrorResponse[T](val status: Int) extends ResponseStatus[T] with AsResponse.Error[T]
+
+trait AsResponseMagnolia[Fmt] {
+  type Typeclass[A] = AsResponse[Fmt, A]
+
+  def combine[T](cc: CaseClass[Typeclass, T])(implicit no: AsResponseNotCombineable) = no.absurd
+
+  def dispatch[T](st: SealedTrait[Typeclass, T]): AsResponse[Fmt, T] =
+    a => st.dispatch(a)(sub => sub.typeclass.apply(sub.cast(a)))
+
+  def instance[A]: AsResponse[Fmt, A] = macro Magnolia.gen[A]
+}
+
+@implicitNotFound("AsResponse could be derived only for sealed traits")
+final abstract class AsResponseNotCombineable {
+  def absurd: Nothing
+}

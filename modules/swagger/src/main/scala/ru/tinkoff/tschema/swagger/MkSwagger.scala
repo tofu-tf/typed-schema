@@ -23,7 +23,7 @@ trait SwaggerBuilder {
 
   def types: TypePool
 
-  def tags: Map[String, String]
+  def tags: TagInfo
 
   def auths: TreeMap[String, OpenApiSecurity]
 
@@ -59,13 +59,13 @@ object SwaggerBuilder {
   private[swagger] class EmptySwaggerBuilder extends SwaggerBuilder {
     override def paths: PathSeq                          = Vector.empty
     override def types: TypePool                         = TreeMap.empty
-    override def tags                                    = Map.empty[String, SwaggerDescription]
+    override def tags: TagInfo                           = Vector.empty
     override def auths: TreeMap[String, OpenApiSecurity] = TreeMap.empty
   }
 
   val empty: SwaggerBuilder = new EmptySwaggerBuilder
 
-  def tags(ts: Map[String, SwaggerDescription]) = new EmptySwaggerBuilder {
+  def tags(ts: TagInfo): EmptySwaggerBuilder = new EmptySwaggerBuilder {
     override val tags = ts
   }
 
@@ -110,13 +110,12 @@ object SwaggerBuilder {
                   param => OpenApiParam.description.update(param, method(MethodTarget.Param(param.name)) orElse _)
                 )
               ) andThen
-            (
-                (oao: OpenApiOp) =>
-                  chain(oao) >>
-                    OpenApiOp.requestBody > _some >> OpenApiRequestBody.description update (method(
-                    MethodTarget.Body
-                  ) orElse _)
-              )
+            ((oao: OpenApiOp) =>
+              chain(oao) >>
+                OpenApiOp.requestBody > _some >> OpenApiRequestBody.description update (method(
+                MethodTarget.Body
+              ) orElse _)
+            )
         )
       case spec => spec
     }
@@ -144,7 +143,7 @@ object SwaggerBuilder {
     val tags = self.tags ++ {
       import PathDescription.Target.Tag
       val allTags = paths.flatMap(_.op.tags).distinct
-      allTags.flatMap(key => descriptions(Tag(key)).map(key -> _))
+      allTags.flatMap(key => descriptions(Tag(key)).map((key, _)))
     }
     val auths = self.auths
   }
@@ -262,12 +261,12 @@ object MkSwagger {
 
   type TypePool = TreeMap[String, DescribedType]
 
-  type TagInfo = Map[String, SwaggerDescription]
+  type TagInfo = Vector[(String, SwaggerDescription)]
 
   def single[T](op: OpenApiOp, typeList: TreeMap[String, DescribedType]) = new MkSwagger[T] {
     val paths                                   = Vector(PathSpec(Vector.empty, None, op))
     val types                                   = typeList
-    val tags: TagInfo                           = Map.empty
+    val tags: TagInfo                           = Vector.empty
     val auths: TreeMap[String, OpenApiSecurity] = TreeMap.empty
   }
 
@@ -294,7 +293,3 @@ object MkSwagger {
   }
   implicit def monoidInstance[A]: Monoid[MkSwagger[A]] = monoidKInstance.algebra[A]
 }
-
-
-
-

@@ -37,7 +37,7 @@ object Server extends App {
   } yield res
 
   val layer: URLayer[Blocking with Console, FullEnv] =
-    ZLayer.identity[Blocking with Console].zipWithPar(ExampleEnv.live)(_ union _)
+    ZLayer.identity[Blocking with Console] ++ ExampleEnv.live
 
   def run(args: List[String]): URIO[Blocking with Console, Int] =
     layer.build.use(r => server.catchAll(ex => putStr(ex.getMessage)).provide(r)) as 0

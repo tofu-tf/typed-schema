@@ -1,6 +1,7 @@
 .idea
 **/target
-.ensime
-.ensime_cache
+.metals
+.bloop
 .tags
 .attach_pid*
+*/project/metals.sbt

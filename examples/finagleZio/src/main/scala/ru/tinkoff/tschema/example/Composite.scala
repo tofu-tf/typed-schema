@@ -15,7 +15,7 @@ import ru.tinkoff.tschema.swagger.MkSwagger
 import syntax._
 import zio.ZIO
 import AsResponse.Error
-
+import Example.storage
 @derive(SwaggerContent, Error)
 sealed trait KeySearching
 
@@ -41,9 +41,9 @@ object ReceiveModule extends ExampleModule {
 }
 
 object ReceiveService {
-  def put(key: String, value: String): Example[Unit] = ZIO.accessM(_.storage.update(_ + (key -> value)).unit)
+  def put(key: String, value: String): Example[Unit] = storage.flatMap(_.update(_ + (key -> value)))
   def get(key: String): Example[Either[KeySearching, String]] =
     (if (key.isEmpty || key.startsWith("bad")) ZIO.fail(BadKey(key))
-     else read(key).some.asError(NotFound())).either
-  def read(key: String): Example[Option[String]] = ZIO.accessM(_.storage.get.map(_.get(key)))
+     else read(key).some.orElseFail(NotFound())).either
+  def read(key: String): Example[Option[String]] = storage.flatMap(_.get.map(_.get(key)))
 }

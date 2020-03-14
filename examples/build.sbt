@@ -1,7 +1,14 @@
 val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
+lazy val typedSchemaVersion = SettingKey[String]("typedSchemaVersion")
+
 val commonSettings = List(
   scalaVersion := "2.12.10",
+  typedSchemaVersion := {
+    val branch = git.gitCurrentBranch.value
+    if (branch == "master") Version.typedSchema
+    else s"${Version.typedSchema}-$branch-SNAPSHOT"
+  },
   crossScalaVersions := List("2.12.10", "2.13.1"),
   swaggerUIVersion := {
     libraryDependencies.value
@@ -23,7 +30,7 @@ val commonSettings = List(
   libraryDependencies += "org.manatki" %% "derevo-cats" % Version.derevo,
   libraryDependencies += "org.manatki" %% "derevo-circe" % Version.derevo,
   libraryDependencies += "org.manatki" %% "derevo-tethys" % Version.derevo,
-  libraryDependencies += "ru.tinkoff" %% "typed-schema-swagger" % Version.typedSchema,
+  libraryDependencies += { "ru.tinkoff" %% "typed-schema-swagger" % typedSchemaVersion.value },
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.patch),
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
   scalacOptions ++= List(
@@ -40,8 +47,6 @@ val commonSettings = List(
   }
 )
 
-
-
 lazy val common =
   project.settings(commonSettings).enablePlugins(BuildInfoPlugin)
 
@@ -50,28 +55,28 @@ lazy val akkaHttp = project
   .settings(commonSettings)
   .settings(
     libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-akka-http" % Version.typedSchema,
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-akka-http" % typedSchemaVersion.value },
   )
 
 lazy val finagleZio = project
   .dependsOn(common)
   .settings(commonSettings)
   .settings(
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-zio" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-tethys" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-circe" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-common" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-custom" % Version.typedSchema,
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-zio" % typedSchemaVersion.value },
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-tethys" % typedSchemaVersion.value },
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-circe" % typedSchemaVersion.value },
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-common" % typedSchemaVersion.value },
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-custom" % typedSchemaVersion.value },
   )
 
 lazy val finagleEnv = project
   .dependsOn(common)
   .settings(commonSettings)
   .settings(
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-env" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-tethys" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-circe" % Version.typedSchema,
-    libraryDependencies += "ru.tinkoff" %% "typed-schema-finagle-custom" % Version.typedSchema,
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-env" % typedSchemaVersion.value },
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-tethys" % typedSchemaVersion.value },
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-circe" % typedSchemaVersion.value },
+    libraryDependencies += { "ru.tinkoff" %% "typed-schema-finagle-custom" % typedSchemaVersion.value },
     libraryDependencies += "org.typelevel" %% "simulacrum" % Version.simulacrum,
   )
 

@@ -4,10 +4,11 @@ import ExampleSwagger._
 import cats.instances.list._
 import cats.syntax.foldable._
 import cats.syntax.semigroupk._
-import com.twitter.finagle.Http
+import com.twitter.finagle.{Http => FHttp}
 import com.twitter.finagle.http.Response
 import com.twitter.util.{Await, Duration}
 import ru.tinkoff.tschema.finagle.RunHttp
+import zio.blocking.Blocking
 import zio.console._
 import zio.{blocking => _, _}
 
@@ -29,18 +30,15 @@ object Server extends App {
 
   val server = for {
     srv <- RunHttp.run[Example](svc)
-    list <- ZIO.effect(Http.serve("0.0.0.0:9191", srv))
+    list <- ZIO.effect(FHttp.serve("0.0.0.0:9191", srv))
     _ <- putStr(s"started at ${list.boundAddress}")
     _ <- ZIO.effect(Await.ready(list, Duration.Top)).fork
     res <- ZIO.never
   } yield res
 
-  def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] =
-    for {
-      ref <- Ref.make(0)
-      storage <- Ref.make(Map[String, String]())
-      _ <- server
-        .catchAll(ex => putStr(ex.getMessage))
-        .provide(ExampleEnv("lol", ref, storage))
-    } yield 0
+  val layer: URLayer[Blocking with Console, FullEnv] =
+    ZLayer.identity[Blocking with Console] ++ ExampleEnv.live
+
+  def run(args: List[String]): URIO[Blocking with Console, Int] =
+    layer.build.use(r => server.catchAll(ex => putStr(ex.getMessage)).provide(r)) as 0
 }

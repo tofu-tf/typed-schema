@@ -79,4 +79,6 @@ object Swagger extends Derivation[SwaggerTypeable] {
   implicit def derivedInstance[T]: Typeclass[T] = macro Magnolia.gen[T]
   def derive[T]: Typeclass[T] = macro Magnolia.gen[T]
   def instance[T]: Typeclass[T] = macro Magnolia.gen[T]
+
+  def typeParams[T](typ: Typeclass[T])(params: Typeclass[_]*): Typeclass[T] = typ.typeParams(params.toVector)
 }

@@ -43,8 +43,8 @@ sealed trait SwaggerType {
 
   def withMediaType(mediaType: MediaType): SwaggerType = SwaggerMedia(this, mediaType)
 
-  def withTypeParams(params: SwaggerType*) =
-    chain(this) >> SwaggerType.ref >> SwaggerRef.tparams put params.toVector.map(Eval.now)
+  def withTypeParams(params: Vector[SwaggerType]) =
+    chain(this) >> SwaggerType.ref >> SwaggerRef.tparams put params.map(Eval.now)
 
 }
 

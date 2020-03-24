@@ -42,8 +42,8 @@ trait SwaggerTypeable[T] {
       (SwaggerType.ref >> SwaggerRef.name).set(self.typ, name)
   }
 
-  def typeParams(params: Swagger[_]*) =
-    updateTyp(_.withTypeParams(params.map(_.typ): _*))
+  def typeParams(params: Vector[Swagger[_]]) =
+    updateTyp(_.withTypeParams(params.map(_.typ)))
 
   def describe(description: String): SwaggerTypeable[T] = updateTyp(_.describe(description))
 

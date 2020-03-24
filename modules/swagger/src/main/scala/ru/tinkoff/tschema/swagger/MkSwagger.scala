@@ -128,7 +128,7 @@ object SwaggerBuilder {
             (DescribedType.title.update(_, typ(TypeTarget.Title) orElse _)) andThen
               (DescribedType.description.update(_, typ(TypeTarget.Type) orElse _)) andThen
               (
-                (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties >> vecItems[
+                (DescribedType.typ >> SwaggerType.obj >> SwaggerObject.properties >> vecItems[
                   SwaggerProperty,
                   SwaggerProperty
                 ]).update(

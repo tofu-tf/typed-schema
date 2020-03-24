@@ -39,13 +39,16 @@ trait SwaggerTypeable[T] {
 
   def named(name: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
     override def typ: SwaggerType =
-      (SwaggerType.refPrism >> SwaggerRef.name).set(self.typ, name)
+      (SwaggerType.ref >> SwaggerRef.name).set(self.typ, name)
   }
+
+  def typeParams(params: Swagger[_]*) =
+    updateTyp(_.withTypeParams(params.map(_.typ): _*))
 
   def describe(description: String): SwaggerTypeable[T] = updateTyp(_.describe(description))
 
   def describeFields(descriptions: (String, String)*): SwaggerTypeable[T] =
-    updateTyp(SwaggerType.objProp.update(_, _.describeFields(descriptions: _*)))
+    updateTyp(SwaggerType.obj.update(_, _.describeFields(descriptions: _*)))
 
   def xml(
       name: Option[String] = None,
@@ -61,7 +64,7 @@ trait SwaggerTypeable[T] {
     )
 
   def xmlFields(fieldOpts: (String, SwaggerXMLOptions)*) =
-    updateTyp(SwaggerType.objProp.update(_, _.xmlFields(fieldOpts: _*)))
+    updateTyp(SwaggerType.obj.update(_, _.xmlFields(fieldOpts: _*)))
 
   //Safe versions
   def descr[S: Name, L <: HList](
@@ -92,10 +95,11 @@ trait LowLevelSwaggerTypeable {
 
   @inline final def unwrap[X[_], T](implicit item: SwaggerTypeable[T]): SwaggerTypeable[X[T]] = item.as[X[T]]
 
-  final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]]     = seq[Seq, T]
+  final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]] = seq[Seq, T]
 }
 
-trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances with AdditionalSwaggerInstances {
+trait SwaggerTypeableInstances
+    extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances with AdditionalSwaggerInstances {
   final implicit val swaggerTypeableInteger: SwaggerTypeable[Int]   = make[Int](SwaggerPrimitive.integer)
   final implicit val swaggerTypeableLong: SwaggerTypeable[Long]     = make[Long](SwaggerPrimitive.long)
   final implicit val swaggerTypeableFloat: SwaggerTypeable[Float]   = make[Float](SwaggerPrimitive.float)

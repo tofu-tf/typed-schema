@@ -21,6 +21,7 @@ import ru.tinkoff.tschema.finagle.tethysInstances._
 
 object Authorize extends ExampleModule {
 
+  implicitly[Routed[Http]]
   override def route: Http[Response] = MkService[Http](api)(handler)
   override def swag: SwaggerBuilder = MkSwagger(api)
 

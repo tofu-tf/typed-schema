@@ -3,13 +3,13 @@ package example
 import derevo.cats.show
 import derevo.derive
 import derevo.tethys.tethysWriter
-import ru.tinkoff.tschema.custom.AsResponse
+import ru.tinkoff.tschema.custom.{AsResponse, PlainResult}
 import ru.tinkoff.tschema.custom.derivation.{jsonError, plainError}
 import ru.tinkoff.tschema.custom.syntax._
 import ru.tinkoff.tschema.finagle.tethysInstances._
 import ru.tinkoff.tschema.finagle.{NoneCompleting, StringCompleting}
-import ru.tinkoff.tschema.swagger.{SwaggerContent}
-import ru.tinkoff.tschema.swagger.{Swagger}
+import ru.tinkoff.tschema.swagger.SwaggerContent
+import ru.tinkoff.tschema.swagger.Swagger
 import ru.tinkoff.tschema.finagle.MkService
 import ru.tinkoff.tschema.swagger.MkSwagger
 import syntax._
@@ -36,6 +36,7 @@ object ReceiveModule extends ExampleModule {
       get |> operation("read") |> plainErr[None.type, String]
     ))
 
+  PlainResult.plainFComplete[Http, Example, Unit]
   def route = MkService[Http](api)(ReceiveService)
   def swag = MkSwagger(api)
 }

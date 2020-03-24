@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.finagle.routing
+package ru.tinkoff.tschema.finagle.zioRouting
 
 import ru.tinkoff.tschema.finagle.Rejection
 

@@ -22,9 +22,21 @@ import ru.tinkoff.tschema.typeDSL.{Delete, Get, Head, Options, Post, Put, QueryP
 import ru.tinkoff.tschema.utils.cont
 import shapeless._
 import shapeless.labelled.{FieldType, field}
-
+import scala.annotation.implicitNotFound
 import scala.tools.nsc.ast.parser.Patch
 
+@implicitNotFound(
+  """
+Don't know how to serve an endpoint `${T}` with input `${In}` and output `${Out}` 
+with effect ${F}.
+---
+Probably these steps may help:
+1) For finagle zio ensure interop import:
+   import zio.interop.catz._
+2) For finagle zio ensure you're using the correct effect (ZIOHttp or URIOHttp from ru.tinkoff.tschema.finagle.routing.ZioRouting)
+---
+"""
+)
 trait Serve[T, F[_], In, Out] {
   def process(in: In, k: Out => F[Response]): F[Response]
 

@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.finagle.routing
+package ru.tinkoff.tschema.finagle.zioRouting
 
 import cats.data.ReaderT
 import cats.effect.syntax.effect._
@@ -10,7 +10,7 @@ import com.twitter
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
-import ru.tinkoff.tschema.finagle.routing.ReaderTRouting.ReaderHttp
+import ru.tinkoff.tschema.finagle.zioRouting.ReaderTRouting.ReaderHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
 

@@ -2,7 +2,7 @@ package ru.tinkoff.tschema.example
 
 import cats.effect.concurrent.Ref
 import monix.eval.Task
-import ru.tinkoff.tschema.finagle.routing._
+import ru.tinkoff.tschema.finagle.envRouting._
 import simulacrum.typeclass
 import tofu.env.EnvSpecializedFunctions
 

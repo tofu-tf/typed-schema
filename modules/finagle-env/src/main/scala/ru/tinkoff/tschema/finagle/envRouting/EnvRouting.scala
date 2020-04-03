@@ -1,4 +1,4 @@
-package ru.tinkoff.tschema.finagle.routing
+package ru.tinkoff.tschema.finagle.envRouting
 
 import cats.syntax.semigroup._
 import com.twitter
@@ -7,8 +7,8 @@ import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import monix.eval.Task
 import monix.execution.Scheduler
-import ru.tinkoff.tschema.finagle.routing.EnvRouting.EnvHttp
-import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
+import ru.tinkoff.tschema.finagle._
+import ru.tinkoff.tschema.finagle.envRouting.EnvRouting.EnvHttp
 import ru.tinkoff.tschema.utils.SubString
 import tofu.env.Env
 
@@ -89,7 +89,7 @@ private[finagle] class EnvInstanceDecl {
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A] = Env.raiseError(Rejected(map))
+    @inline private[this] def throwRej[A](map: Rejection): F[A] = Env.raiseError(envRouting.Rejected(map))
   }
 
   protected object envRoutedAny extends EnvRoutedConvert[Any]

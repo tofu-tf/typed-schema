@@ -11,12 +11,12 @@ import ru.tinkoff.tschema.typeDSL
 class JsonResult[A]
 
 object JsonResult {
-  implicit def jsonComplete[F[_]: Applicative, R, A: AsResponse.Json]: Completing[F, JsonResult[R], A] =
+  implicit def jsonComplete[F[_]: Applicative, A: AsResponse.Json]: Completing[F, JsonResult[A], A] =
     a => AsResponse.json(a).pure[F]
 
-  implicit def jsonCompleteF[F[_], G[_]: Functor, R, A: AsResponse.Json](
+  implicit def jsonCompleteF[F[_], G[_]: Functor, A: AsResponse.Json](
       implicit lift: LiftHttp[F, G]
-  ): Completing[F, JsonResult[R], G[A]] =
+  ): Completing[F, JsonResult[A], G[A]] =
     fa => lift(fa.map(AsResponse.json[A]))
 
   implicit def jsonSwagger[R](

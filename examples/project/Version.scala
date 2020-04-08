@@ -3,7 +3,7 @@ object Version {
 
   val swaggerUI = "3.25.0"
 
-  val derevo = "0.11.1"
+  val derevo = "0.11.2"
 
   val scalaTags = "0.8.6"
 

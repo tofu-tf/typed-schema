@@ -21,6 +21,8 @@ object Server extends App {
       FormFieldsModule,
       MultiParameters,
       ProxyModule,
+      BinaryModule,
+      ProtoModule,
       VersionModule,
       Authorize,
       ReceiveModule

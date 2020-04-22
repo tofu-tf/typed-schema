@@ -77,14 +77,12 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics = libraryDependencies ++= List("core", "macro").map(module =>
-  "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
-)
+val tofuOptics = libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
 
 val circe = libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
-  "derivation",
-  "derivation-annotations"
-).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
+    "derivation",
+    "derivation-annotations"
+  ).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
 
 val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
@@ -97,14 +95,15 @@ val simulacrum = "org.typelevel" %% "simulacrum"  % Version.simulacrum
 val shapeless  = "com.chuusai"   %% "shapeless"   % Version.shapeless
 val enumeratum = "com.beachape"  %% "enumeratum"  % Version.enumeratum
 
-val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaHttp
-val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka % Test
-val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
-val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
-val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
-val swaggerUILib    = "org.webjars.npm"   % "swagger-ui-dist"    % Version.swaggerUI
-val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
-val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
+val akkaHttpLib     = "com.typesafe.akka"    %% "akka-http"            % Version.akkaHttp
+val akkaTestKit     = "com.typesafe.akka"    %% "akka-testkit"         % Version.akka % Test
+val akkaHttpTestKit = "com.typesafe.akka"    %% "akka-http-testkit"    % Version.akkaHttp % Test
+val finagleHttp     = "com.twitter"          %% "finagle-http"         % Version.finagle
+val derevo          = "org.manatki"          %% "derevo-cats"          % Version.derevo
+val swaggerUILib    = "org.webjars.npm"      % "swagger-ui-dist"       % Version.swaggerUI
+val scalapb         = "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % Version.scalapb
+val scalaTags       = "com.lihaoyi"          %% "scalatags"            % Version.scalaTags
+val env             = "ru.tinkoff"           %% "tofu-env"             % Version.tofu
 
 val scalatest           = "org.scalatest"     %% "scalatest"                % Version.scalaTest           % Test
 val scalacheck          = "org.scalacheck"    %% "scalacheck"               % Version.scalaCheck          % Test
@@ -242,13 +241,22 @@ lazy val finagleTethys = project
     libraryDependencies ++= tethys
   )
 
+lazy val finagleProtobuf = project
+  .in(file("modules/finagleProtobuf"))
+  .dependsOn(finagle, swagger)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-protobuf",
+    libraryDependencies += scalapb
+  )
+
 lazy val finagleCustom = project
   .in(file("modules/finagleCustom"))
   .dependsOn(finagleCirce, finagleTethys, swagger)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-custom",
-    libraryDependencies += derevo
+    libraryDependencies ++= List(derevo, scalapb)
   )
 
 lazy val finagleZio = project
@@ -340,6 +348,7 @@ lazy val typedschema =
       finagleCirce,
       finagleTethys,
       finagleCommon,
+      finagleProtobuf,
       finagleCustom,
       swaggerUI,
       docs

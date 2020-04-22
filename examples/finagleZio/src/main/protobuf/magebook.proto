@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message MageBook {
+    int32 enchantment = 1;
+    int32 potion = 2;
+    int32 spell = 3;
+}

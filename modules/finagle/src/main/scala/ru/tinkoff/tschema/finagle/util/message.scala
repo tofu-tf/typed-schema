@@ -5,6 +5,7 @@ import cats.syntax.functor._
 import cats.syntax.option._
 import cats.{Applicative, Functor, Monad}
 import com.twitter.finagle.http.{MediaType, Response, Status}
+import com.twitter.io.Buf
 import ru.tinkoff.tschema.finagle.{Completing, LiftHttp, ParseBody, Rejection, Routed}
 
 object message {
@@ -22,14 +23,27 @@ object message {
   def emptyComplete[F[_]: Applicative, A, B](status: Status = Status.Ok): Completing[F, A, B] = _ => Response(status).pure[F]
 
   def parseRequest[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): F[A] =
-    Routed.request.flatMap(req =>
-      f(req.contentString).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.pure[F]))
+    Routed.request.flatMap(req => f(req.contentString).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.pure[F]))
 
   def parseOptRequest[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): F[Option[A]] =
     Routed.request.flatMap { req =>
       val cs = req.contentString
       if (cs.isEmpty) none.pure[F]
       else f(cs).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.some.pure[F])
+    }
+
+  def parseRequestBytes[F[_]: Routed: Monad, A](f: Array[Byte] => Either[Throwable, A]): F[A] =
+    Routed.request.flatMap(req =>
+      f(readBytes(req.content))
+        .fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.pure[F])
+    )
+
+  def parseOptRequestBytes[F[_]: Routed: Monad, A](f: Array[Byte] => Either[Throwable, A]): F[Option[A]] =
+    Routed.request.flatMap { req =>
+      val cs = req.content
+      if (cs.isEmpty) none.pure[F]
+      else
+        f(readBytes(req.content)).fold(fail => Routed.reject(Rejection.body(fail.getMessage)), res => res.some.pure[F])
     }
 
   def stringComplete[F[_]: Applicative, A](f: A => String, status: Status = Status.Ok): Completing[F, A, A] =
@@ -46,7 +60,9 @@ object message {
 
   def jsonBodyParse[F[_]: Routed: Monad, A](f: String => Either[Throwable, A]): ParseBody[F, A] =
     new ParseBody[F, A] {
-      override def parse(): F[A] = parseRequest(f)
+      override def parse(): F[A]            = parseRequest(f)
       override def parseOpt(): F[Option[A]] = parseOptRequest(f)
     }
+
+  private def readBytes(buf: Buf): Array[Byte] = Buf.ByteArray.Shared.extract(buf)
 }

@@ -96,12 +96,13 @@ trait LowLevelSwaggerTypeable {
 }
 
 trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances with AdditionalSwaggerInstances {
-  final implicit val swaggerTypeableInteger: SwaggerTypeable[Int]   = make[Int](SwaggerPrimitive.integer)
-  final implicit val swaggerTypeableLong: SwaggerTypeable[Long]     = make[Long](SwaggerPrimitive.long)
-  final implicit val swaggerTypeableFloat: SwaggerTypeable[Float]   = make[Float](SwaggerPrimitive.float)
-  final implicit val swaggerTypeableDouble: SwaggerTypeable[Double] = make[Double](SwaggerPrimitive.double)
-  final implicit val swaggerTypeableString: SwaggerTypeable[String] = make[String](SwaggerPrimitive.string)
-  final implicit val swaggerTypeableByte: SwaggerTypeable[Byte]     = make[Byte](SwaggerPrimitive.byte)
+  final implicit val swaggerTypeableInteger: SwaggerTypeable[Int]           = make[Int](SwaggerPrimitive.integer)
+  final implicit val swaggerTypeableLong: SwaggerTypeable[Long]             = make[Long](SwaggerPrimitive.long)
+  final implicit val swaggerTypeableFloat: SwaggerTypeable[Float]           = make[Float](SwaggerPrimitive.float)
+  final implicit val swaggerTypeableDouble: SwaggerTypeable[Double]         = make[Double](SwaggerPrimitive.double)
+  final implicit val swaggerTypeableString: SwaggerTypeable[String]         = make[String](SwaggerPrimitive.string)
+  final implicit val swaggerTypeableByte: SwaggerTypeable[Byte]             = make[Byte](SwaggerPrimitive.byte)
+  final implicit val swaggerTypeableArrayByte: SwaggerTypeable[Array[Byte]] = make[Array[Byte]](SwaggerPrimitive.binary)
 
   final implicit val swaggerTypeableDate: SwaggerTypeable[Date]                     = make(SwaggerPrimitive.dateTime)
   final implicit val swaggerTypeableLocalDateTime: SwaggerTypeable[LocalDateTime]   = make(SwaggerPrimitive.dateTime)

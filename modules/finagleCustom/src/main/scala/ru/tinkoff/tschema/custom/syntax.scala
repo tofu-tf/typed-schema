@@ -1,7 +1,5 @@
 package ru.tinkoff.tschema.custom
 
-import ru.tinkoff.tschema.custom._
-
 import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.syntax.{Maker, MkComplex}
 
@@ -30,4 +28,8 @@ object syntax {
     new MkComplex(new Maker[x, JsonBody] {
       override def make[name]: JsonBody[name, x] = new JsonBody
     })
+
+  def binBody = new MkComplex(new Maker[Array[Byte], BinBody] {
+    override def make[name]: BinBody[name, Array[Byte]] = new BinBody
+  })
 }

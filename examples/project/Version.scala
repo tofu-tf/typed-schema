@@ -11,6 +11,6 @@ object Version {
 
   val simulacrum = "1.0.0"
 
-  val typedSchema = "0.12.1"
+  val typedSchema = "0.12.2"
 
 }

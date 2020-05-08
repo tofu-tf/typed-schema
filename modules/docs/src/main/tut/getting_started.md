@@ -18,7 +18,7 @@ import ru.tinkoff.tschema.swagger._
 
 object ExampleDefinition {
   import ru.tinkoff.tschema.syntax._
-  def api = get |> operation('hello) |> capture[String]('name) |> $$[String]
+  def api = get |> operation("hello") |> capture[String]("name") |> $$[String]
 }
 
 object ExampleSwagger {}
@@ -35,7 +35,7 @@ object Example extends App {
   val apiRoute = MkRoute(api)(handler)
 
   //building swagger
-  val apiSwagger   = MkOpenApi(api)(()).make(OpenApiInfo("example"))
+  val apiSwagger   = MkSwagger(api).make(OpenApiInfo("example"))
   val printer      = Printer.spaces2.copy(dropNullValues = true)
   val swaggerRoute = path("swagger")(complete(apiSwagger.asJson.pretty(printer)))
 
@@ -56,7 +56,7 @@ More examples see in subproject `examples`
 Your schemes definitions consist of elements from `ru.tinkoff.tschema.syntax._` and maybe custom directives
 
 ```scala
-def api = get |> operation('hello) |> capture[String]('name) |> $$[String]
+def api = get |> operation("hello") |> capture[String]("name") |> $$[String]
 ```
 
 This may be read as a sequence:
@@ -69,10 +69,10 @@ Your definition could have some branching, a common prefix will be applied as th
 Branching is done with the `<>` operator:
 ```scala
   def api =
-    get |> prefix('greeting) |> capture[String]('name) |> ((
-      operation('hello) |> $$[String]
+    get |> prefix("greeting") |> capture[String]("name") |> ((
+      operation("hello") |> $$[String]
     ) <> (
-      operation('aloha) |> queryParam[Int]('age) |> $$[String]
+      operation("aloha") |> queryParam[Int]("age") |> $$[String]
     ))
 ```
 

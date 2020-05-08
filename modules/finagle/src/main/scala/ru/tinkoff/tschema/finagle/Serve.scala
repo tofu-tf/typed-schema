@@ -18,12 +18,11 @@ import ru.tinkoff.tschema.finagle.Rejection.missingParam
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
 import ru.tinkoff.tschema.common.Name
-import ru.tinkoff.tschema.typeDSL.{Delete, Get, Head, Options, Post, Put, QueryParams}
+import ru.tinkoff.tschema.typeDSL.{Delete, Get, Head, Options, Patch, Post, Put, QueryParams}
 import ru.tinkoff.tschema.utils.cont
 import shapeless._
 import shapeless.labelled.{FieldType, field}
 import scala.annotation.implicitNotFound
-import scala.tools.nsc.ast.parser.Patch
 
 @implicitNotFound(
   """

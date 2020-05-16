@@ -17,8 +17,6 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   import c.universe._
   type WTTF[F[_]] = WeakTypeTag[F[Unit]]
 
-  val typeOfSkip: Type = c.typeOf[Any]
-
   def makeRouteHNilNoImpl[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Res: WeakTypeTag](
       definition: c.Expr[Def]
   ): c.Expr[Res] =
@@ -54,8 +52,6 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     val ft        = weakTypeOf[F[Unit]].typeConstructor
     val dsl       = constructDslTree(defT, Monoid.empty[PrefixInfo[Type]])
     val wholeTree = new RouteTreeMaker(impl).makeRouteTree(ft, dsl, input.tree)
-
-    findMonadInstanceOrAbort(ft)
 
     infoTime(s"route $implT")
 
@@ -260,16 +256,4 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     catch {
       case ex: TypecheckException => c.abort(c.enclosingPosition, ex.toString)
     }
-
-  private def findMonadInstanceOrAbort(tpe: Type): Unit = {
-    if (tpe != typeOfSkip) {
-      val implicitlyTree = q"""
-        _root_.scala.Predef.implicitly[cats.Monad[$tpe]]
-      """
-      val typechecked = c.typecheck(tree = implicitlyTree, silent = true)
-
-      if (typechecked.isEmpty)
-        c.abort(c.enclosingPosition, s"Monad instance for $tpe not found in:")
-    }
-  }
 }

@@ -18,8 +18,8 @@ private[zioRouting] class ZiosRoutedInstance[R, E] extends RoutedPlus[ZIOH[R, E,
   def withMatched[A](m: Int, fa: F[A]): F[A] =
     fa.provideSome(r => r add r.get.copy(matched = m))
 
-  def path: F[CharSequence]    = ZIO.access(_.get.path)
-  def request: F[http.Request] = ZIO.access(_.get.request)
+  def path: F[CharSequence]                 = ZIO.access(_.get.path)
+  def request: F[http.Request]              = ZIO.access(_.get.request)
   def reject[A](rejection: Rejection): F[A] =
     Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
@@ -29,5 +29,5 @@ private[zioRouting] class ZiosRoutedInstance[R, E] extends RoutedPlus[ZIOH[R, E,
   @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
     z.catchSome { case Fail.Rejected(xrs) => f(xrs) }
 
-  @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
+  @inline private[this] def throwRej[A](map: Rejection): F[A]                = ZIO.fail(Fail.Rejected(map))
 }

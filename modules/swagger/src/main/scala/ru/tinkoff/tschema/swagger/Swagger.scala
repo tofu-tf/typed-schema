@@ -28,8 +28,8 @@ object Swagger extends Derivation[SwaggerTypeable] {
           )
     }
 
-  def combine[T](caseClass: CaseClass[Typeclass, T])(
-      implicit cfg: Config = SwaggerTypeable.defaultConfig,
+  def combine[T](caseClass: CaseClass[Typeclass, T])(implicit
+      cfg: Config = SwaggerTypeable.defaultConfig,
       desc: DescribeTypeable[T] = DescribeTypeable.empty[T]
   ): Typeclass[T] =
     new Typeclass[T] {
@@ -54,8 +54,8 @@ object Swagger extends Derivation[SwaggerTypeable] {
         )
     }
 
-  def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(
-      implicit cfg: Config = SwaggerTypeable.defaultConfig,
+  def dispatch[T](sealedTrait: SealedTrait[Typeclass, T])(implicit
+      cfg: Config = SwaggerTypeable.defaultConfig,
       desc: DescribeTypeable[T] = DescribeTypeable.empty[T]
   ): Typeclass[T] =
     new Typeclass[T] {

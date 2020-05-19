@@ -31,7 +31,7 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
   }
 
   def helloApi = (keyPrefix("test") |> get |> $$[String]) <> (keyPrefix("testAsync") |> get |> $$[String]) <>
-      (keyPrefix("testCapture") |> get |> capture[String]("name") |> capture[Int]("age") |> $$[String])
+    (keyPrefix("testCapture") |> get |> capture[String]("name") |> capture[Int]("age") |> $$[String])
 
   val helloRoute = MkRoute(helloApi)(hello)
 

@@ -29,13 +29,13 @@ object SwaggerContent extends Derivation[SwaggerContent] {
   final case class BuilderBy(types: Content) extends AnyVal {
     def apply[T](implicit t: SwaggerTypeable[T], s: ResponseStatus[T] = ResponseStatus.default[T]) =
       BuilderBy((s.status -> t.typ.some) :: types)
-    def of[T]: SwaggerContent[T] = SwaggerContent[T](types)
+    def of[T]: SwaggerContent[T]                                                                   = SwaggerContent[T](types)
   }
 
-  final implicit def bySingleTypeable[T](
-      implicit t: SwaggerTypeable[T],
+  final implicit def bySingleTypeable[T](implicit
+      t: SwaggerTypeable[T],
       s: ResponseStatus[T] = ResponseStatus.default[T]
-  ): SwaggerContent[T] =
+  ): SwaggerContent[T]                                              =
     SwaggerContent(List(s.status -> t.typ.some))
 
   final implicit val notFoundContent: SwaggerContent[NotFound.type] = SwaggerContent(List(404 -> None))

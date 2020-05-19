@@ -7,5 +7,4 @@ class PolysemySuite extends AnyFlatSpec {
     MagnoliaSwagger.derive[leo.Tolstoi].typ.collectTypes ++
       MagnoliaSwagger.derive[aleksey.Tolstoi].typ.collectTypes
 
-
 }

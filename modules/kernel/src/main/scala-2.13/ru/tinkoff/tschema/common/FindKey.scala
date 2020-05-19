@@ -12,8 +12,8 @@ trait FindKey[Params <: HList] extends DepFn0 {
 object FindKey {
   type Aux[Params <: HList, O <: String] = FindKey[Params] { type Out = O }
 
-  implicit def findStringKey[Params <: HList, name <: String](
-      implicit selectKey: Find.Aux[Key, Params, name],
+  implicit def findStringKey[Params <: HList, name <: String](implicit
+      selectKey: Find.Aux[Key, Params, name],
       keyValue: ValueOf[name]
   ): Aux[Params, name] = new FindKey[Params] {
     type Out = name

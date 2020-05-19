@@ -74,14 +74,14 @@ trait SwaggerTypeable[T] {
   )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S]) =
     xmlFields(Name[S].string -> fld)
 
-  def withMediaType(mediaType: MediaType): SwaggerTypeable[T] = updateTyp(_.withMediaType(mediaType))
+  def withMediaType(mediaType: MediaType): SwaggerTypeable[T]                 = updateTyp(_.withMediaType(mediaType))
 }
 
 trait LowLevelSwaggerTypeable {
-  @inline final def make[T](t: SwaggerType): SwaggerTypeable[T] = new SwaggerTypeable[T] {
+  @inline final def make[T](t: SwaggerType): SwaggerTypeable[T]                                   = new SwaggerTypeable[T] {
     val typ = t
   }
-  @inline final def makeNamed[T](t: SwaggerType, name: String): SwaggerTypeable[T] = new SwaggerTypeable[T] {
+  @inline final def makeNamed[T](t: SwaggerType, name: String): SwaggerTypeable[T]                = new SwaggerTypeable[T] {
     val typ = SwaggerRef(name, None, Eval.later(t))
   }
   @inline final def seq[X[_], T](implicit items: Lazy[SwaggerTypeable[T]]): SwaggerTypeable[X[T]] =
@@ -92,10 +92,11 @@ trait LowLevelSwaggerTypeable {
 
   @inline final def unwrap[X[_], T](implicit item: SwaggerTypeable[T]): SwaggerTypeable[X[T]] = item.as[X[T]]
 
-  final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]]     = seq[Seq, T]
+  final implicit def seqTypeable[T: SwaggerTypeable]: SwaggerTypeable[Seq[T]] = seq[Seq, T]
 }
 
-trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances with AdditionalSwaggerInstances {
+trait SwaggerTypeableInstances
+    extends LowLevelSwaggerTypeable with CirceSwaggerTypeableInstances with AdditionalSwaggerInstances {
   final implicit val swaggerTypeableInteger: SwaggerTypeable[Int]   = make[Int](SwaggerPrimitive.integer)
   final implicit val swaggerTypeableLong: SwaggerTypeable[Long]     = make[Long](SwaggerPrimitive.long)
   final implicit val swaggerTypeableFloat: SwaggerTypeable[Float]   = make[Float](SwaggerPrimitive.float)
@@ -115,9 +116,9 @@ trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwagger
   final implicit val swaggerTypeableBoolean: SwaggerTypeable[Boolean]       = make(SwaggerPrimitive.boolean)
   final implicit val swaggerTypeableBigIng: SwaggerTypeable[BigInt]         = make(SwaggerPrimitive.integer)
   final implicit val swaggerTypeableBigDecimal: SwaggerTypeable[BigDecimal] = make(SwaggerPrimitive.double)
-  final implicit val swaggerTypeableUUID: SwaggerTypeable[UUID] =
+  final implicit val swaggerTypeableUUID: SwaggerTypeable[UUID]             =
     make[UUID](new SwaggerPrimitive(SwaggerStringValue.uuid))
-  final implicit val swaggerTypeableUnit: SwaggerTypeable[Unit] = make[Unit](SwaggerObject())
+  final implicit val swaggerTypeableUnit: SwaggerTypeable[Unit]             = make[Unit](SwaggerObject())
 
   final implicit val swaggerTypeableJsonObject: SwaggerTypeable[JsonObject] = make[JsonObject](SwaggerObject())
 
@@ -129,12 +130,12 @@ trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwagger
 
   final implicit def swaggerNEVectorTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyVector[T]] =
     neseq[NonEmptyVector, T]
-  final implicit def swaggerNEListTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyList[T]] =
+  final implicit def swaggerNEListTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyList[T]]     =
     neseq[NonEmptyList, T]
-  final implicit def swaggerNESetTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptySet[T]] = neseq[NonEmptySet, T]
+  final implicit def swaggerNESetTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptySet[T]]       = neseq[NonEmptySet, T]
   final implicit def swaggerNEStreamTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyStream[T]] =
     neseq[NonEmptyStream, T]
-  final implicit def swaggerNEChainTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyChain[T]] =
+  final implicit def swaggerNEChainTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyChain[T]]   =
     neseq[NonEmptyChain, T]
 
   final implicit def swaggerSomeTypeable[T: SwaggerTypeable]: SwaggerTypeable[Some[T]]         = unwrap[Some, T]
@@ -147,16 +148,16 @@ trait SwaggerTypeableInstances extends LowLevelSwaggerTypeable with CirceSwagger
       override def optional: Boolean = true
     }
 
-  final implicit def swaggerMapTypeable[K, T](
-      implicit values: Lazy[SwaggerTypeable[T]],
+  final implicit def swaggerMapTypeable[K, T](implicit
+      values: Lazy[SwaggerTypeable[T]],
       keys: SwaggerMapKey[K]
   ): SwaggerTypeable[Map[K, T]] =
     make[Map[K, T]](SwaggerMap(values.later))
 
-  private def typeSum[X[_, _], A, B](
-      implicit left: Lazy[SwaggerTypeable[A]],
+  private def typeSum[X[_, _], A, B](implicit
+      left: Lazy[SwaggerTypeable[A]],
       right: Lazy[SwaggerTypeable[B]]
-  ): SwaggerTypeable[X[A, B]] =
+  ): SwaggerTypeable[X[A, B]]                                                                                     =
     make[X[A, B]](SwaggerOneOf(Vector(None -> left.later, None -> right.later)))
 
   final implicit def swaggerEitherTypeable[A: SwaggerTypeable, B: SwaggerTypeable]: SwaggerTypeable[Either[A, B]] =
@@ -203,14 +204,14 @@ object SwaggerTypeable extends SwaggerTypeableInstances {
     lazy val typ = t
   }
 
-  def genTypeable[T](implicit gen: Lazy[GenericSwaggerTypeable[T]]) = make[T](gen.value.typ)
+  def genTypeable[T](implicit gen: Lazy[GenericSwaggerTypeable[T]])                    = make[T](gen.value.typ)
   def genNamedTypeable[T](name: String)(implicit gen: Lazy[GenericSwaggerTypeable[T]]) =
     make[T](SwaggerRef(name, gen.value.description, gen.later))
-  def deriveNamedTypeable[T](
-      implicit gen: Lazy[GenericSwaggerTypeable[T]],
+  def deriveNamedTypeable[T](implicit
+      gen: Lazy[GenericSwaggerTypeable[T]],
       typeTag: TypeTag[T],
       config: Config = defaultConfig
-  ): SwaggerTypeable[T] =
+  ): SwaggerTypeable[T]                                                                =
     genNamedTypeable[T](config.nameMod(typeTag.tpe.typeSymbol.name.toString))
 
   trait SwaggerTypeableEnum[X <: EnumEntry] {
@@ -256,8 +257,8 @@ object GenericSwaggerTypeable {
 
   implicit val hNilProps = HListProps[HNil](Nil)
 
-  implicit def hConProps[Name <: Symbol, Value, Tail <: HList](
-      implicit headProp: Lazy[SwaggerTypeable[Value]],
+  implicit def hConProps[Name <: Symbol, Value, Tail <: HList](implicit
+      headProp: Lazy[SwaggerTypeable[Value]],
       tail: HListProps[Tail],
       name: Witness.Aux[Name],
       cfg: Config = SwaggerTypeable.defaultConfig
@@ -266,8 +267,8 @@ object GenericSwaggerTypeable {
       (cfg.propMod(name.value.name), Eval.later(headProp.value).map(t => t.typ -> t.optional)) :: tail.props
     )
 
-  implicit def genericProductTypeable[T, L <: HList](
-      implicit lgen: LabelledGeneric.Aux[T, L],
+  implicit def genericProductTypeable[T, L <: HList](implicit
+      lgen: LabelledGeneric.Aux[T, L],
       list: HListProps[L],
       descr: DescribeTypeable[T] = DescribeTypeable.empty[T]
   ): GenericSwaggerTypeable[T] = {
@@ -280,8 +281,8 @@ object GenericSwaggerTypeable {
 
   implicit val cNilAlts = CoproductAlts[CNil](Nil)
 
-  implicit def cConsAlts[Name <: Symbol, Value, Tail <: Coproduct](
-      implicit headAlt: Lazy[SwaggerTypeable[Value]],
+  implicit def cConsAlts[Name <: Symbol, Value, Tail <: Coproduct](implicit
+      headAlt: Lazy[SwaggerTypeable[Value]],
       tail: CoproductAlts[Tail],
       name: Witness.Aux[Name],
       cfg: Config = SwaggerTypeable.defaultConfig
@@ -291,8 +292,8 @@ object GenericSwaggerTypeable {
     CoproductAlts[FieldType[Name, Value] :+: Tail]((altName -> headAlt.later) :: tail.alts)
   }
 
-  implicit def genericSumTypeable[T, C <: Coproduct](
-      implicit gen: LabelledGeneric.Aux[T, C],
+  implicit def genericSumTypeable[T, C <: Coproduct](implicit
+      gen: LabelledGeneric.Aux[T, C],
       sum: CoproductAlts[C],
       cfg: Config = SwaggerTypeable.defaultConfig,
       descr: DescribeTypeable[T] = DescribeTypeable.empty[T]

@@ -37,7 +37,7 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions := List("2.13.1", "2.12.10")
+val crossCompile = crossScalaVersions := List("2.13.2", "2.12.11")
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",
@@ -77,16 +77,16 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics = libraryDependencies ++= List("core", "macro").map(module =>
-  "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu
-)
+val tofuOptics =
+  libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe = libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
-  "derivation",
-  "derivation-annotations"
-).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
+val circe      =
+  libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
+    "derivation",
+    "derivation-annotations"
+  ).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
 
-val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
+val scalatags  = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
 val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
@@ -98,11 +98,11 @@ val shapeless  = "com.chuusai"   %% "shapeless"   % Version.shapeless
 val enumeratum = "com.beachape"  %% "enumeratum"  % Version.enumeratum
 
 val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaHttp
-val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka % Test
+val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka     % Test
 val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
 val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
 val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
-val swaggerUILib    = "org.webjars.npm"   % "swagger-ui-dist"    % Version.swaggerUI
+val swaggerUILib    = "org.webjars.npm"    % "swagger-ui-dist"   % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
 val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
 
@@ -131,7 +131,7 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatestScalacheck :: Nil
 
 lazy val commonSettings = publishSettings ++ List(
-  scalaVersion := "2.13.1",
+  scalaVersion := "2.13.2",
   compilerPlugins,
   commonScalacOptions,
   specificScalacOptions,
@@ -309,7 +309,7 @@ lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
-    scalaVersion := "2.13.1",
+    scalaVersion := "2.13.2",
     publish / skip := true,
     crossCompile,
     setMinorVersion,
@@ -322,7 +322,7 @@ lazy val typedschema =
     .dependsOn(macros, kernel, main)
     .settings(
       publish / skip := true,
-      scalaVersion := "2.13.1",
+      scalaVersion := "2.13.2",
       publishSettings,
       setMinorVersion,
       crossCompile
@@ -344,3 +344,6 @@ lazy val typedschema =
       swaggerUI,
       docs
     )
+
+addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
+addCommandAlias("checkfmt", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")

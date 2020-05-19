@@ -8,7 +8,9 @@ import cats.instances.string._
 import shapeless.HList
 
 private[finagle] trait MethodDirectives { self: Serve.type =>
-  implicit def serveCheckMethod[T <: DSLMethod, F[_]: Routed: Monad, In](implicit method: CheckMethod[T]): Filter[T, F, In] =
+  implicit def serveCheckMethod[T <: DSLMethod, F[_]: Routed: Monad, In](implicit
+      method: CheckMethod[T]
+  ): Filter[T, F, In] =
     check(Routed.request.flatMap[Unit] { req =>
       if (req.method.name === method.name) ().pure[F]
       else

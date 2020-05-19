@@ -7,8 +7,8 @@ import scala.util.hashing.MurmurHash3
 
 final class SubString private[SubString] (private val arr: Array[Char], private val from: Int, private val to: Int)
     extends CharSequence {
-  @inline private[this] def size = to - from
-  def length(): Int              = size
+  @inline private[this] def size         = to - from
+  def length(): Int                      = size
   def charAt(index: Int): Char = {
     if (index >= size || index < 0) outOfBound(index)
     arr(from + index)
@@ -25,7 +25,7 @@ final class SubString private[SubString] (private val arr: Array[Char], private 
     case s: CharSequence =>
       @tailrec def go(i: Int): Boolean = (i == size) || ((s.charAt(i) == charAt(i)) && go(i + 1))
       size == s.length() && go(0)
-    case _ => false
+    case _               => false
   }
 
   override def hashCode(): Int = {

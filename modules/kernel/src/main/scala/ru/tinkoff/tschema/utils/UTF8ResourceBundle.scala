@@ -6,17 +6,17 @@ import java.util.{Locale, PropertyResourceBundle, ResourceBundle}
 object UTF8ResourceBundle {
   private[this] object Control extends ResourceBundle.Control {
     override def newBundle(
-      baseName  : String,
-      locale: Locale,
-      format    : String,
-      loader: ClassLoader,
-      reload    : Boolean
+        baseName: String,
+        locale: Locale,
+        format: String,
+        loader: ClassLoader,
+        reload: Boolean
     ): ResourceBundle = {
-      val bundleName = toBundleName(baseName, locale)
+      val bundleName   = toBundleName(baseName, locale)
       val resourceName = toResourceName(bundleName, "properties")
 
       def reloadStream = for {
-        url <- Option(loader.getResource(resourceName))
+        url        <- Option(loader.getResource(resourceName))
         connection <- Option(url.openConnection())
       } yield {
         connection.setUseCaches(false)

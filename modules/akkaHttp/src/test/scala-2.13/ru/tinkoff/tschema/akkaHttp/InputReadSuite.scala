@@ -25,8 +25,8 @@ final case class MagicalInput(value: String)
 final case class magicParam[name <: Singleton](name: name) extends DSLAtom
 
 object magicParam {
-  implicit def serve[In <: HList, name <: Singleton](
-      implicit sel: Selector[In, MagicalInput]
+  implicit def serve[In <: HList, name <: Singleton](implicit
+      sel: Selector[In, MagicalInput]
   ): Serve.Add[magicParam[name], In, name, MagicalInput] =
     Serve.serveAddIn(in => provide(sel(in)))
 }

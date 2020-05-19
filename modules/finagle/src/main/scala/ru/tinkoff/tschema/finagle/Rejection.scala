@@ -21,7 +21,7 @@ final case class Rejection(
 ) {
   def withPath(p: String): Rejection   = copy(path = p)
   def addMessage(s: String): Rejection = copy(messages = s :: messages)
-  def message: String = messages.headOption.getOrElse {
+  def message: String                  = messages.headOption.getOrElse {
     (Iterator(s"at $path") ++
       Iterator(
         "incorrect methods"    -> wrongMethod,
@@ -33,19 +33,20 @@ final case class Rejection(
 }
 
 object Rejection {
-  val notFound                                        = Rejection(0)
-  def wrongMethod(method: String)                     = Rejection(1, MethodNotAllowed, wrongMethod = List(method))
-  def missingParam(name: String, source: ParamSource) = Rejection(3, BadRequest, missing = List(MissingParam(name, source)))
+  val notFound                                                         = Rejection(0)
+  def wrongMethod(method: String)                                      = Rejection(1, MethodNotAllowed, wrongMethod = List(method))
+  def missingParam(name: String, source: ParamSource)                  =
+    Rejection(3, BadRequest, missing = List(MissingParam(name, source)))
   def malformedParam(name: String, error: String, source: ParamSource) =
     Rejection(4, BadRequest, malformed = List(MalformedParam(name, error, source)))
-  def body(error: String) = Rejection(5, BadRequest, messages = List(error))
-  val unauthorized        = Rejection(6, Unauthorized)
+  def body(error: String)                                              = Rejection(5, BadRequest, messages = List(error))
+  val unauthorized                                                     = Rejection(6, Unauthorized)
 
   case class MissingParam(name: String, source: ParamSource)
   case class MalformedParam(name: String, error: String, source: ParamSource)
 
   implicit val rejectionMonoid: Monoid[Rejection] = new Monoid[Rejection] {
-    def empty: Rejection = notFound
+    def empty: Rejection                               = notFound
     def combine(x: Rejection, y: Rejection): Rejection =
       if (x < y) combine(y, x)
       else
@@ -66,7 +67,7 @@ object Rejection {
       x.priority compare y.priority match {
         case 0 => x.path.length compare y.path.length
         case i => i
-    }
+      }
 
   trait Handler {
     def apply(rej: Rejection): Response

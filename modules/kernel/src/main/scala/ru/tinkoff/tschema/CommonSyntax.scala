@@ -41,27 +41,24 @@ class CommonSyntax { self: syntax.type =>
   }
 }
 
-trait NamedSyntaxOps[s] {
-  import syntax.TypeApiOps
+trait NamedSyntaxOps[trans, orig] {
+  def prefix: Prefix[trans]       = new Prefix
+  def queryFlag: QueryFlag[trans] = new QueryFlag
 
-  def prefix    = new Prefix[s]
-  def queryFlag = new QueryFlag[s]
-  def tag       = new Tag[s]
-  def key       = new Key[s]
-  def group     = new Group[s]
+  def tagPrefix: Prefix[trans] :> Tag[orig]     = new :>
+  def keyPrefix: Prefix[trans] :> Key[orig]     = new :>
+  def groupPrefix: Prefix[trans] :> Group[orig] = new :>
+  def operation: Prefix[trans] :> Key[orig]     = new :>
+  def allQuery: AllQuery[trans]                 = new AllQuery
 
-  def tagPrefix             = prefix |> tag
-  def keyPrefix             = prefix |> key
-  def groupPrefix           = prefix |> group
-  def operation             = keyPrefix
-  def allQuery: AllQuery[s] = new AllQuery[s]
+  def capture[x]     = new Capture[trans, x]
+  def queryParam[x]  = new QueryParam[trans, x]
+  def queryParams[x] = new QueryParams[trans, x]
 
-  def capture[x]     = new Capture[s, x]
-  def queryParam[x]  = new QueryParam[s, x]
-  def queryParams[x] = new QueryParams[s, x]
-
-  def header[x]    = new Header[s, x]
-  def formField[x] = new FormField[s, x]
-  def cookie[x]    = new Cookie[s, x]
-  def body[x]      = new ReqBody[s, x]
+  def header[x]    = new Header[trans, x]
+  def formField[x] = new FormField[trans, x]
+  def cookie[x]    = new Cookie[trans, x]
+  def body[x]      = new ReqBody[trans, x]
 }
+
+class Renamed[orig, param] extends NamedSyntaxOps[orig, param]

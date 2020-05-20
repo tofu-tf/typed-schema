@@ -1,38 +1,6 @@
 package ru.tinkoff.tschema
-import ru.tinkoff.tschema.common.Rename
-import ru.tinkoff.tschema.typeDSL.{
-  :>,
-  <|>,
-  AllQuery,
-  ApiKeyAuth,
-  As,
-  BasicAuth,
-  BearerAuth,
-  CanHoldApiKey,
-  Capture,
-  Complete,
-  Cookie,
-  DSLDef,
-  DSLMethod,
-  Delete,
-  Deprecated,
-  FormField,
-  Get,
-  Group,
-  Head,
-  Header,
-  Key,
-  Options,
-  Patch,
-  Post,
-  Prefix,
-  Put,
-  QueryFlag,
-  QueryParam,
-  QueryParams,
-  ReqBody,
-  Tag
-}
+import ru.tinkoff.tschema.common.NameTrans
+import ru.tinkoff.tschema.typeDSL._
 
 object syntax extends CommonSyntax {
   def prefix[s <: Singleton](s: s)                            = new Prefix[s]
@@ -46,10 +14,12 @@ object syntax extends CommonSyntax {
   def operation[s <: Singleton](s: s)                         = keyPrefix[s](s)
   def allQuery[name <: Singleton](name: name): AllQuery[name] = new AllQuery[name]
 
-  def snake[name <: Singleton](name: name): Rename[name, Rename.snakeCase] = new Rename
-  def kebab[name <: Singleton](name: name): Rename[name, Rename.kebabCase] = new Rename
-  def lower[name <: Singleton](name: name): Rename[name, Rename.lowerCase] = new Rename
-  def upper[name <: Singleton](name: name): Rename[name, Rename.upperCase] = new Rename
+  def snake[name <: Singleton](name: name): NameTrans[name, NameTrans.snakeCase] = new NameTrans
+  def kebab[name <: Singleton](name: name): NameTrans[name, NameTrans.kebabCase] = new NameTrans
+  def lower[name <: Singleton](name: name): NameTrans[name, NameTrans.lowerCase] = new NameTrans
+  def upper[name <: Singleton](name: name): NameTrans[name, NameTrans.upperCase] = new NameTrans
+
+  def renamed[name <: Singleton, as <: Singleton](name: name, as: as): Renamed[name, as] = new Renamed
 
   def capture[x] =
     new MkComplex(new Maker[x, Capture] {

@@ -1,5 +1,5 @@
 package ru.tinkoff.tschema
-import ru.tinkoff.tschema.common.Rename
+import ru.tinkoff.tschema.common.NameTrans
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 
@@ -14,10 +14,12 @@ object syntax extends CommonSyntax {
   def groupPrefix[s](witness: Witness.Aux[s]) = prefix[s](witness) |> group[s](witness)
   def operation[s](witness: Witness.Aux[s])   = keyPrefix[s](witness)
 
-  def snake[name](name: Witness.Aux[name]): Rename[name, Rename.snakeCase] = new Rename
-  def kebab[name](name: Witness.Aux[name]): Rename[name, Rename.kebabCase] = new Rename
-  def lower[name](name: Witness.Aux[name]): Rename[name, Rename.lowerCase] = new Rename
-  def upper[name](name: Witness.Aux[name]): Rename[name, Rename.upperCase] = new Rename
+  def snake[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.snakeCase] = new NameTrans
+  def kebab[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.kebabCase] = new NameTrans
+  def lower[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.lowerCase] = new NameTrans
+  def upper[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.upperCase] = new NameTrans
+
+  def renamed[name, as](name: Witness.Aux[name], as: Witness.Aux[as]): Renamed[name, as] = new Renamed
 
   def allQuery[name](s: Witness.Aux[name]): AllQuery[name] = new AllQuery[name]
 

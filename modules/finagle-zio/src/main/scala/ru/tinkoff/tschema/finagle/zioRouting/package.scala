@@ -30,7 +30,7 @@ package object zioRouting {
     val promise = Promise[Response]
 
     runtime.unsafeRunAsync(setInterruption(zio, promise, runtime)) {
-      case Exit.Success(resp) => promise.setValue(resp)
+      case Exit.Success(resp)  => promise.setValue(resp)
       case Exit.Failure(cause) =>
         val resp  = Response(Status.InternalServerError)
         val error = cause.squash

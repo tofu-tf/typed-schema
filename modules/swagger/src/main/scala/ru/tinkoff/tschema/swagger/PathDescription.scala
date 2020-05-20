@@ -12,15 +12,16 @@ object PathDescription {
     def readKey(name: String) = if (bundle.containsKey(name)) bundle.getString(name).some else None
 
     {
-      case Target.Tag(key) => readKey(s"@$key")
+      case Target.Tag(key)         => readKey(s"@$key")
       case Target.Method(key, sub) =>
         sub match {
-          case MethodTarget.Path        => readKey(key)
-          case MethodTarget.Body        => readKey(s"$key.body")
-          case MethodTarget.Summary     => readKey(s"$key.summary")
-          case MethodTarget.Param(name) => readKey(s"$key.$name")
+          case MethodTarget.Path         => readKey(key)
+          case MethodTarget.Body         => readKey(s"$key.body")
+          case MethodTarget.Summary      => readKey(s"$key.summary")
+          case MethodTarget.Param(name)  => readKey(s"$key.$name")
+          case MethodTarget.Status(code) => readKey(s"$key.$code")
         }
-      case Target.Type(name, sub) =>
+      case Target.Type(name, sub)  =>
         sub match {
           case TypeTarget.Type         => readKey(s"~$name")
           case TypeTarget.Title        => readKey(s"~$name~")
@@ -42,7 +43,7 @@ object PathDescription {
     implicit class DescriptionOps(val descriptionMap: DescriptionMap) extends AnyVal {
       def method(key: String): MethodTarget => Option[SwaggerDescription] =
         sub => descriptionMap(Method(key, sub))
-      def typ(key: String): TypeTarget => Option[SwaggerDescription] =
+      def typ(key: String): TypeTarget => Option[SwaggerDescription]      =
         sub => descriptionMap(Type(key, sub))
     }
   }
@@ -53,6 +54,7 @@ object PathDescription {
     case object Body                     extends MethodTarget
     case object Summary                  extends MethodTarget
     final case class Param(name: String) extends MethodTarget
+    final case class Status(code: Int)   extends MethodTarget
   }
 
   sealed trait TypeTarget

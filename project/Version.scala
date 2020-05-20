@@ -20,9 +20,9 @@ object Version {
 
   val catsEffect = "2.1.3"
 
-  val enumeratum = "1.6.0"
+  val enumeratum = "1.6.1"
 
-  val enumeratumCirce = "1.6.0"
+  val enumeratumCirce = "1.6.1"
 
   val monocle = "1.6.0"
 
@@ -30,9 +30,9 @@ object Version {
 
   val magnolia = "0.15.0"
 
-  val zio = "1.0.0-RC18-2"
+  val zio = "1.0.0-RC19-2"
 
-  val zioCats = "2.0.0.0-RC13"
+  val zioCats = "2.0.0.0-RC14"
 
   val finagle = "20.4.1"
 
@@ -40,7 +40,7 @@ object Version {
 
   val tofu = "0.7.5"
 
-  val swaggerUI = "3.25.2"
+  val swaggerUI = "3.25.3"
 
   val scalaTags = "0.9.1"
 

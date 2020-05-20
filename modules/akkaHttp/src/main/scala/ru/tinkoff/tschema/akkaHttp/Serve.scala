@@ -18,7 +18,17 @@ import cats.instances.option._
 import cats.instances.either._
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.param.ParamSource.All
-import ru.tinkoff.tschema.param.{MissingParamError, MultiParam, MultiParamError, Param, ParamError, ParamSource, ParseParamError, SingleParam, SingleParamError}
+import ru.tinkoff.tschema.param.{
+  MissingParamError,
+  MultiParam,
+  MultiParamError,
+  Param,
+  ParamError,
+  ParamSource,
+  ParseParamError,
+  SingleParam,
+  SingleParamError
+}
 import ru.tinkoff.tschema.common.Name
 import shapeless.ops.record.Selector
 
@@ -47,14 +57,14 @@ private[akkaHttp] trait ServeTypes {
 }
 
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
-  protected def resolveParam[S >: All <: ParamSource, name, A](
-      implicit param: Param[S, A],
+  protected def resolveParam[S >: All <: ParamSource, name, A](implicit
+      param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S]
   ): Directive1[A] = param match {
     case single: SingleParam[S, A] =>
       directives.getByName(w.string).flatMap(s => directives.provideOrReject(w.string, single.applyOpt(s)))
-    case multi: MultiParam[S, A] =>
+    case multi: MultiParam[S, A]   =>
       multi.names.traverse(directives.getByName).flatMap(ls => directives.provideOrReject(w.string, multi.applyOpt(ls)))
   }
 
@@ -105,8 +115,8 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
     def directive(in: In): Directive1[Out] = provide(field[nameB](f(select(in))) :: in)
   }
 
-  def serveMap2[T, In <: HList, nameA, nameB, nameC, A, B, C](f: (A, B) => C)(
-      implicit selectA: Selector.Aux[In, nameA, A],
+  def serveMap2[T, In <: HList, nameA, nameB, nameC, A, B, C](f: (A, B) => C)(implicit
+      selectA: Selector.Aux[In, nameA, A],
       selectB: Selector.Aux[In, nameB, B]
   ): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
     type Out = FieldType[nameC, C] :: In
@@ -121,7 +131,7 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
       def directive(in: In): Directive1[Out] = Directive { handle => ctx =>
         for {
           b   <- f(select(in): A)
-          out = field[nameB](b) :: in
+          out  = field[nameB](b) :: in
           res <- handle(Tuple1(out))(ctx)
         } yield res
       }
@@ -177,7 +187,8 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def formFieldServe[name: Name, x: Param.PForm, In <: HList] =
     serveAdd[FormField[name, x], In, x, name](resolveParam[ParamSource.Form, name, x])
 
-  implicit def asServe[x, name, In <: HList, Head, old]: Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
+  implicit def asServe[x, name, In <: HList, Head, old]
+      : Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
     Serve.identity.asInstanceOf[Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In]]
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
@@ -253,8 +264,8 @@ private[akkaHttp] trait ServeAuthInstances extends ServeFunctions {
       BearerAuthenticator[x].directive(Name[realm].string).optional
     }
 
-  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](
-      implicit serve: Serve[Param, In]
+  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](implicit
+      serve: Serve[Param, In]
   ): Serve.Aux[ApiKeyAuth[realm, Param], In, serve.Out] =
     serve.as[ApiKeyAuth[realm, Param]]
 }
@@ -273,7 +284,7 @@ trait ParamDirectives[S <: ParamSource] {
   def errorReject[A](name: String, error: ParamError): Directive1[A] =
     error match {
       case single: SingleParamError => reject(singleRejection(name, single))
-      case MultiParamError(vals) =>
+      case MultiParamError(vals)    =>
         reject(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
     }
 

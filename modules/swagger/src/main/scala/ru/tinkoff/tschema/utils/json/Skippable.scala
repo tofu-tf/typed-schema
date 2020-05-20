@@ -9,15 +9,16 @@ import simulacrum.typeclass
 /**
   * tag for types that should be omitted with default value in json
   */
-  final abstract class Skippable
+final abstract class Skippable
 
 object Skippable {
-  implicit def skippableEncoder[T: Encoder : Default]: Encoder[T @@ Skippable] = Encoder.instance {
+  implicit def skippableEncoder[T: Encoder: Default]: Encoder[T @@ Skippable] = Encoder.instance {
     case x if Default[T].value == x => Json.Null
     case x                          => Encoder[T].apply(x)
   }
-  implicit def skippableDecoder[T: Decoder : Default]: Decoder[T @@ Skippable] = Decoder.instance {
-    h => if (h.value.isNull) Right(tag[Skippable](Default[T].value)) else h.as[T].asInstanceOf[Decoder.Result[T @@ Skippable]]
+  implicit def skippableDecoder[T: Decoder: Default]: Decoder[T @@ Skippable] = Decoder.instance { h =>
+    if (h.value.isNull) Right(tag[Skippable](Default[T].value))
+    else h.as[T].asInstanceOf[Decoder.Result[T @@ Skippable]]
   }
 
   implicit def tagImplicitly[T](x: T): T @@ Skippable = tag[Skippable](x)
@@ -35,5 +36,3 @@ object Default {
     def value: List[A] = List.empty
   }
 }
-
-

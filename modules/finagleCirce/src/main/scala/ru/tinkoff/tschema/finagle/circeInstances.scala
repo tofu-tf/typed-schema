@@ -9,13 +9,13 @@ import ru.tinkoff.tschema.finagle.util.message.{jsonBodyParse, jsonComplete}
 object circeInstances {
   private[this] val defaultPrinter = Printer.noSpaces.copy(dropNullValues = true)
 
-  implicit def circeEncodeComplete[F[_]: Applicative, A: Encoder](
-      implicit printer: Printer = defaultPrinter
+  implicit def circeEncodeComplete[F[_]: Applicative, A: Encoder](implicit
+      printer: Printer = defaultPrinter
   ): Completing[F, A, A] =
     jsonComplete(_.asJson.printWith(printer))
 
-  implicit def circeEncodeCompleteF[F[_], G[_]: Functor, A: Encoder](
-      implicit lift: LiftHttp[F, G],
+  implicit def circeEncodeCompleteF[F[_], G[_]: Functor, A: Encoder](implicit
+      lift: LiftHttp[F, G],
       printer: Printer = defaultPrinter
   ): Completing[F, A, G[A]] =
     message.fjsonComplete(_.asJson.printWith(printer))

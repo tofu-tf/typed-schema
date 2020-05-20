@@ -27,13 +27,13 @@ object EnvRouting extends EnvInstanceDecl {
       : RoutedPlus[EnvHttp[R, *]] with ConvertService[EnvHttp[R, *]] with LiftHttp[EnvHttp[R, *], Env[R, *]] =
     envRoutedAny.asInstanceOf[EnvRoutedConvert[R]]
 
-  implicit def envRunnable[R](
-      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  implicit def envRunnable[R](implicit
+      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
   ): RunHttp[EnvHttp[R, *], Env[R, *]] =
     response => Env(r => Task.deferAction(implicit sched => Task.delay(execResponse(r, response, _))))
 
-  private[this] def execResponse[R](r: R, envResponse: EnvHttp[R, Response], request: Request)(
-      implicit sc: Scheduler,
+  private[this] def execResponse[R](r: R, envResponse: EnvHttp[R, Response], request: Request)(implicit
+      sc: Scheduler,
       handler: Rejection.Handler
   ): Future[Response] = {
     val promise = Promise[Response]
@@ -41,7 +41,7 @@ object EnvRouting extends EnvInstanceDecl {
 
     val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
       case Right(res) => promise.setValue(res)
-      case Left(ex) =>
+      case Left(ex)   =>
         val resp    = Response(Status.InternalServerError)
         val message = Option(ex.getLocalizedMessage).getOrElse(ex.toString)
         resp.setContentString(message)
@@ -65,8 +65,8 @@ private[finagle] class EnvInstanceDecl {
 
     def withMatched[A](m: Int, fa: F[A]): F[A] = fa.local(_.copy(matched = m))
 
-    def path: F[CharSequence]    = Env.fromFunc(_.path)
-    def request: F[http.Request] = Env.fromFunc(_.request)
+    def path: F[CharSequence]                 = Env.fromFunc(_.path)
+    def request: F[http.Request]              = Env.fromFunc(_.request)
     def reject[A](rejection: Rejection): F[A] =
       Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
@@ -85,11 +85,11 @@ private[finagle] class EnvInstanceDecl {
         }
       }
 
-    def apply[A](fa: Env[R, A]): EnvHttp[R, A] = fa.localP(_.embedded)
+    def apply[A](fa: Env[R, A]): EnvHttp[R, A]                                 = fa.localP(_.embedded)
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A] = Env.raiseError(envRouting.Rejected(map))
+    @inline private[this] def throwRej[A](map: Rejection): F[A]                = Env.raiseError(envRouting.Rejected(map))
   }
 
   protected object envRoutedAny extends EnvRoutedConvert[Any]

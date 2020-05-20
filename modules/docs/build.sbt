@@ -14,14 +14,14 @@ micrositeTwitter := "@Tinkoff"
 micrositeGithubOwner := "TinkoffCreditSystems"
 micrositeGithubRepo := "typed-schema"
 micrositePalette := Map(
-  "brand-primary"     -> "#51839A",
-  "brand-secondary"   -> "#5A4C08",
-  "brand-tertiary"    -> "#D1D4D8",
-  "gray-dark"         -> "#192946",
-  "gray"              -> "#424F67",
-  "gray-light"        -> "#E3E2E3",
-  "gray-lighter"      -> "#F4F3F4",
-  "white-color"       -> "#FFFFFF"
+  "brand-primary"   -> "#51839A",
+  "brand-secondary" -> "#5A4C08",
+  "brand-tertiary"  -> "#D1D4D8",
+  "gray-dark"       -> "#192946",
+  "gray"            -> "#424F67",
+  "gray-light"      -> "#E3E2E3",
+  "gray-lighter"    -> "#F4F3F4",
+  "white-color"     -> "#FFFFFF"
 )
 micrositeAuthor := "Tinkoff"
 micrositeFooterText := Some(
@@ -42,8 +42,10 @@ fork in tut := true
 fork in (ScalaUnidoc, unidoc) := true
 scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
   "-Xfatal-warnings",
-  "-doc-source-url", scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
-  "-sourcepath", baseDirectory.in(LocalRootProject).value.getAbsolutePath,
+  "-doc-source-url",
+  scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
+  "-sourcepath",
+  baseDirectory.in(LocalRootProject).value.getAbsolutePath,
   "-diagrams"
 )
 scalacOptions in Tut ~= (_.filterNot(Set("-Ywarn-unused:imports", "-Ywarn-dead-code")))

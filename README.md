@@ -1,6 +1,6 @@
 | CI | Release | 
 | --- | --- |
-| [![Build Status](https://travis-ci.com/TinkoffCreditSystems/typed-schema.svg?branch=master)](https://travis-ci.com/TinkoffCreditSystems/typed-schema) | [![Maven Central](https://img.shields.io/maven-central/v/ru.tinkoff/typed-schema-typedsl_2.12.svg)](https://search.maven.org/search?q=ru.tinkoff.typed-schema-typedsl) | 
+| ![Scala CI](https://github.com/TinkoffCreditSystems/typed-schema/workflows/Scala%20CI/badge.svg) | [![Maven Central](https://img.shields.io/maven-central/v/ru.tinkoff/typed-schema-typedsl_2.12.svg)](https://search.maven.org/search?q=ru.tinkoff.typed-schema-typedsl) | 
 
 # Welcome to Typed Schema
 Typed schema is an http service definition DSL, currently translating to [akka-http Routes](https://doc.akka.io/docs/akka-http/current/routing-dsl/overview.html) and [OpenApi 3.0 definition](https://swagger.io/specification/) inspired by the [haskell-servant](http://haskell-servant.readthedocs.io/en/stable/) library.

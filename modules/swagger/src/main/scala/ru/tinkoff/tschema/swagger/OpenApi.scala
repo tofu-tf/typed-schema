@@ -35,7 +35,7 @@ final case class OpenApi(
 
 object OpenApi {
   sealed trait Method extends EnumEntry
-  object Method extends Enum[Method] with CirceKeyEnum[Method] {
+  object Method       extends Enum[Method] with CirceKeyEnum[Method] {
     val values = findValues
 
     case object get     extends Method
@@ -83,7 +83,7 @@ final case class OpenApiSecurity(
 object OpenApiSecurity
 
 sealed trait OpenApiSecurityType extends EnumEntry
-object OpenApiSecurityType extends Enum[OpenApiSecurityType] with CirceEnum[OpenApiSecurityType] {
+object OpenApiSecurityType       extends Enum[OpenApiSecurityType] with CirceEnum[OpenApiSecurityType] {
   val values = findValues
 
   case object apiKey        extends OpenApiSecurityType
@@ -93,7 +93,7 @@ object OpenApiSecurityType extends Enum[OpenApiSecurityType] with CirceEnum[Open
 }
 
 sealed trait OpenApiSecurityScheme extends EnumEntry
-object OpenApiSecurityScheme extends Enum[OpenApiSecurityScheme] with CirceEnum[OpenApiSecurityScheme] {
+object OpenApiSecurityScheme       extends Enum[OpenApiSecurityScheme] with CirceEnum[OpenApiSecurityScheme] {
   val values = findValues
 
   case object basic  extends OpenApiSecurityScheme
@@ -125,7 +125,7 @@ object OpenApiParam {
   val description: Contains[OpenApiParam, Option[SwaggerDescription]] = GenContains[OpenApiParam](_.description)
 
   sealed trait In extends EnumEntry
-  object In extends Enum[In] with CirceEnum[In] {
+  object In       extends Enum[In] with CirceEnum[In] {
     override val values = findValues
     case object query    extends In
     case object header   extends In
@@ -275,7 +275,7 @@ final case class OpenApiRequestBody(
 )
 
 object OpenApiRequestBody {
-  val description: Contains[OpenApiRequestBody, Option[String]] = GenContains[OpenApiRequestBody](_.description)
+  val description: Contains[OpenApiRequestBody, Option[String]]               = GenContains[OpenApiRequestBody](_.description)
   val content: Contains[OpenApiRequestBody, Map[MediaType, OpenApiMediaType]] =
     GenContains[OpenApiRequestBody](_.content)
 
@@ -372,6 +372,10 @@ final case class OpenApiResponse(
 )
 
 object OpenApiResponse {
+  val description: OpenApiResponse Contains Option[String]               = GenContains[OpenApiResponse](_.description)
+  val content: OpenApiResponse Contains Map[MediaType, OpenApiMediaType] = GenContains[OpenApiResponse](_.content)
+  val headers: OpenApiResponse Contains Map[String, OpenApiHeader]       = GenContains[OpenApiResponse](_.headers)
+
   def make(description: Option[SwaggerDescription] = None, swaggerType: SwaggerType): OpenApiResponse =
     OpenApiResponse(
       description = description,

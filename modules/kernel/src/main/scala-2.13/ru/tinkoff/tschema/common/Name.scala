@@ -19,5 +19,3 @@ trait SymbolName {
   ): Name[Symbol with shapeless.tag.Tagged[name]] =
     new Name(value.value)
 }
-
-

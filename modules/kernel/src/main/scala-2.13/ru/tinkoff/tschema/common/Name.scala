@@ -13,8 +13,8 @@ object Name extends SymbolName {
     new Name[name](value.value)
 }
 trait SymbolName {
-  implicit def symbolName[name <: String with Singleton](
-      implicit value: ValueOf[name]
+  implicit def symbolName[name <: String with Singleton](implicit
+      value: ValueOf[name]
   ): Name[Symbol with shapeless.tag.Tagged[name]] =
     new Name(value.value)
 }

@@ -29,7 +29,9 @@ object MkRoute {
     def route[Res](res: => Res) = new RoutePA(res)
 
     class RoutePA[Res](res: => Res) {
-      def apply[F[_], In, Out](in: In)(implicit routable: RoutableIn[In, Res, Out]): Route = pathEnd(routable.route(in, res))
+      def apply[F[_], In, Out](in: In)(implicit routable: RoutableIn[In, Res, Out]): Route = pathEnd(
+        routable.route(in, res)
+      )
     }
 
     class ServePA[T] {

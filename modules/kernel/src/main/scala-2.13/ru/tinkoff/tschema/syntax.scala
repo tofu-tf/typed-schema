@@ -1,5 +1,37 @@
 package ru.tinkoff.tschema
-import ru.tinkoff.tschema.typeDSL.{:>, <|>, AllQuery, ApiKeyAuth, As, BasicAuth, BearerAuth, CanHoldApiKey, Capture, Complete, Cookie, DSLDef, DSLMethod, Delete, Deprecated, FormField, Get, Group, Head, Header, Key, Options, Patch, Post, Prefix, Put, QueryFlag, QueryParam, QueryParams, ReqBody, Tag}
+import ru.tinkoff.tschema.typeDSL.{
+  :>,
+  <|>,
+  AllQuery,
+  ApiKeyAuth,
+  As,
+  BasicAuth,
+  BearerAuth,
+  CanHoldApiKey,
+  Capture,
+  Complete,
+  Cookie,
+  DSLDef,
+  DSLMethod,
+  Delete,
+  Deprecated,
+  FormField,
+  Get,
+  Group,
+  Head,
+  Header,
+  Key,
+  Options,
+  Patch,
+  Post,
+  Prefix,
+  Put,
+  QueryFlag,
+  QueryParam,
+  QueryParams,
+  ReqBody,
+  Tag
+}
 
 object syntax {
   def prefix[s <: Singleton](s: s)      = new Prefix[s]

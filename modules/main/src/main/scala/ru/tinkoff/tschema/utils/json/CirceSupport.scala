@@ -17,7 +17,8 @@ object CirceSupport {
   def marshallResponse[T: Encoder]: ToResponseMarshaller[T] = Marshaller.fromToEntityMarshaller[T]()(marshallEntity)
 
   def unmarshallRequest[T: Decoder]: FromRequestUnmarshaller[T] =
-    Unmarshaller.identityUnmarshaller[HttpRequest]
+    Unmarshaller
+      .identityUnmarshaller[HttpRequest]
       .map(_.entity)
       .flatMap[T](unmarshallEntity[T]: Unmarshaller[HttpEntity, T])
       .asScala

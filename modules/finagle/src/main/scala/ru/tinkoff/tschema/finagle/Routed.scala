@@ -43,9 +43,9 @@ class RoutedFunctions {
   def withMatched[F[_], A](m: Int, fa: F[A])(implicit routed: Routed[F]): F[A] = routed.withMatched(m, fa)
   def request[F[_]](implicit routed: Routed[F]): F[Request]                    = routed.request
   def matchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence]    = (path, matched).mapN(_.subSequence(0, _))
-  def unmatchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence] =
+  def unmatchedPath[F[_]: Apply](implicit routed: Routed[F]): F[CharSequence]  =
     (path, matched).mapN((p, m) => p.subSequence(m, p.length()))
-  def reject[F[_], A](rejection: Rejection)(implicit routed: Routed[F]): F[A] = routed.reject(rejection)
+  def reject[F[_], A](rejection: Rejection)(implicit routed: Routed[F]): F[A]  = routed.reject(rejection)
 
   def rejectMany[F[_]: Routed, A](rejections: Rejection*): F[A]              = reject(Foldable[List].fold(rejections.toList))
   def addMatched[F[_]: Monad: Routed, A](i: Int, fa: F[A]): F[A]             = matched >>= (m => withMatched(m + i, fa))
@@ -54,14 +54,14 @@ class RoutedFunctions {
   def checkPrefix[F[_]: Monad: Routed, A](pref: CharSequence, fa: F[A]): F[A] =
     for {
       path <- unmatchedPath[F]
-      i    = commonPathPrefix(path, pref)
+      i     = commonPathPrefix(path, pref)
       res  <- if (i < 0) reject[F, A](notFound) else if (i > 0) addMatched(i, fa) else fa
     } yield res
 
   def checkPath[F[_]: Monad: Routed, A](full: CharSequence, fa: F[A]): F[A] =
     for {
       path <- unmatchedPath[F]
-      i    = commonPathPrefix(path, full)
+      i     = commonPathPrefix(path, full)
       res  <- if (i == path.length()) addMatched(i, fa) else reject[F, A](notFound)
     } yield res
 
@@ -71,13 +71,14 @@ class RoutedFunctions {
 
   def customSegment[F[_]: Monad: Routed, A](pattern: Regex, groupId: Int, f: Option[CharSequence] => F[A]): F[A] =
     for {
-      path     <- unmatchedPath[F]
+      path    <- unmatchedPath[F]
       matchOpt = pattern.findPrefixMatchOf(path)
-      res      <- matchOpt.fold(f(None))(m => addMatched(m.end - m.start, f(Some(m.group(groupId)))))
+      res     <- matchOpt.fold(f(None))(m => addMatched(m.end - m.start, f(Some(m.group(groupId)))))
     } yield res
 
-  def param[F[_]: Routed: Monad, S >: ParamSource.All <: ParamSource, T](name: String)(implicit param: Param[S, T],
-                                                                                       p: ParamDirectives[S]): F[T] =
+  def param[F[_]: Routed: Monad, S >: ParamSource.All <: ParamSource, T](
+      name: String
+  )(implicit param: Param[S, T], p: ParamDirectives[S]): F[T] =
     p.getByName[F, T](name, os => p.provideOrReject[F, T](name, param.get(name, _ => os)))
 
   def uriParam[F[_]: Routed: Monad, T: Param.PQuery](name: String)     = param[F, ParamSource.Query, T](name)
@@ -108,11 +109,12 @@ object RunHttp {
   def run[G[_]] = new Run[G]
 
   class Run[G[_]] {
-    def apply[F[_]](resp: F[Response])(implicit runnable: RunHttp[F, G]): G[Service[Request, Response]] = runnable.run(resp)
-    def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(
-        implicit runnable: RunHttp[F, G],
+    def apply[F[_]](resp: F[Response])(implicit runnable: RunHttp[F, G]): G[Service[Request, Response]] =
+      runnable.run(resp)
+    def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(implicit
+        runnable: RunHttp[F, G],
         G: Monad[G]
-    ): G[Service[Request, Response]] =
+    ): G[Service[Request, Response]]                                                                    =
       resps
         .foldM[G, HttpMuxer](HttpMuxer) {
           case (mux, (name, svc)) => runnable.run(svc).map(s => mux withHandler Route(name, s))
@@ -123,7 +125,8 @@ object RunHttp {
 }
 
 @implicitNotFound(
-  "Could not parse body ${A} in ${F}. Make sure you have appropriate deserializing instance and imported complete implementation from tethysIntances, circeInstances, etc.")
+  "Could not parse body ${A} in ${F}. Make sure you have appropriate deserializing instance and imported complete implementation from tethysIntances, circeInstances, etc."
+)
 trait ParseBody[F[_], A] {
   def parse(): F[A]
   def parseOpt(): F[Option[A]]

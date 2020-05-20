@@ -38,32 +38,37 @@ object Authorization {
   def basic[F[_], A](implicit auth: Authorization[Basic, F, A]): Authorization[Basic, F, A]    = auth
   def bearer[F[_], A](implicit auth: Authorization[Bearer, F, A]): Authorization[Bearer, F, A] = auth
 
-  implicit def optional[K <: Kind, F[_]: Applicative, A](
-      implicit auth: Authorization[K, F, A]): Authorization[K, F, Option[A]] =
+  implicit def optional[K <: Kind, F[_]: Applicative, A](implicit
+      auth: Authorization[K, F, A]
+  ): Authorization[K, F, Option[A]] =
     _.traverse(s => auth(Some(s)))
 
   implicit def applicative[K <: Kind, F[_]: Applicative]: Applicative[Authorization[K, F, *]] =
     new Applicative[Authorization[K, F, *]] {
-      def pure[A](x: A): Authorization[K, F, A] = _ => x.pure[F]
+      def pure[A](x: A): Authorization[K, F, A]                                                         = _ => x.pure[F]
       def ap[A, B](ff: Authorization[K, F, A => B])(fa: Authorization[K, F, A]): Authorization[K, F, B] =
         os => ff(os) ap fa(os)
     }
 }
 
 private[finagle] trait ServeAuthInstances { self: Serve.type =>
-  implicit def apiKeyAuthServe[F[_]: Routed, realm, Param <: CanHoldApiKey, In, Out](
-      implicit serve: Serve[Param, F, In, Out]): Serve[ApiKeyAuth[realm, Param], F, In, Out] =
+  implicit def apiKeyAuthServe[F[_]: Routed, realm, Param <: CanHoldApiKey, In, Out](implicit
+      serve: Serve[Param, F, In, Out]
+  ): Serve[ApiKeyAuth[realm, Param], F, In, Out] =
     serve.as[ApiKeyAuth[realm, Param]]
 
-  private def authServe[F[_]: Routed: Monad, realm, name: Name, x, In <: HList, K <: Kind, atom](
-      implicit auth: Authorization[K, F, x]): Add[atom, F, In, name, x] =
+  private def authServe[F[_]: Routed: Monad, realm, name: Name, x, In <: HList, K <: Kind, atom](implicit
+      auth: Authorization[K, F, x]
+  ): Add[atom, F, In, name, x] =
     add(Routed.request.flatMap(r => auth(r.authorization)))
 
-  implicit def basicAuthServe[F[_]: Routed: Monad, realm, name : Name, x: Authorization[Basic, F, *], In <: HList]
-    : Add[BasicAuth[realm, name, x], F, In, name, x] = authServe[F, realm, name, x, In, Basic, BasicAuth[realm, name, x]]
+  implicit def basicAuthServe[F[_]: Routed: Monad, realm, name: Name, x: Authorization[Basic, F, *], In <: HList]
+      : Add[BasicAuth[realm, name, x], F, In, name, x] =
+    authServe[F, realm, name, x, In, Basic, BasicAuth[realm, name, x]]
 
-  implicit def bearerAuthServe[F[_]: Routed: Monad, realm, name : Name, x: Authorization[Bearer, F, *], In <: HList]
-    : Add[BearerAuth[realm, name, x], F, In, name, x] = authServe[F, realm, name, x, In, Bearer, BearerAuth[realm, name, x]]
+  implicit def bearerAuthServe[F[_]: Routed: Monad, realm, name: Name, x: Authorization[Bearer, F, *], In <: HList]
+      : Add[BearerAuth[realm, name, x], F, In, name, x] =
+    authServe[F, realm, name, x, In, Bearer, BearerAuth[realm, name, x]]
 }
 
 object Credentials {
@@ -80,7 +85,7 @@ object Credentials {
           case UsrAndPasswd(u, p) => Some(u -> p)
           case _                  => None
         }
-      case _ => None
+      case _        => None
     }
 
   def secure_equals(that: CharSequence, other: CharSequence): Boolean = {

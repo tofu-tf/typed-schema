@@ -14,23 +14,13 @@ object JsonResult {
   implicit def jsonComplete[F[_]: Applicative, A: AsResponse.Json]: Completing[F, JsonResult[A], A] =
     a => AsResponse.json(a).pure[F]
 
-  implicit def jsonCompleteF[F[_], G[_]: Functor, A: AsResponse.Json](
-      implicit lift: LiftHttp[F, G]
+  implicit def jsonCompleteF[F[_], G[_]: Functor, A: AsResponse.Json](implicit
+      lift: LiftHttp[F, G]
   ): Completing[F, JsonResult[A], G[A]] =
     fa => lift(fa.map(AsResponse.json[A]))
 
-  implicit def jsonSwagger[R](
-      implicit mkSwagger: MkSwagger[typeDSL.Complete[R]]
+  implicit def jsonSwagger[R](implicit
+      mkSwagger: MkSwagger[typeDSL.Complete[R]]
   ): MkSwagger[typeDSL.Complete[JsonResult[R]]] =
     mkSwagger.as[typeDSL.Complete[JsonResult[R]]]
 }
-
-
-
-
-
-
-
-
-
-

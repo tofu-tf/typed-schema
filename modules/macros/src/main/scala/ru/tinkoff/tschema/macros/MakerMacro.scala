@@ -18,7 +18,8 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   type WTTF[F[_]] = WeakTypeTag[F[Unit]]
 
   def makeRouteHNilNoImpl[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Res: WeakTypeTag](
-      definition: c.Expr[Def]): c.Expr[Res] =
+      definition: c.Expr[Def]
+  ): c.Expr[Res] =
     makeRouteImpl[F, If, Def, Unit, Res, HNil](definition)(none)(c.Expr(q"()"))
 
   def makeRouteHNil[F[_]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag](
@@ -36,12 +37,9 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
       input: c.Expr[In]
   ): c.Expr[Res] = makeRouteImpl[F, If, Def, Impl, Res, In](definition)(impl.tree.some)(input)
 
-  private def makeRouteImpl[F[_]: WTTF,
-                            If: WeakTypeTag,
-                            Def: WeakTypeTag,
-                            Impl: WeakTypeTag,
-                            Res: WeakTypeTag,
-                            In: WeakTypeTag](
+  private def makeRouteImpl[F[
+      _
+  ]: WTTF, If: WeakTypeTag, Def: WeakTypeTag, Impl: WeakTypeTag, Res: WeakTypeTag, In: WeakTypeTag](
       definition: c.Expr[Def]
   )(
       impl: Option[Tree]
@@ -121,7 +119,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   private class RouteTreeMaker(impl: Option[Tree]) {
     type DSL = DSLTree[Type]
     def makeRouteTree(ft: Type, dsl: DSL, input: Tree): Tree = dsl match {
-      case DSLLeaf(resTyp, groups, key) =>
+      case DSLLeaf(resTyp, groups, key)  =>
         impl match {
           case None       => q"""{
               $interface.makeResult[$ft, $resTyp]($input)($key, ..$groups)
@@ -138,7 +136,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
         val rest      = makeRouteTree(ft, DSLBranch(next, dsls), Ident(identName))
         q"""$interface.serve[$ft, $pref]($input).apply(($ident) => $rest)"""
 
-      case DSLBranch(_, dsls) => makeRouteSumTree(ft, dsls, input)
+      case DSLBranch(_, dsls)            => makeRouteSumTree(ft, dsls, input)
     }
 
     def makeRouteSumTree(ft: Type, dsls: Vector[DSL], input: Tree): Tree =
@@ -151,7 +149,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     typ.decl(name) match {
       case ms: MethodSymbol                 => Some(ms)
       case ov if ov.alternatives.length > 1 => abort("could not handle method overloading")
-      case _ =>
+      case _                                =>
         typ.baseClasses.tail.iterator.collect {
           case base: TypeSymbol if base != typ => base.toType
         }.flatMap {
@@ -170,7 +168,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
           case ms: ModuleSymbol                         => findMeth(ms.typeSignature, rest, name)
           case _                                        => None
         }
-      case Vector() => extractMeth(typ, name)
+      case Vector()      => extractMeth(typ, name)
     }
 
   private def unpackString(name: String)(sExpr: c.Expr[String]): String =
@@ -202,22 +200,22 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   }
 
   def constructDslTree(t: Type, prefix: PrefixInfo[Type]): DSLTree[Type] = t match {
-    case Complete(res) =>
+    case Complete(res)      =>
       prefix.key match {
         case Some(str) => DSLLeaf(res, prefix.groups, str)
-        case None =>
+        case None      =>
           val typLine = (prefix.prefix :+ t).map(showType).mkString(" :> ")
           abort(s"method key for $typLine is not defined")
       }
 
-    case Cons(x, y) =>
+    case Cons(x, y)         =>
       val px = constructDefPrefix(x)
       constructDslTree(y, prefix |+| px) match {
         case DSLBranch(p2, cdn) => DSLBranch(px.prefix ++ p2, cdn)
         case res                => DSLBranch(px.prefix, Vector(res))
       }
 
-    case Split(x, y) =>
+    case Split(x, y)        =>
       val t1 = constructDslTree(x, prefix)
       constructDslTree(y, prefix) match {
         case DSLBranch(Vector(), cdn) => DSLBranch(Vector(), t1 +: cdn)
@@ -231,7 +229,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   def extractMethod(meth: MethodSymbol): MethodDecl[Type] =
     meth.paramLists.map(lst => lst.map(p => symbolName(p) -> p.typeSignature)) -> meth.returnType
 
-  def symbolName(symbol: Symbol) = symbol.name.decodedName.toString
+  def symbolName(symbol: Symbol)                          = symbol.name.decodedName.toString
 
   def makeRouteTree(t: Type): Tree = {
     val defTree = constructDslTree(t, Monoid.empty[PrefixInfo[Type]])
@@ -245,7 +243,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     case TypeRef(_, s, xs) if xs.nonEmpty => xs.map(showType).mkString(s"${symbolName(s)}[", ",", "]")
   }
 
-  def getPackage(t: Type): Tree =
+  def getPackage(t: Type): Tree       =
     t.typeSymbol.fullName
       .split("\\.")
       .foldLeft[Tree](q"_root_") { (pack, name) =>
@@ -254,7 +252,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   private def infoTime(label: String) = if (false) info(s"$label: ${Instant.now().toString}")
 
   private def typeCheckOrAbort(t: Tree): Tree =
-    try(c.typecheck(t))
+    try (c.typecheck(t))
     catch {
       case ex: TypecheckException => c.abort(c.enclosingPosition, ex.toString)
     }

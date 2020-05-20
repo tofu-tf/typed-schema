@@ -14,8 +14,8 @@ object BinResult {
   implicit def binComplete[CT, F[_]: Applicative, A: AsResponse.Binary[CT, *]]: Completing[F, BinResult[CT, A], A] =
     a => AsResponse.binary(a).pure[F]
 
-  implicit def binFComplete[CT, F[_], G[_]: Functor, A: AsResponse.Binary[CT, *]](
-      implicit lift: LiftHttp[F, G]
+  implicit def binFComplete[CT, F[_], G[_]: Functor, A: AsResponse.Binary[CT, *]](implicit
+      lift: LiftHttp[F, G]
   ): Completing[F, BinResult[CT, A], G[A]] = gs => lift(gs.map(AsResponse.binary[CT, A]))
 
   implicit def binSwagger[TC <: BinaryContentType, R](implicit tc: TC): MkSwagger[typeDSL.Complete[BinResult[TC, R]]] =

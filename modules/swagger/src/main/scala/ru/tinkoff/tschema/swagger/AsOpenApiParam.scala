@@ -49,7 +49,7 @@ final case class AsSingleOpenApiParam[T](typ: SwaggerType, required: Boolean = t
 object AsSingleOpenApiParam extends AsOpenParamInstances[AsSingleOpenApiParam]
 
 trait AsOpenParamInstances[TC[x] >: AsSingleOpenApiParam[x]] {
-  final implicit def requiredParam[T](implicit typ: SwaggerTypeable[T]): TC[T] =
+  final implicit def requiredParam[T](implicit typ: SwaggerTypeable[T]): TC[T]                 =
     AsSingleOpenApiParam[T](typ = typ.typ, required = true)
   final implicit def optParam[T](implicit param: AsOpenApiParam[T]): AsOpenApiParam[Option[T]] = param.optional
 }

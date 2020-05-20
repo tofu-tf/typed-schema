@@ -18,7 +18,7 @@ import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
 import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
 import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
 import ru.tinkoff.tschema.typeDSL._
-import ru.tinkoff.tschema.utils.subsets._
+import ru.tinkoff.tschema.utils.optics._
 import tofu.optics.chain
 import tofu.optics.tags.at
 import shapeless.{Lazy, Witness}
@@ -89,19 +89,19 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   }
 
   def fromAuth[T](name: String, auth: OpenApiSecurity) = new Empty[T] {
-    override def auths = TreeMap(name -> auth)
+    override def auths                             = TreeMap(name -> auth)
     override def mapSpec(spec: PathSpec): PathSpec =
       (PathSpec.op >> OpenApiOp.security).update(spec, _ :+ Map(name -> Vector.empty))
   }
 
-  private[swagger] def derivedParam[name, T, param[_, _]](in: In)(
-      implicit name: Name[name],
+  private[swagger] def derivedParam[name, T, param[_, _]](in: In)(implicit
+      name: Name[name],
       param: AsOpenApiParam[T]
   ): SwaggerMapper[param[name, T]] =
     derivedParamAtom[name, T, param[name, T]](in)
 
-  private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(
-      implicit name: Name[name],
+  private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(implicit
+      name: Name[name],
       param: AsOpenApiParam[T]
   ): SwaggerMapper[atom] = {
     def makeSingle(p: OpenApiParamInfo, name: String): OpenApiParam =
@@ -163,8 +163,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
     derivedParam[name, T, Capture](In.path).map(PathSpec.path.update(_, s"{$name}" +: _))
 
-  implicit def deriveReqOptBody[name, T](
-      implicit content: SwaggerContent[T]
+  implicit def deriveReqOptBody[name, T](implicit
+      content: SwaggerContent[T]
   ): SwaggerMapper[ReqBody[name, Option[T]]] = {
     fromFunc(
       (PathSpec.op >> OpenApiOp.requestBody).set(
@@ -180,13 +180,18 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   }
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
-    fromFunc[method](PathSpec.method.update(_, {
-      case None           => methodDeclare.method.some
-      case meth @ Some(_) => meth
-    }))
+    fromFunc[method](
+      PathSpec.method.update(
+        _,
+        {
+          case None           => methodDeclare.method.some
+          case meth @ Some(_) => meth
+        }
+      )
+    )
 
-  implicit def deriveCons[start, end](
-      implicit start: SwaggerMapper[start],
+  implicit def deriveCons[start, end](implicit
+      start: SwaggerMapper[start],
       end: SwaggerMapper[end]
   ): SwaggerMapper[start :> end] =
     (start andThen end).as[start :> end]
@@ -222,8 +227,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def bearerSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BearerAuth[realm, name, x]] =
     swaggerAuth[realm, x, BearerAuth[realm, name, x]](scheme = OpenApiSecurityScheme.bearer.some)
 
-  implicit def apiKeyAuth[realm: Name, Param <: CanHoldApiKey, name, x](
-      implicit
+  implicit def apiKeyAuth[realm: Name, Param <: CanHoldApiKey, name, x](implicit
       param: ApiKeyParam[Param, name, x],
       name: Name[name]
   ): SwaggerMapper[ApiKeyAuth[realm, Param]] =
@@ -243,7 +247,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   final class MakeFormField(val objType: SwaggerType) {
     def myMediaType: MediaType = "application/x-www-form-urlencoded"
 
-    def make: OpenApiRequestBody =
+    def make: OpenApiRequestBody                          =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
 
     def add(body: OpenApiRequestBody): OpenApiRequestBody =

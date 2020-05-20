@@ -26,14 +26,16 @@ trait ParamDirectives[S <: ParamSource] {
   def errorReject[F[_], A](name: String, error: ParamError)(implicit routed: Routed[F]): F[A] =
     error match {
       case single: SingleParamError => routed.reject(singleRejection(name, single))
-      case MultiParamError(vals) =>
+      case MultiParamError(vals)    =>
         Routed.rejectMany(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
     }
 
-  def direct[F[_]: Routed: Monad, A, name, In <: HList](name: String,
-                                                                 result: Param.Result[A],
-                                                                 in: In,
-                                                                 k: (FieldType[name, A] :: In) => F[Response]): F[Response] =
+  def direct[F[_]: Routed: Monad, A, name, In <: HList](
+      name: String,
+      result: Param.Result[A],
+      in: In,
+      k: (FieldType[name, A] :: In) => F[Response]
+  ): F[Response] =
     result.fold(errorReject[F, Response](name, _), a => k(field[name](a) :: in))
 
   def provideOrReject[F[_]: Routed: Monad, A](name: String, result: Param.Result[A]): F[A] =

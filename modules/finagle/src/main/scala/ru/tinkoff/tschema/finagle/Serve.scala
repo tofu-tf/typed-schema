@@ -53,12 +53,12 @@ object Serve
   implicit class ServeOps[T, F[_], In <: HList, Out](val serve: Serve[T, F, In, Out]) extends AnyVal {
     def add[key](implicit F: Functor[F]): Add[T, F, In, key, Out] = (in, f) =>
       serve.process(in, a => f(field[key](a) :: in))
-    def filter[key](implicit F: Functor[F]): Filter[T, F, In] = (in, f) => serve.process(in, _ => f(in))
+    def filter[key](implicit F: Functor[F]): Filter[T, F, In]     = (in, f) => serve.process(in, _ => f(in))
 
   }
 
-  protected def resolveParam[F[_]: Routed: Monad, S >: All <: ParamSource, name, A, D, In <: HList](
-      implicit param: Param[S, A],
+  protected def resolveParam[F[_]: Routed: Monad, S >: All <: ParamSource, name, A, D, In <: HList](implicit
+      param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S]
   ): Add[D, F, In, name, A] =
@@ -66,7 +66,7 @@ object Serve
       case single: SingleParam[S, A] =>
         (in, k) =>
           directives.getByName[F, Response](w.string, s => directives.direct(w.string, single.applyOpt(s), in, k))
-      case multi: MultiParam[S, A] =>
+      case multi: MultiParam[S, A]   =>
         (in, k) =>
           cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
             directives.direct(w.string, multi.applyOpt(ls), in, k)
@@ -115,8 +115,8 @@ object Serve
 private[finagle] trait ServeReqBodyInstances extends ServeReqBodyInstances1 { self: Serve.type =>
   import ru.tinkoff.tschema.typeDSL.ReqBody
 
-  implicit def bodyOptServe[F[_]: FlatMap, name, A, In <: HList](
-      implicit A: ParseBody[F, A]
+  implicit def bodyOptServe[F[_]: FlatMap, name, A, In <: HList](implicit
+      A: ParseBody[F, A]
   ): Add[ReqBody[name, Option[A]], F, In, name, Option[A]] =
     add[ReqBody[name, Option[A]], F, In, Option[A], name](A.parseOpt())
 }
@@ -124,21 +124,21 @@ private[finagle] trait ServeReqBodyInstances extends ServeReqBodyInstances1 { se
 private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
   import ru.tinkoff.tschema.typeDSL.ReqBody
 
-  implicit def bodyServe[F[_]: FlatMap, name, A, In <: HList](
-      implicit A: ParseBody[F, A]
+  implicit def bodyServe[F[_]: FlatMap, name, A, In <: HList](implicit
+      A: ParseBody[F, A]
   ): Add[ReqBody[name, A], F, In, name, A] =
     add[ReqBody[name, A], F, In, A, name](A.parse())
 }
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>
 
-  implicit def queryParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](
-      implicit param: SingleParam[ParamSource.Query, x]
+  implicit def queryParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](implicit
+      param: SingleParam[ParamSource.Query, x]
   ) =
     add[QueryParams[name, x], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = false))
 
-  implicit def queryOptParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](
-      implicit param: SingleParam[ParamSource.Query, x]
+  implicit def queryOptParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](implicit
+      param: SingleParam[ParamSource.Query, x]
   ) =
     add[QueryParams[name, Option[x]], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = true))
 
@@ -151,7 +151,7 @@ private[finagle] trait ServeParamsInstances { self: Serve.type =>
       req.params.getAll(name) match {
         case it if it.nonEmpty || allowEmpty =>
           it.toList.traverse(s => dir.provideOrReject(name, param.applyOpt(Some(s))))
-        case _ => Routed.reject(missingParam(name, Query))
+        case _                               => Routed.reject(missingParam(name, Query))
       }
     }
 
@@ -169,7 +169,7 @@ private[finagle] trait ServeFunctions { self: Serve.type =>
   def checkCont[T, F[_]: Apply, In](fr: F[Response] => F[Response]): Filter[T, F, In] = (in, f) => fr(f(in))
   def checkIn[T, F[_]: Apply, In](f: In => F[Unit]): Filter[T, F, In]                 = (in, g) => f(in) *> g(in)
 
-  def add[T, F[_]: FlatMap, In <: HList, A, key](fa: F[A]): Add[T, F, In, key, A] = provide[T, F, In, A](fa).add[key]
+  def add[T, F[_]: FlatMap, In <: HList, A, key](fa: F[A]): Add[T, F, In, key, A]        = provide[T, F, In, A](fa).add[key]
   def addIn[T, F[_]: FlatMap, In <: HList, A, key](f: In => F[A]): Add[T, F, In, key, A] =
     provideIn[T, F, In, A](f).add[key]
 
@@ -185,19 +185,19 @@ private[finagle] trait ServeCatsInstance {
     new StackSafeMonad[Serve[T, F, In, *]] {
       def flatMap[A, B](fa: Serve[T, F, In, A])(f: A => Serve[T, F, In, B]): Serve[T, F, In, B] =
         (in, k) => FD.defer(fa.process(in, a => f(a).process(in, k)))
-      def pure[A](x: A): Serve[T, F, In, A] = (_, k) => k(x)
+      def pure[A](x: A): Serve[T, F, In, A]                                                     = (_, k) => k(x)
     }
 
   implicit def serveArrow[T, F[_], In](implicit FD: Defer[F]): Arrow[Serve[T, F, *, *]] =
     new Arrow[Serve[T, F, *, *]] {
-      def lift[A, B](f: A => B): Serve[T, F, A, B] = (a, kb) => FD.defer(kb(f(a)))
+      def lift[A, B](f: A => B): Serve[T, F, A, B]                                        = (a, kb) => FD.defer(kb(f(a)))
       def compose[A, B, C](f: Serve[T, F, B, C], g: Serve[T, F, A, B]): Serve[T, F, A, C] =
         (a, kc) => FD.defer(g.process(a, b => f.process(b, kc)))
-      def first[A, B, C](fa: Serve[T, F, A, B]): Serve[T, F, (A, C), (B, C)] =
+      def first[A, B, C](fa: Serve[T, F, A, B]): Serve[T, F, (A, C), (B, C)]              =
         (ac, kbc) => FD.defer(fa.process(ac._1, b => kbc((b, ac._2))))
     }
 }
-trait ServeMethodInstances { self: Serve.type =>
+trait ServeMethodInstances               { self: Serve.type =>
   private[this] def checkMethod[T, F[_]: Routed: Monad, In](method: http.Method): Filter[T, F, In] =
     check(Routed.request.flatMap(r => Routed.reject(Rejection.wrongMethod(r.method.name)).whenA(r.method != method)))
 

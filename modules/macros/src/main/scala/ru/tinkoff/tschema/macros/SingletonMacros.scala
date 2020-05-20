@@ -30,7 +30,7 @@ trait SingletonMacros extends ReprTypes {
     def unapply(t: Type): Option[String] =
       t match {
         case RefinedType(List(SymTpe, TypeRef(_, TaggedSym, List(ConstantType(Constant(s: String))))), _) => Some(s)
-        case _ => None
+        case _                                                                                            => None
       }
   }
 }

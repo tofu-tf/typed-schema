@@ -25,8 +25,8 @@ object TaskRouting extends TaskInstanceDecl {
   implicit val taskRouted: RoutedPlus[TaskHttp] with ConvertService[TaskHttp] with LiftHttp[TaskHttp, Task] =
     new TaskRoutedConvert
 
-  implicit def envRunnable(
-      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  implicit def envRunnable(implicit
+      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
   ): RunHttp[TaskHttp, Task] =
     response => Task.deferAction(implicit sched => Task.delay(execResponse(response, _)))
 
@@ -39,7 +39,7 @@ object TaskRouting extends TaskInstanceDecl {
 
     val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
       case Right(res) => promise.setValue(res)
-      case Left(ex) =>
+      case Left(ex)   =>
         val resp = Response(Status.InternalServerError)
         resp.setContentString(ex.getMessage)
         promise.setValue(resp)
@@ -62,8 +62,8 @@ private[finagle] class TaskInstanceDecl {
 
     def withMatched[A](m: Int, fa: F[A]): F[A] = fa.local(_.copy(matched = m))
 
-    def path: F[CharSequence]    = Env.fromFunc(_.path)
-    def request: F[http.Request] = Env.fromFunc(_.request)
+    def path: F[CharSequence]                 = Env.fromFunc(_.path)
+    def request: F[http.Request]              = Env.fromFunc(_.request)
     def reject[A](rejection: Rejection): F[A] =
       Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
@@ -87,7 +87,7 @@ private[finagle] class TaskInstanceDecl {
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A] = Env.raiseError(envRouting.Rejected(map))
+    @inline private[this] def throwRej[A](map: Rejection): F[A]                = Env.raiseError(envRouting.Rejected(map))
   }
 
 }

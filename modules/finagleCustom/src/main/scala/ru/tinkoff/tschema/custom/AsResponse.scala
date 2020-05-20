@@ -41,15 +41,15 @@ object AsResponse extends AsResponseInstances with AsResponseDerivation {
   def error[A](a: A)(implicit asResponse: Error[A]): Response           = asResponse(a)
 
   import tethys._
-  implicit def tethysAsResponse[A: JsonWriter](
-      implicit producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer
+  implicit def tethysAsResponse[A: JsonWriter](implicit
+      producer: TokenWriterProducer = jackson.jacksonTokenWriterProducer
   ): AsResponse.Json[A] = a => jsonResponse(a.asJson)
 
   implicit val plainAsResponseString: AsResponse.Plain[String] = stringResponse(_)
   implicit val plainAsResponseUnit: AsResponse.Plain[Unit]     = _ => Response(Status.Ok)
 
-  implicit def binAsResponseByteSeq[T[x] <: Seq[x], CT <: BinaryContentType](
-      implicit ct: CT
+  implicit def binAsResponseByteSeq[T[x] <: Seq[x], CT <: BinaryContentType](implicit
+      ct: CT
   ): AsResponse.Binary[CT, T[Byte]] =
     bytes => {
       val resp = Response(Status.Ok)
@@ -58,8 +58,8 @@ object AsResponse extends AsResponseInstances with AsResponseDerivation {
       resp
     }
 
-  implicit def binAsResponseBuf[CT <: BinaryContentType](
-      implicit ct: CT
+  implicit def binAsResponseBuf[CT <: BinaryContentType](implicit
+      ct: CT
   ): AsResponse.Binary[CT, Buf] =
     buf => {
       val resp = Response(Status.Ok)
@@ -68,8 +68,8 @@ object AsResponse extends AsResponseInstances with AsResponseDerivation {
       resp
     }
 
-  implicit def binAsResponseReader[CT <: BinaryContentType](
-      implicit ct: CT
+  implicit def binAsResponseReader[CT <: BinaryContentType](implicit
+      ct: CT
   ): AsResponse.Binary[CT, Reader[Buf]] =
     reader => {
       val resp = Response(Version.Http11, Status.Ok, reader)
@@ -83,8 +83,8 @@ trait AsResponseInstances {
   import io.circe.syntax._
   private[this] val defaultPrinter = Printer.noSpaces.copy(dropNullValues = true)
 
-  implicit def circeAsResponse[A: Encoder](
-      implicit printer: Printer = defaultPrinter
+  implicit def circeAsResponse[A: Encoder](implicit
+      printer: Printer = defaultPrinter
   ): AsResponse.Json[A] = a => jsonResponse(a.asJson.printWith(printer))
 
   implicit def showAsResponse[A: Show]: AsResponse.Plain[A] = a => stringResponse(a.show)

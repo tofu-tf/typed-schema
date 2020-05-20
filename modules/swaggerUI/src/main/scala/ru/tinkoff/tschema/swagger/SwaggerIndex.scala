@@ -4,24 +4,26 @@ import scalatags.Text.all._
 
 object SwaggerIndex {
 
-
-
   def apply(url: String, webjarsUri: String): String = {
     def cssref(s: String) = link(href := s, rel := "stylesheet")
     def js(s: String)     = script(src := s)
     val version           = BuildInfo.swaggerUIVersion
     def webjar(s: String) = s"$webjarsUri/swagger-ui-dist/$version/$s"
-    def index =
+    def index             =
       html(
         meta(charset := "UTF-8"),
         tag("title")("Typed Schema Swagger UI"),
-        cssref("https://fonts.googleapis.com/css?family=Open+Sans:400,700|Source+Code+Pro:300,600|Titillium+Web:400,600,700"),
+        cssref(
+          "https://fonts.googleapis.com/css?family=Open+Sans:400,700|Source+Code+Pro:300,600|Titillium+Web:400,600,700"
+        ),
         cssref(webjar("swagger-ui.css")),
         tag("style")(indexStyle),
-        body(div(id := "swagger-ui"),
-             js(webjar("swagger-ui-bundle.js")),
-             js(webjar("swagger-ui-standalone-preset.js")),
-             script(onload))
+        body(
+          div(id := "swagger-ui"),
+          js(webjar("swagger-ui-bundle.js")),
+          js(webjar("swagger-ui-standalone-preset.js")),
+          script(onload)
+        )
       )
 
     def indexStyle =

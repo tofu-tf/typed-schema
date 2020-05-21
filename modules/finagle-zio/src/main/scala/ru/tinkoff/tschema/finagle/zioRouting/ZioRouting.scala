@@ -4,10 +4,12 @@ import cats.evidence.As
 import com.twitter.finagle.http
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.Future
+import ru.tinkoff.tschema.finagle.Rejection.Recover
 import ru.tinkoff.tschema.finagle._
 import ru.tinkoff.tschema.finagle.zioRouting.impl._
 import ru.tinkoff.tschema.utils.SubString
 import zio.{Has, URIO, ZIO}
+import zio.interop.catz.monadErrorInstance
 
 final case class ZioRouting[@specialized(Unit) +R](
     request: http.Request,
@@ -39,7 +41,7 @@ trait ZioRoutingInstances extends ZioRoutingInstances2 { self: ZioRouting.type =
     zioLift[R, R1, NoError, Nothing]
   final implicit def zioConvertServiceU[R]: ConvertService[URIOHttp[R, *]]                          = zioConvertService[R, NoError]
   final implicit def zioRunnableU[R](implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+      recover: Recover[URIOHttp[R, *]] = Recover.default[URIOHttp[R, *]]
   ): RunHttp[URIOHttp[R, *], URIO[R, *]]                                                            = zioRunnable[R, NoError]
 
   implicit def ziosRoutedU[R]: RoutedPlus[URIOH[R, *]]                                     = ziosRouted[R, Nothing]
@@ -48,7 +50,7 @@ trait ZioRoutingInstances extends ZioRoutingInstances2 { self: ZioRouting.type =
   implicit def ziosConvertServiceU[R]: ConvertService[URIOH[R, *]]                         =
     ziosConvertService[R, Nothing]
   implicit def ziosRunnableU[R <: Has[_]](implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+      recover: Recover[URIOH[R, *]] = Recover.default[URIOH[R, *]]
   ): RunHttp[URIOH[R, *], URIO[R, *]]                                                      =
     ziosRunnable[R, Nothing]
 }
@@ -67,7 +69,7 @@ trait ZioRoutingInstances2 {
     zioConvertServiceAny.asInstanceOf[ConvertService[ZIOHttp[R, E, *]]]
 
   implicit def zioRunnable[R, E <: Throwable](implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+      recover: Recover[ZIO[ZioRouting[R], E, *]] = Recover.default[ZIO[ZioRouting[R], E, *]]
   ): RunHttp[ZIOHttp[R, E, *], ZIO[R, E, *]] =
     zioResponse => ZIO.runtime[R].flatMap(runtime => ZIO.effectTotal(exec(runtime, zioResponse, _)))
 
@@ -81,23 +83,38 @@ trait ZioRoutingInstances2 {
     ziosConvertAny.asInstanceOf[ConvertService[ZIOH[R, E, *]]]
 
   implicit def ziosRunnable[R <: Has[_], E <: Throwable](implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
-  ): RunHttp[ZIOH[R, E, *], ZIO[R, E, *]] =
-    zioResponse => ZIO.runtime[R].flatMap(runtime => ZIO.effectTotal(execs(runtime, zioResponse, _)))
+      recover: Recover[ZIO[R with HasRouting, E, *]] = Recover.default[ZIO[R with HasRouting, E, *]]
+  ): RunHttp[ZIOH[R, E, *], ZIO[R, E, *]] = zioResponse =>
+    ZIO.runtime[R].flatMap(runtime => ZIO.effectTotal(execs(runtime, zioResponse, _)))
+
+  private def catchRejections[R, E, A](r: ZIO[R, Fail[E], Response])(implicit recover: Recover[ZIO[R, E, *]]) =
+    r.catchAll {
+      case Fail.Rejected(rejection) => recover(rejection)
+      case Fail.Other(e)            => ZIO.fail(e)
+    }
 
   private[this] def execs[R <: Has[_], E <: Throwable](
       runtime: zio.Runtime[R],
       zioResponse: ZIOH[R, E, Response],
       request: Request
-  )(implicit handler: Rejection.Handler): Future[Response] =
-    execResponse[R, R with HasRouting, E](runtime, zioResponse, _ add ZRouting(request, SubString(request.path), 0))
+  )(implicit recover: Recover[ZIO[R with HasRouting, E, *]]): Future[Response] =
+    execResponse[R, R with HasRouting, E](
+      runtime,
+      catchRejections(zioResponse),
+      _ add ZRouting(request, SubString(request.path), 0)
+    )
 
   private[this] def exec[R, E <: Throwable](
       runtime: zio.Runtime[R],
       zioResponse: ZIOHttp[R, E, Response],
       request: Request
-  )(implicit handler: Rejection.Handler): Future[Response] =
-    execResponse[R, ZioRouting[R], E](runtime, zioResponse, ZioRouting(request, SubString(request.path), 0, _))
+  )(implicit recover: Recover[ZIO[ZioRouting[R], E, *]]): Future[Response] = {
+    execResponse[R, ZioRouting[R], E](
+      runtime,
+      catchRejections(zioResponse),
+      ZioRouting(request, SubString(request.path), 0, _)
+    )
+  }
 
   private[this] val zioRoutedAny         = new ZioRoutedInstance[Any, Nothing]
   private[this] val zioLiftAny           = new ZioLiftInstance[Any, Any, Nothing, Nothing]

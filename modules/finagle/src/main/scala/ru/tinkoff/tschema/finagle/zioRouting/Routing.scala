@@ -10,6 +10,7 @@ import com.twitter
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
+import ru.tinkoff.tschema.finagle.Rejection.{OptRecover, Recover}
 import ru.tinkoff.tschema.finagle.zioRouting.Routing.FHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
@@ -29,17 +30,19 @@ object Routing extends FInstanceDecl {
     new FRoutedConvert[F]
 
   implicit def envRunnable[F[_]: Effect](implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
-  ): RunHttp[FHttp[F, *], F] =
+      optRecover: OptRecover[FHttp[F, *]] = OptRecover.default[FHttp[F, *]]
+  ): RunHttp[FHttp[F, *], F] = {
+    implicit val recover: Recover[FHttp[F, *]] = optRecover.orDefault
     zioResponse => Sync[F].delay(execResponse(zioResponse, _))
+  }
 
   private[this] def execResponse[F[_]: Effect](envResponse: FHttp[F, Response], request: Request)(implicit
-      handler: Rejection.Handler
+      recover: Recover[FHttp[F, *]]
   ): Future[Response] = {
     val promise = Promise[Response]
     val routing = Routing(request, SubString(request.path), 0)
 
-    envResponse.run(routing).recover { case Rejected(rej) => handler(rej) }.runAsync {
+    envResponse.recoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {
       case Right(res) => IO(promise.setValue(res))
       case Left(ex)   =>
         IO {

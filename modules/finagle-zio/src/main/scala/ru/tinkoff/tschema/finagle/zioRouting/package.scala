@@ -52,13 +52,10 @@ package object zioRouting {
 
   private[zioRouting] def execResponse[R, R1, E <: Throwable](
       runtime: zio.Runtime[R],
-      zioResponse: ZIO[R1, Fail[E], Response],
+      zioResponse: ZIO[R1, E, Response],
       f: R => R1
-  )(implicit handler: Rejection.Handler): Future[Response] =
+  ): Future[Response] =
     zioRouting.execWithRuntime(runtime)(
-      zioResponse.provideSome[R](f).catchAll {
-        case Fail.Rejected(rejection) => ZIO.succeed(handler(rejection))
-        case Fail.Other(e)            => ZIO.fail(e)
-      }
+      zioResponse.provideSome[R](f)
     )
 }

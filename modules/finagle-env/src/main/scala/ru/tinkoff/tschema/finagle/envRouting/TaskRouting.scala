@@ -7,6 +7,7 @@ import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import monix.eval.Task
 import monix.execution.Scheduler
+import ru.tinkoff.tschema.finagle.Rejection.Recover
 import ru.tinkoff.tschema.finagle._
 import ru.tinkoff.tschema.finagle.envRouting.TaskRouting.TaskHttp
 import ru.tinkoff.tschema.utils.SubString
@@ -26,18 +27,18 @@ object TaskRouting extends TaskInstanceDecl {
     new TaskRoutedConvert
 
   implicit def envRunnable(implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+      recover: Recover[TaskHttp] = Recover.default[TaskHttp]
   ): RunHttp[TaskHttp, Task] =
     response => Task.deferAction(implicit sched => Task.delay(execResponse(response, _)))
 
   private[this] def execResponse(
       envResponse: TaskHttp[Response],
       request: Request
-  )(implicit sc: Scheduler, handler: Rejection.Handler): Future[Response] = {
+  )(implicit sc: Scheduler, recover: Recover[TaskHttp]): Future[Response] = {
     val promise = Promise[Response]
     val routing = TaskRouting(request, SubString(request.path), 0)
 
-    val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
+    val cancelable = envResponse.onErrorRecoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {
       case Right(res) => promise.setValue(res)
       case Left(ex)   =>
         val resp = Response(Status.InternalServerError)

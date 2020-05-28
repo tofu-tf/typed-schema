@@ -10,6 +10,7 @@ import com.twitter
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
+import ru.tinkoff.tschema.finagle.Rejection.{OptRecover, Recover}
 import ru.tinkoff.tschema.finagle.zioRouting.ReaderTRouting.ReaderHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
@@ -30,17 +31,19 @@ object ReaderTRouting extends ReaderTInstanceDecl {
     new ReaderTRoutedConvert[F, R]
 
   implicit def envRunnable[F[_]: Effect, R](implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
-  ): RunHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
+      optRecover: OptRecover[ReaderHttp[F, R, *]] = OptRecover.default[ReaderHttp[F, R, *]]
+  ): RunHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] = {
+    implicit val rec: Recover[ReaderHttp[F, R, *]] = optRecover.orDefault
     response => ReaderT(r => Sync[F].delay(execResponse(r, response, _)))
+  }
 
   private[this] def execResponse[F[_]: Effect, R](r: R, envResponse: ReaderHttp[F, R, Response], request: Request)(
-      implicit handler: Rejection.Handler
+      implicit recover: Recover[ReaderHttp[F, R, *]]
   ): Future[Response] = {
     val promise = Promise[Response]
     val routing = ReaderTRouting(request, SubString(request.path), 0, r)
 
-    envResponse.run(routing).recover { case Rejected(rej) => handler(rej) }.runAsync {
+    envResponse.recoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {
       case Right(res) => IO(promise.setValue(res))
       case Left(ex)   =>
         IO {

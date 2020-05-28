@@ -7,6 +7,7 @@ import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import monix.eval.Task
 import monix.execution.Scheduler
+import ru.tinkoff.tschema.finagle.Rejection.Recover
 import ru.tinkoff.tschema.finagle._
 import ru.tinkoff.tschema.finagle.envRouting.EnvRouting.EnvHttp
 import ru.tinkoff.tschema.utils.SubString
@@ -28,18 +29,20 @@ object EnvRouting extends EnvInstanceDecl {
     envRoutedAny.asInstanceOf[EnvRoutedConvert[R]]
 
   implicit def envRunnable[R](implicit
-      rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+      recover: Recover[EnvHttp[R, *]] = Recover.default[EnvHttp[R, *]]
   ): RunHttp[EnvHttp[R, *], Env[R, *]] =
-    response => Env(r => Task.deferAction(implicit sched => Task.delay(execResponse(r, response, _))))
+    response => {
+      val handled = response.onErrorRecoverWith { case Rejected(rej) => recover(rej) }
+      Env(r => Task.deferAction(implicit sched => Task.delay(execResponse(r, handled, _))))
+    }
 
   private[this] def execResponse[R](r: R, envResponse: EnvHttp[R, Response], request: Request)(implicit
-      sc: Scheduler,
-      handler: Rejection.Handler
+      sc: Scheduler
   ): Future[Response] = {
     val promise = Promise[Response]
     val routing = EnvRouting(request, SubString(request.path), 0, r)
 
-    val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
+    val cancelable = envResponse.run(routing).runAsync {
       case Right(res) => promise.setValue(res)
       case Left(ex)   =>
         val resp    = Response(Status.InternalServerError)

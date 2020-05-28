@@ -19,6 +19,7 @@ import derevo.Derivation
 import enumeratum.values.{ValueEnum, ValueEnumEntry}
 import tofu.optics.Contains
 import ru.tinkoff.tschema.common.Name
+import ru.tinkoff.tschema.utils.transform
 
 import scala.collection.{immutable, mutable}
 import scala.reflect.runtime.universe.TypeTag
@@ -173,10 +174,7 @@ trait SwaggerTypeableInstances
 object SwaggerTypeable extends SwaggerTypeableInstances {
   def apply[T](implicit typeable: SwaggerTypeable[T]): SwaggerTypeable[T] = typeable
 
-  val snakeCaseModifier: String => String = _.replaceAll(
-    "([A-Z]+)([A-Z][a-z])",
-    "$1_$2"
-  ).replaceAll("([a-z\\d])([A-Z])", "$1_$2").toLowerCase
+  val snakeCaseModifier: String => String = transform.snakeCase
 
   case class Config(
       propMod: String => String = identity,

@@ -18,10 +18,11 @@ import ru.tinkoff.tschema.finagle.Rejection.missingParam
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
 import ru.tinkoff.tschema.common.Name
-import ru.tinkoff.tschema.typeDSL.{Delete, Get, Head, Options, Patch, Post, Put, QueryParams}
+import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.cont
 import shapeless._
 import shapeless.labelled.{FieldType, field}
+
 import scala.annotation.implicitNotFound
 
 @implicitNotFound(
@@ -57,11 +58,11 @@ object Serve
 
   }
 
-  protected def resolveParam[F[_]: Routed: Monad, S >: All <: ParamSource, name, A, D, In <: HList](implicit
+  protected def resolveParam[F[_]: Routed: Monad, S >: All <: ParamSource, name, p, A, D, In <: HList](implicit
       param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S]
-  ): Add[D, F, In, name, A] =
+  ): Add[D, F, In, p, A] =
     param match {
       case single: SingleParam[S, A] =>
         (in, k) =>
@@ -73,32 +74,33 @@ object Serve
           )
     }
 
-  implicit def queryParamServe[F[_]: Routed: Monad, name: Name, x: Param.PQuery, In <: HList]
-      : Add[QueryParam[name, x], F, In, name, x] = resolveParam[F, ParamSource.Query, name, x, QueryParam[name, x], In]
+  implicit def queryParamServe[F[_]: Routed: Monad, name: Name, p, x: Param.PQuery, In <: HList]
+      : Add[QueryParamAs[name, p, x], F, In, p, x] =
+    resolveParam[F, ParamSource.Query, name, p, x, QueryParamAs[name, p, x], In]
 
   implicit def allQueryServe[F[_]: Routed: Monad, name, In <: HList]
       : Add[AllQuery[name], F, In, name, Map[String, String]] =
     add(Routed.request[F].map(_.params))
 
-  implicit def queryFlagServe[F[_]: Routed: Monad, name: Name, x, In <: HList]
-      : Add[QueryFlag[name], F, In, name, Boolean] =
-    add[QueryFlag[name], F, In, Boolean, name](Routed.request[F].map(_.params.contains(Name[name].string)))
+  implicit def queryFlagServe[F[_]: Routed: Monad, name: Name, p, x, In <: HList]
+      : Add[QueryFlag[name], F, In, p, Boolean] =
+    add[QueryFlag[name], F, In, Boolean, p](Routed.request[F].map(_.params.contains(Name[name].string)))
 
-  implicit def captureServe[F[_]: Routed: Monad, name: Name, x: Param.PPath, In <: HList]
-      : Add[Capture[name, x], F, In, name, x] =
-    resolveParam[F, ParamSource.Path, name, x, Capture[name, x], In]
+  implicit def captureServe[F[_]: Routed: Monad, name: Name, p, x: Param.PPath, In <: HList]
+      : Add[CaptureAs[name, p, x], F, In, p, x] =
+    resolveParam[F, ParamSource.Path, name, p, x, CaptureAs[name, p, x], In]
 
-  implicit def headerServe[F[_]: Routed: Monad, name: Name, x: Param.PHeader, In <: HList]
-      : Add[Header[name, x], F, In, name, x] =
-    resolveParam[F, ParamSource.Header, name, x, Header[name, x], In]
+  implicit def headerServe[F[_]: Routed: Monad, name: Name, p, x: Param.PHeader, In <: HList]
+      : Add[HeaderAs[name, p, x], F, In, p, x] =
+    resolveParam[F, ParamSource.Header, name, p, x, HeaderAs[name, p, x], In]
 
-  implicit def cookieServe[F[_]: Routed: Monad, name: Name, x: Param.PCookie, In <: HList]
-      : Add[Cookie[name, x], F, In, name, x] =
-    resolveParam[F, ParamSource.Cookie, name, x, Cookie[name, x], In]
+  implicit def cookieServe[F[_]: Routed: Monad, name: Name, p, x: Param.PCookie, In <: HList]
+      : Add[CookieAs[name, p, x], F, In, p, x] =
+    resolveParam[F, ParamSource.Cookie, name, p, x, CookieAs[name, p, x], In]
 
-  implicit def formFieldServe[F[_]: Routed: Monad, name: Name, x: Param.PForm, In <: HList]
-      : Add[FormField[name, x], F, In, name, x] =
-    resolveParam[F, ParamSource.Form, name, x, FormField[name, x], In]
+  implicit def formFieldServe[F[_]: Routed: Monad, name: Name, p, x: Param.PForm, In <: HList]
+      : Add[FormFieldAs[name, p, x], F, In, p, x] =
+    resolveParam[F, ParamSource.Form, name, p, x, FormFieldAs[name, p, x], In]
 
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))
@@ -132,15 +134,15 @@ private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>
 
-  implicit def queryParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](implicit
+  implicit def queryParamsServe[F[_]: Routed: Monad, name: Name, p, x, In <: HList](implicit
       param: SingleParam[ParamSource.Query, x]
   ) =
-    add[QueryParams[name, x], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = false))
+    add[QueryParamsAs[name, p, x], F, In, List[x], p](extractQueryParams[F, name, x](allowEmpty = false))
 
-  implicit def queryOptParamsServe[F[_]: Routed: Monad, name: Name, x, In <: HList](implicit
+  implicit def queryOptParamsServe[F[_]: Routed: Monad, name: Name, p, x, In <: HList](implicit
       param: SingleParam[ParamSource.Query, x]
   ) =
-    add[QueryParams[name, Option[x]], F, In, List[x], name](extractQueryParams[F, name, x](allowEmpty = true))
+    add[QueryParamsAs[name, p, Option[x]], F, In, List[x], p](extractQueryParams[F, name, x](allowEmpty = true))
 
   private def extractQueryParams[F[_]: Routed: Monad, name: Name, x](
       allowEmpty: Boolean

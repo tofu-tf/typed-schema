@@ -76,9 +76,23 @@ Branching is done with the `<>` operator:
     ))
 ```
 
-
 Note that now you must implement `aloha` method in your handler
 or compile error will be raised in the `MkRoute` application
+
+
+You can use different parameters in your definition:
+
+```scala
+  def apiWithPathParam  = get |> operation("withPath")  |> capture[String]("name")    |> $$[String]
+  def apiWithQueryParam = get |> operation("withQuery") |> queryParam[String]("name") |> $$[String]
+  
+  def apiWithPlainPayload = opPost |> body[String]("name")     |> $$[String]
+  def apiWithJsonPayload  = opPut  |> jsonBody[String]("name") |> $$[String]
+  
+  // and combinations
+  
+  def apiForExample  = opGet |> capture[String]("locality") |> queryParam[String]("variant") |> $$[String]
+```
 
 Your definition could have custom parameters:
 
@@ -125,6 +139,23 @@ where
       else Left(ResponceUnhappy(s"Mood $mood is not happy"))
 ```
 
+Also, your definitions may have different server responses:
+```scala
+  def apiPlain  = get |> operation("plain") |> plain[String]
+  def apiJson   = get |> operation("json")  |> json[String]
+  
+  @derive(Swagger, codec, plainError(404))
+  final case class PlainNotFound(message: String) extends ResponceError
+  @derive(Swagger, codec, jsonError(404))
+  final case class JsonNotFound(message: String) extends ResponceError
+
+  def apiPlainWithPlainError  = get |> operation("plain-plain") |> plainErr[PlainNotFound, String]
+  def apiJsonWithPlainError   = get |> operation("json-plain")  |> jsonErr [PlainNotFound, String]
+  def apiPlainWithJsonError   = get |> operation("plain-json")  |> plainErr[JsonNotFound, String]
+  def apiJsonWithJsonError    = get |> operation("json-json")   |> jsonErr [JsonNotFound, String]
+```
+
+
 ### DSL
 All definition elements are functions with almost no implementation, returning types from the
 `ru.tinkoff.tschema.typeDSL._` package, or created by yourself.
@@ -133,7 +164,7 @@ All definition elements are functions with almost no implementation, returning t
 
 All interpreters just traversing the tree type and building construction using information from types only
 
-Type tree will consist of type constructors, subtypes of `DSlAtom` at it branches, and `DSLRes` at leafs.
+Type tree will consist of type constructors, subtypes of `DSLAtom` at it branches, and `DSLRes` at leafs.
 Each `DSLAtom` describes single step like parameter matching, filter or anything you'd like to do inside
 
 ### Akka http route.

@@ -30,17 +30,17 @@ object Version {
 
   val magnolia = "0.15.0"
 
-  val zio = "1.0.0-RC19-2"
+  val zio = "1.0.0-RC20"
 
   val zioCats = "2.0.0.0-RC14"
 
-  val finagle = "20.4.1"
+  val finagle = "20.5.0"
 
   val derevo = "0.11.3"
 
   val tofu = "0.7.5"
 
-  val swaggerUI = "3.25.3"
+  val swaggerUI = "3.25.4"
 
   val scalaTags = "0.9.1"
 

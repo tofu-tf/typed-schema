@@ -17,7 +17,7 @@ class SwaggerTypeableTest extends AnyFlatSpec {
         )
 
         assert(required.value == Vector("a"))
-      case res                            =>
+      case res                               =>
         fail("Unknown SwaggerType: " + res)
     }
   }

@@ -389,7 +389,7 @@ object SwaggerXMLOptions {
   implicit val codec: Codec.AsObject[SwaggerXMLOptions] = io.circe.derivation.deriveCodec
 }
 
-private [tschema] case class Discriminator(propertyName: String, mapping: Map[String, String] = Map.empty)
+private[tschema] case class Discriminator(propertyName: String, mapping: Map[String, String] = Map.empty)
 object Discriminator {
   implicit val codec: Codec.AsObject[Discriminator] = io.circe.derivation.deriveCodec
 }

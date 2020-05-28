@@ -94,11 +94,11 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       (PathSpec.op >> OpenApiOp.security).update(spec, _ :+ Map(name -> Vector.empty))
   }
 
-  private[swagger] def derivedParam[name, T, param[_, _]](in: In)(implicit
+  private[swagger] def derivedParam[name, p, T, param[_, _, _]](in: In)(implicit
       name: Name[name],
       param: AsOpenApiParam[T]
-  ): SwaggerMapper[param[name, T]] =
-    derivedParamAtom[name, T, param[name, T]](in)
+  ): SwaggerMapper[param[name, p, T]] =
+    derivedParamAtom[name, T, param[name, p, T]](in)
 
   private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(implicit
       name: Name[name],
@@ -131,20 +131,20 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
-  implicit def deriveQueryParam[name: Name, T: AsOpenApiParam] =
-    derivedParam[name, T, QueryParam](In.query)
+  implicit def deriveQueryParam[name: Name, p, T: AsOpenApiParam] =
+    derivedParam[name, p, T, QueryParamAs](In.query)
 
-  implicit def deriveOptQueryParams[name: Name, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
-    derivedParamAtom[name, Option[List[T]], QueryParams[name, Option[T]]](In.query)
+  implicit def deriveOptQueryParams[name: Name, p, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
+    derivedParamAtom[name, Option[List[T]], QueryParamsAs[name, p, Option[T]]](In.query)
 
-  implicit def deriveQueryFlag[name: Name]: SwaggerMapper[QueryFlag[name]] =
-    derivedParamAtom[name, Option[Boolean], QueryFlag[name]](In.query, flag = true)
+  implicit def deriveQueryFlag[name: Name, p]: SwaggerMapper[QueryFlagAs[name, p]] =
+    derivedParamAtom[name, Option[Boolean], QueryFlagAs[name, p]](In.query, flag = true)
 
-  implicit def deriveHeader[name: Name, T: AsSingleOpenApiParam] =
-    derivedParam[name, T, Header](In.header)
+  implicit def deriveHeader[name: Name, p, T: AsSingleOpenApiParam] =
+    derivedParam[name, p, T, HeaderAs](In.header)
 
-  implicit def deriveFormField[name: Name, T](implicit asParam: AsOpenApiParam[T]) =
-    fromFunc[FormField[name, T]] {
+  implicit def deriveFormField[name: Name, p, T](implicit asParam: AsOpenApiParam[T]) =
+    fromFunc[FormFieldAs[name, p, T]] {
       def param(field: OpenApiParamInfo, name: String) = MakeFormField(name, field.typ, field.required)
 
       val params = asParam match {
@@ -155,17 +155,17 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
     }
 
-  implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
-    derivedParam[name, T, Cookie](In.cookie)
+  implicit def deriveCookie[name: Name, p, T: AsOpenApiParam] =
+    derivedParam[name, p, T, CookieAs](In.cookie)
 
   implicit def deriveAllQuery[x]: SwaggerMapper[AllQuery[x]] = SwaggerMapper.empty
 
-  implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
-    derivedParam[name, T, Capture](In.path).map(PathSpec.path.update(_, s"{$name}" +: _))
+  implicit def derivePathParam[name, p, T: AsOpenApiParam](implicit name: Name[name]) =
+    derivedParam[name, p, T, CaptureAs](In.path).map(PathSpec.path.update(_, s"{$name}" +: _))
 
-  implicit def deriveReqOptBody[name, T](implicit
+  implicit def deriveReqOptBody[name, p, T](implicit
       content: SwaggerContent[T]
-  ): SwaggerMapper[ReqBody[name, Option[T]]] = {
+  ): SwaggerMapper[ReqBodyAs[name, p, Option[T]]] = {
     fromFunc(
       (PathSpec.op >> OpenApiOp.requestBody).set(
         _,
@@ -176,7 +176,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
           )
           .some
       )
-    ) andThen fromTypes[ReqBody[name, Option[T]]](content.collectTypes)
+    ) andThen fromTypes[ReqBodyAs[name, p, Option[T]]](content.collectTypes)
   }
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =

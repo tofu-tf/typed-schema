@@ -7,7 +7,7 @@ class SwaggerTypeableTest extends AnyFlatSpec {
 
   "SwaggerTypeable.genTypeable" should "derive typeable for case class" in {
     SwaggerTypeable.genTypeable[SwaggerTypeableTest.TestClass].typ match {
-      case SwaggerObject(props, required) =>
+      case SwaggerObject(props, required, _) =>
         val nowProps = props.map(p => p.copy(typ = Eval.now(p.typ.value)))
         assert(
           nowProps == Vector(
@@ -17,7 +17,7 @@ class SwaggerTypeableTest extends AnyFlatSpec {
         )
 
         assert(required.value == Vector("a"))
-      case res                            =>
+      case res                               =>
         fail("Unknown SwaggerType: " + res)
     }
   }

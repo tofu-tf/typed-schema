@@ -37,7 +37,7 @@ object MkService {
     }
 
     class ServePA[F[_], T] {
-      def apply[In, Out](in: In)(implicit serve: Serve[T, F, In, Out], F: FlatMap[F]) =
+      def apply[In, Out](in: In)(implicit F: Monad[F], serve: Serve[T, F, In, Out]) =
         new ServePA2[F, T, In, Out](in)(serve)
     }
 

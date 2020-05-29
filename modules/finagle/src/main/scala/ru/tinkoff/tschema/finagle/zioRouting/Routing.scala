@@ -1,4 +1,5 @@
-package ru.tinkoff.tschema.finagle.zioRouting
+package ru.tinkoff.tschema.finagle
+package zioRouting
 
 import cats.data.ReaderT
 import cats.effect.syntax.effect._
@@ -54,11 +55,10 @@ object Routing extends FInstanceDecl {
 
     promise
   }
+
 }
 
 private[finagle] class FInstanceDecl {
-
-  final case class Rejected(rej: Rejection) extends Throwable
 
   private def cachedMonadInstance[G[_]: Async] = Async[FHttp[G, *]]
 

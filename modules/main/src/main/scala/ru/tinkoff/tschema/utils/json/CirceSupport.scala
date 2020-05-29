@@ -24,7 +24,7 @@ object CirceSupport {
       .asScala
 
   def marshallEntity[T: Encoder]: ToEntityMarshaller[T] =
-    Marshaller.stringMarshaller(`application/json`).compose((_: T).asJson.pretty(printer))
+    Marshaller.stringMarshaller(`application/json`).compose((_: T).asJson.printWith(printer))
 
   def unmarshallEntity[T: Decoder]: FromEntityUnmarshaller[T] =
     Unmarshaller.stringUnmarshaller

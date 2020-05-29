@@ -7,6 +7,7 @@ import ru.tinkoff.tschema.syntax._
 
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.language.reflectiveCalls
 
 class InnerSuite extends AsyncFlatSpec with ScalatestRouteTest with Matchers {
 

@@ -114,8 +114,9 @@ val akka   = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka
 val zio    = List("dev.zio" %% "zio" % Version.zio, "dev.zio" %% "zio-interop-cats" % Version.zioCats)
 val tethys = List("core", "jackson").map(module => "com.tethys-json" %% s"tethys-$module" % Version.tethys)
 
-val reflect  = libraryDependencies += scalaOrganization.value % "scala-reflect"  % scalaVersion.value
-val compiler = libraryDependencies += scalaOrganization.value % "scala-compiler" % scalaVersion.value
+val reflect          = libraryDependencies += scalaOrganization.value   % "scala-reflect"           % scalaVersion.value
+val compiler         = libraryDependencies += scalaOrganization.value   % "scala-compiler"          % scalaVersion.value
+val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
 
 val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
 
@@ -132,12 +133,13 @@ lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatest
 
 lazy val commonSettings = publishSettings ++ List(
   scalaVersion := "2.13.2",
+  collectionCompat,
   compilerPlugins,
   commonScalacOptions,
   specificScalacOptions,
   crossCompile,
   setMinorVersion,
-  testLibs
+  testLibs,
 )
 
 lazy val simulacrumSettings = Seq(

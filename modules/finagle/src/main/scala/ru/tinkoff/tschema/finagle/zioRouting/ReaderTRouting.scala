@@ -59,9 +59,6 @@ object ReaderTRouting extends ReaderTInstanceDecl {
 }
 
 private[finagle] class ReaderTInstanceDecl {
-
-  final case class Rejected(rej: Rejection) extends Throwable
-
   private def cachedMonadInstance[G[_]: Async, R] = Async[ReaderHttp[G, R, *]]
 
   protected class ReaderTRoutedConvert[G[_]: Async, R]

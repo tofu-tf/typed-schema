@@ -27,6 +27,8 @@ import ru.tinkoff.tschema.common.Name
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
+import scala.collection.compat._
+
 @implicitNotFound("Could not find swagger atom for ${T}")
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
   self =>
@@ -57,7 +59,7 @@ trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
     def auths                             = self.auths
   }
 
-  def ++(that: TraversableOnce[(String, SwaggerType)]) = new SwaggerMapper[T] {
+  def ++(that: Iterable[(String, SwaggerType)]) = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec       = self.mapSpec(spec)
     def types: Map[String, DescribedType]       = self.types ++ that.map { case (name, typ) => name -> DescribedType(typ) }
     def auths: TreeMap[String, OpenApiSecurity] = self.auths

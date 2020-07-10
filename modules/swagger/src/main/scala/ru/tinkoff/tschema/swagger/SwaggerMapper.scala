@@ -219,9 +219,10 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       scheme: Option[OpenApiSecurityScheme] = None,
       name: Option[String] = None,
       typ: OpenApiSecurityType = OpenApiSecurityType.http,
-      in: Option[OpenApiParam.In] = None
+      in: Option[OpenApiParam.In] = None,
+      flows: Option[List[OpenApiFlow]] = None
   ): SwaggerMapper[T] =
-    fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name))
+    fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name, flows = flows))
 
   implicit def basicSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BasicAuth[realm, name, x]] =
     swaggerAuth[realm, x, BasicAuth[realm, name, x]](scheme = OpenApiSecurityScheme.basic.some)
@@ -237,6 +238,32 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       typ = OpenApiSecurityType.apiKey,
       in = param.in.some,
       name = Name[name].string.some
+    )
+
+  case class OAuthConfig(realm: String, flows: List[OpenApiFlow])
+
+  trait Config1[A] {
+    type realm <: String with Singleton
+  }
+
+  object Config1 {
+    type Aux[A, realm0] = Config1[A] {
+      type realm = realm0
+    }
+  }
+
+  implicit def makeConfig1[A <: Singleton with OAuthConfig : ValueOf]: { val stable: A; type realm = stable.realm.type }  =
+    new Config1[A] {
+      val stable = valueOf[A]
+      override type realm = stable.realm.type
+    }
+
+  implicit def oauth2SwaggerAuth[x, skip, conf, name, realm0: Name](implicit
+    conf1: Config1[conf] { type realm = realm0 }
+  ): SwaggerMapper[OAuth2Auth[skip, x, conf, name]] =
+    swaggerAuth[realm0, x, OAuth2Auth[skip, x, conf, name]](
+      typ = OpenApiSecurityType.oauth2,
+      //flows = config.flows.some.filter(_.isEmpty)
     )
 
   implicit val monoidKInstance = new MonoidK[SwaggerMapper] {

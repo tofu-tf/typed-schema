@@ -78,7 +78,8 @@ final case class OpenApiSecurity(
     scheme: Option[OpenApiSecurityScheme] = None,
     name: Option[String] = None,
     in: Option[OpenApiParam.In] = None,
-    description: Option[SwaggerDescription] = None
+    description: Option[SwaggerDescription] = None,
+    flows: Option[List[OpenApiFlow]]
 )
 object OpenApiSecurity
 
@@ -99,6 +100,20 @@ object OpenApiSecurityScheme       extends Enum[OpenApiSecurityScheme] with Circ
   case object basic  extends OpenApiSecurityScheme
   case object bearer extends OpenApiSecurityScheme
 }
+
+sealed trait OpenApiFlow extends EnumEntry {
+  val refreshUrl: Option[String] //TODO URL?
+  val scopes: Map[String, String]
+}
+object OpenApiFlow extends Enum[OpenApiFlow] with CirceEnum[OpenApiFlow] {
+  val values = findValues
+
+  case class Implicit(authorizationUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+  case class Password(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+  case class ClientCredentials(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+  case class AuthorizationCode(authorizationUrl: String, tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+}
+
 @JsonCodec(Configuration.encodeOnly)
 final case class OpenApiSchema()
 

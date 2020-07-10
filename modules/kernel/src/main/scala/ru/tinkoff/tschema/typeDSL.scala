@@ -182,6 +182,11 @@ object typeDSL {
   final class BearerAuth[realm, name, T] extends DSLAtomAuth
 
   /**
+    * defines oauth2 authentication
+    */
+  final class OAuth2Auth[+T, R, conf, name] extends DSLAtomAuth
+
+  /**
     * defines api key authentication scheme
     * @tparam Param on of: Header, Cookie or Query
     */

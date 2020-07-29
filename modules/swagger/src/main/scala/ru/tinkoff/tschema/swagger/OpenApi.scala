@@ -79,7 +79,7 @@ final case class OpenApiSecurity(
     name: Option[String] = None,
     in: Option[OpenApiParam.In] = None,
     description: Option[SwaggerDescription] = None,
-    flows: Option[List[OpenApiFlow]]
+    flows: Option[OpenApiFlows]
 )
 object OpenApiSecurity
 
@@ -101,17 +101,24 @@ object OpenApiSecurityScheme       extends Enum[OpenApiSecurityScheme] with Circ
   case object bearer extends OpenApiSecurityScheme
 }
 
-sealed trait OpenApiFlow extends EnumEntry {
+@JsonCodec
+case class OpenApiFlows(
+  `implicit`        : Option[OpenApiFlow.Implicit] = None,
+  password          : Option[OpenApiFlow.Password] = None,
+  clientCredentials : Option[OpenApiFlow.ClientCredentials] = None,
+  authorizationCode : Option[OpenApiFlow.AuthorizationCode] = None,
+)
+
+@JsonCodec
+sealed trait OpenApiFlow {
   val refreshUrl: Option[String] //TODO URL?
   val scopes: Map[String, String]
 }
-object OpenApiFlow extends Enum[OpenApiFlow] with CirceEnum[OpenApiFlow] {
-  val values = findValues
-
-  case class Implicit(authorizationUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
-  case class Password(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
-  case class ClientCredentials(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
-  case class AuthorizationCode(authorizationUrl: String, tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+object OpenApiFlow {
+  @JsonCodec case class Implicit(authorizationUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+  @JsonCodec case class Password(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+  @JsonCodec case class ClientCredentials(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
+  @JsonCodec case class AuthorizationCode(authorizationUrl: String, tokenUrl: String, refreshUrl: Option[String] = None, scopes: Map[String, String] = Map.empty) extends OpenApiFlow
 }
 
 @JsonCodec(Configuration.encodeOnly)

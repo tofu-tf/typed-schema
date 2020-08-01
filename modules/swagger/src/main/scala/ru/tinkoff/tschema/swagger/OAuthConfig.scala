@@ -16,7 +16,7 @@ object ConfigDesc {
 
   def apply[A](implicit ev: ConfigDesc[A]): ConfigDesc[A] = ev
 
-  implicit def makeConfig1[A <: OAuthConfig : ValueOf]: ConfigDesc[A] { val stable: A; type realm = stable.realm.type }  =
+  implicit def makeConfigDesc[A <: OAuthConfig : ValueOf]: ConfigDesc[A] { val stable: A; type realm = stable.realm.type }  =
     new ConfigDesc[A] {
       val stable = valueOf[A]
       override type realm = stable.realm.type

@@ -1,12 +1,16 @@
 package ru.tinkoff.tschema.swagger
 
-case class OAuthConfig(realm: String, flows: OpenApiFlows)
+import scala.collection.immutable.TreeMap
+
+case class OAuthConfig(realm: String, flows: TreeMap[String, OpenApiFlow] = TreeMap.empty) {
+  def flow(flow: OpenApiFlow): OAuthConfig = copy(realm, flows.updated(flow.name, flow))
+}
 
 trait ConfigDesc[A] {
   type realm <: String with Singleton
 
   val realm: String
-  val flows: OpenApiFlows
+  val flows: TreeMap[String, OpenApiFlow]
 }
 
 object ConfigDesc {
@@ -22,6 +26,6 @@ object ConfigDesc {
       override type realm = stable.realm.type
 
       override val realm: String = stable.realm
-      override val flows: OpenApiFlows = stable.flows
+      override val flows: TreeMap[String, OpenApiFlow] = stable.flows
     }
 }

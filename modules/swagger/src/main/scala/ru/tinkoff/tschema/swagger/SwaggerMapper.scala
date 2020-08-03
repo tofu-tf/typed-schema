@@ -220,7 +220,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       name: Option[String] = None,
       typ: OpenApiSecurityType = OpenApiSecurityType.http,
       in: Option[OpenApiParam.In] = None,
-      flows: Option[OpenApiFlows] = None
+      flows: TreeMap[String, OpenApiFlow] = TreeMap.empty
   ): SwaggerMapper[T] =
     fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name, flows = flows))
 
@@ -244,7 +244,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     val conf = ConfigDesc[conf]
     swaggerAuth[realm0, x, OAuth2Auth[skip, x, conf, name]](
       typ = OpenApiSecurityType.oauth2,
-      flows = conf.flows.some
+      flows = conf.flows
     )(new Name[realm0](conf.realm))
   }
 

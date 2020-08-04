@@ -105,11 +105,28 @@ sealed trait OpenApiFlow { self: Product =>
   val refreshUrl: Option[String] //TODO URL?
   val scopes: Map[String, String]
 }
-object OpenApiFlow {
-  @JsonCodec(Configuration.encodeOnly) case class `implicit`(authorizationUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
-  @JsonCodec(Configuration.encodeOnly) case class password(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
-  @JsonCodec(Configuration.encodeOnly) case class clientCredentials(tokenUrl: String, refreshUrl: Option[String], scopes: Map[String, String]) extends OpenApiFlow
-  @JsonCodec(Configuration.encodeOnly) case class authorizationCode(authorizationUrl: String, tokenUrl: String, refreshUrl: Option[String] = None, scopes: Map[String, String] = Map.empty) extends OpenApiFlow
+object OpenApiFlow       {
+  @JsonCodec(Configuration.encodeOnly) case class `implicit`(
+      authorizationUrl: String,
+      refreshUrl: Option[String],
+      scopes: Map[String, String]
+  ) extends OpenApiFlow
+  @JsonCodec(Configuration.encodeOnly) case class password(
+      tokenUrl: String,
+      refreshUrl: Option[String],
+      scopes: Map[String, String]
+  ) extends OpenApiFlow
+  @JsonCodec(Configuration.encodeOnly) case class clientCredentials(
+      tokenUrl: String,
+      refreshUrl: Option[String],
+      scopes: Map[String, String]
+  ) extends OpenApiFlow
+  @JsonCodec(Configuration.encodeOnly) case class authorizationCode(
+      authorizationUrl: String,
+      tokenUrl: String,
+      refreshUrl: Option[String] = None,
+      scopes: Map[String, String] = Map.empty
+  ) extends OpenApiFlow
 
   implicit val encodeOpenApiFlow: Encoder[OpenApiFlow] = Encoder.instance {
     case v: `implicit`        => v.asJson

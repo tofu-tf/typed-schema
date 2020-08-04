@@ -240,7 +240,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       name = Name[name].string.some
     )
 
-  implicit def oauth2SwaggerAuth[x, skip, conf: ConfigDesc.Aux[*, realm0], name, realm0]: SwaggerMapper[OAuth2Auth[skip, x, conf, name]] = {
+  implicit def oauth2SwaggerAuth[x, skip, conf: ConfigDesc.Aux[*, realm0], name, realm0]
+      : SwaggerMapper[OAuth2Auth[skip, x, conf, name]] = {
     val conf = ConfigDesc[conf]
     swaggerAuth[realm0, x, OAuth2Auth[skip, x, conf, name]](
       typ = OpenApiSecurityType.oauth2,

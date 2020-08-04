@@ -46,7 +46,6 @@ object Authorization {
   def basic[F[_], A](implicit auth: AuthorizationS[Basic, F, A]): AuthorizationS[Basic, F, A]    = auth
   def bearer[F[_], A](implicit auth: AuthorizationS[Bearer, F, A]): AuthorizationS[Bearer, F, A] = auth
 
-
   implicit def optional[K <: Kind, F[_]: Applicative, A, R](implicit
       auth: Authorization[K, F, A, R]
   ): Authorization[K, F, Option[A], R] =
@@ -54,7 +53,7 @@ object Authorization {
 
   implicit def applicative[K <: Kind, F[_]: Applicative, R]: Applicative[Authorization[K, F, *, R]] =
     new Applicative[Authorization[K, F, *, R]] {
-      def pure[A](x: A): Authorization[K, F, A, R]                                                         = _ => x.pure[F]
+      def pure[A](x: A): Authorization[K, F, A, R]                                                               = _ => x.pure[F]
       def ap[A, B](ff: Authorization[K, F, A => B, R])(fa: Authorization[K, F, A, R]): Authorization[K, F, B, R] =
         os => ff(os) ap fa(os)
     }
@@ -79,8 +78,9 @@ private[finagle] trait ServeAuthInstances { self: Serve.type =>
       : Add[BearerAuth[realm, name, x], F, In, name, x] =
     authServe[F, realm, name, x, In, Bearer, BearerAuth[realm, name, x]]
 
-  implicit def oauth2Serve[F[_]: Routed: Monad, conf, T, R, In <: HList, name](
-    implicit A: Authorization[OAuth2, F, T, R], P: Provide[F, R]
+  implicit def oauth2Serve[F[_]: Routed: Monad, conf, T, R, In <: HList, name](implicit
+      A: Authorization[OAuth2, F, T, R],
+      P: Provide[F, R]
   ): Add[OAuth2Auth[T, R, conf, name], F, In, name, T] = add(P.provide >>= A.apply)
 }
 

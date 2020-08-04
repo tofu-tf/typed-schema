@@ -6,6 +6,8 @@ case class OAuthConfig(realm: String, flows: TreeMap[String, OpenApiFlow] = Tree
   def flow(flow: OpenApiFlow): OAuthConfig = copy(realm, flows.updated(flow.name, flow))
 }
 
+object OAuthConfig extends OAuthConfigInstances
+
 trait ConfigDesc[A] {
   type realm <: String with Singleton
 
@@ -19,13 +21,4 @@ object ConfigDesc {
   }
 
   def apply[A](implicit ev: ConfigDesc[A]): ConfigDesc[A] = ev
-
-  implicit def makeConfigDesc[A <: OAuthConfig : ValueOf]: ConfigDesc[A] { val stable: A; type realm = stable.realm.type }  =
-    new ConfigDesc[A] {
-      val stable = valueOf[A]
-      override type realm = stable.realm.type
-
-      override val realm: String = stable.realm
-      override val flows: TreeMap[String, OpenApiFlow] = stable.flows
-    }
 }

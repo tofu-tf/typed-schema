@@ -84,4 +84,11 @@ object syntax extends CommonSyntax {
 
   def apiKeyAuth[realm, Param <: CanHoldApiKey](realm: Witness.Aux[realm], param: Param): ApiKeyAuth[realm, Param] =
     new ApiKeyAuth
+
+  def oauth[R, T] = new MkOAuth[R, T]
+
+  class MkOAuth[R, T] {
+    def apply[name, conf](name: Witness.Aux[name], conf: Witness.Aux[conf]): OAuth2Auth[T, R, conf, name] =
+      new OAuth2Auth
+  }
 }

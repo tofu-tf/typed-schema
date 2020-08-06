@@ -6,11 +6,12 @@ import cats.syntax.apply._
 import cats.syntax.traverse._
 import cats.syntax.flatMap._
 import com.twitter.util.Base64StringEncoder
-import ru.tinkoff.tschema.finagle.Authorization.{AuthorizationS, Basic, Bearer, Kind, OAuth2, Provide}
+import ru.tinkoff.tschema.finagle.Authorization.{AuthorizationS, Basic, Bearer, Kind, OAuth2}
 import ru.tinkoff.tschema.typeDSL.{ApiKeyAuth, BasicAuth, BearerAuth, CanHoldApiKey, OAuth2Auth}
 import shapeless.HList
 import ru.tinkoff.tschema.finagle.Rejection.unauthorized
 import ru.tinkoff.tschema.common.Name
+import ru.tinkoff.tschema.utils.Provision
 
 import scala.annotation.tailrec
 
@@ -30,10 +31,6 @@ object Authorization {
   type OAuth2 = OAuth2.type
 
   type AuthorizationS[K <: Kind, F[_], A] = Authorization[K, F, A, String]
-
-  trait Provide[F[_], A] {
-    def provide: F[Option[A]]
-  }
 
   def require[K <: Kind] = new Require[K](true)
   class Require[K <: Kind](val dummy: Boolean) extends AnyVal {
@@ -80,7 +77,7 @@ private[finagle] trait ServeAuthInstances { self: Serve.type =>
 
   implicit def oauth2Serve[F[_]: Routed: Monad, conf, T, R, In <: HList, name](implicit
       A: Authorization[OAuth2, F, T, R],
-      P: Provide[F, R]
+      P: Provision[F, R]
   ): Add[OAuth2Auth[T, R, conf, name], F, In, name, T] = add(P.provide >>= A.apply)
 }
 

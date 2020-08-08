@@ -1,5 +1,5 @@
 object Version {
-  val akkaHttpCirce = "1.32.0"
+  val akkaHttpCirce = "1.34.0"
 
   val swaggerUI = "3.25.5"
 

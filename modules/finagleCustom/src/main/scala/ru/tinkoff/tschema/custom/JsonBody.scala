@@ -6,7 +6,8 @@ import ru.tinkoff.tschema.typeDSL.{DSLAtom, ReqBody}
 import shapeless.HList
 
 /** special container for JSON bodies it would try Tethys Reader first, then Circe Decoder
-  * you can define your own instance for your types*/
+  * you can define your own instance for your types
+  */
 class JsonBody[name, A] extends DSLAtom
 
 object JsonBody {

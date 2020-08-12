@@ -35,7 +35,8 @@ object typeDSL {
   }
 
   /**
-    * naming intermediate group of methods */
+    * naming intermediate group of methods
+    */
   class Group[key] extends DSLAtom
 
   object Group {

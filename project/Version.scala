@@ -34,7 +34,7 @@ object Version {
 
   val zioCats = "2.0.0.0-RC14"
 
-  val finagle = "20.5.0"
+  val finagle = "20.8.0"
 
   val derevo = "0.11.3"
 
@@ -44,7 +44,7 @@ object Version {
 
   val scalaTags = "0.9.1"
 
-  val scalaTest = "3.2.1"
+  val scalaTest = "3.1.3"
 
   val scalaCheck = "1.14.3"
 

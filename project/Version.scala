@@ -8,13 +8,13 @@ object Version {
 
   val akka = "2.6.5"
 
-  val akkaHttp = "10.1.12"
+  val akkaHttp = "10.2.0"
 
   val shapeless = "2.3.3"
 
   val kindProjector = "0.10.3"
 
-  val akkaHttpCirce = "1.32.0"
+  val akkaHttpCirce = "1.34.0"
 
   val cats = "2.1.1"
 
@@ -32,13 +32,13 @@ object Version {
 
   val zio = "1.0.0-RC20"
 
-  val zioCats = "2.0.0.0-RC14"
+  val zioCats = "2.1.4.0"
 
   val finagle = "20.8.0"
 
   val derevo = "0.11.3"
 
-  val tofu = "0.7.6"
+  val tofu = "0.7.9"
 
   val swaggerUI = "3.25.5"
 

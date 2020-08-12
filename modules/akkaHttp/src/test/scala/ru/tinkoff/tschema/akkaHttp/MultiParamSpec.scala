@@ -84,5 +84,5 @@ object MultiParamSpec {
   import Directives._
   val kek = Directives.parameter("kek".as[Option[String]])(os => complete(os))
 
-  parameters(("raw".as[Boolean], "offset".as[Int], "pageSize".as[Int]))
+  parameters("raw".as[Boolean], "offset".as[Int], "pageSize".as[Int])
 }

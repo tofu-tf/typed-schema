@@ -1,19 +1,17 @@
 package ru.tinkoff.tschema.swagger
 
-import cats.instances.map._
 import cats.syntax.option._
 import cats.{Endo, Monoid, MonoidK}
 import ru.tinkoff.tschema.macros._
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
 import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
-import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.optics
-import ru.tinkoff.tschema.utils.optics._
-import tofu.optics.functions.{some, vecItems}
+import tofu.optics.functions.some
 import tofu.optics.macros.GenContains
-import tofu.optics.{Contains, Update, chain, functions}
+import tofu.optics.tags.every
+import tofu.optics.{Contains, Update}
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
@@ -115,7 +113,7 @@ object SwaggerBuilder {
               OpenApiOp.requestBody >> some[OpenApiRequestBody] >> OpenApiRequestBody.description,
               MethodTarget.Body
             ) andThen
-            readDescrSub(OpenApiOp.parameters >> vecItems[OpenApiParam, OpenApiParam])(
+            readDescrSub(OpenApiOp.parameters > every end)(
               OpenApiParam.description,
               param => MethodTarget.Param(param.name)
             ) andThen
@@ -135,10 +133,7 @@ object SwaggerBuilder {
             (DescribedType.title.update(_, typ(TypeTarget.Title) orElse _)) andThen
               (DescribedType.description.update(_, typ(TypeTarget.Type) orElse _)) andThen
               (
-                (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties >> vecItems[
-                  SwaggerProperty,
-                  SwaggerProperty
-                ]).update(
+                (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties > every end).update(
                   _,
                   prop => SwaggerProperty.description.update(prop, typ(TypeTarget.Field(prop.name)) orElse _)
                 )

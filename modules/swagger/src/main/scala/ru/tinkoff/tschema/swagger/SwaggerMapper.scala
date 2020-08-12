@@ -219,9 +219,10 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       scheme: Option[OpenApiSecurityScheme] = None,
       name: Option[String] = None,
       typ: OpenApiSecurityType = OpenApiSecurityType.http,
-      in: Option[OpenApiParam.In] = None
+      in: Option[OpenApiParam.In] = None,
+      flows: TreeMap[String, OpenApiFlow] = TreeMap.empty
   ): SwaggerMapper[T] =
-    fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name))
+    fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name, flows = flows))
 
   implicit def basicSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BasicAuth[realm, name, x]] =
     swaggerAuth[realm, x, BasicAuth[realm, name, x]](scheme = OpenApiSecurityScheme.basic.some)
@@ -238,6 +239,15 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       in = param.in.some,
       name = Name[name].string.some
     )
+
+  implicit def oauth2SwaggerAuth[x, skip, conf: ConfigDesc.Aux[*, realm0], name, realm0]
+      : SwaggerMapper[OAuth2Auth[skip, x, conf, name]] = {
+    val conf = ConfigDesc[conf]
+    swaggerAuth[realm0, x, OAuth2Auth[skip, x, conf, name]](
+      typ = OpenApiSecurityType.oauth2,
+      flows = conf.flows
+    )(new Name[realm0](conf.realm))
+  }
 
   implicit val monoidKInstance = new MonoidK[SwaggerMapper] {
     def empty[A]: SwaggerMapper[A]                                              = SwaggerMapper.empty

@@ -82,4 +82,11 @@ object syntax extends CommonSyntax {
 
   def apiKeyAuth[realm <: Singleton, Param <: CanHoldApiKey](realm: realm, param: Param): ApiKeyAuth[realm, Param] =
     new ApiKeyAuth
+
+  def oauth[R, T] = new MkOAuth[R, T]
+
+  class MkOAuth[R, T] {
+    def apply[name <: Singleton, conf <: Singleton](name: name, conf: conf): OAuth2Auth[T, R, conf, name] =
+      new OAuth2Auth
+  }
 }

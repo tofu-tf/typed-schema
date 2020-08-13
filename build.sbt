@@ -32,7 +32,8 @@ publishMavenStyle in ThisBuild := true
 
 homepage in ThisBuild := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
 developers in ThisBuild := List(
-  Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
+  Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois")),
+  Developer("REDNBLACK", "Boris Potepun", "boris.p@protonmail.com", url("https://github.com/REDNBLACK"))
 )
 
 val minorVersion = SettingKey[Int]("minor scala version")

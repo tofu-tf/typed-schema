@@ -80,13 +80,13 @@ val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.m
 val tofuOptics =
   libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe =
+val circe      =
   libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
     "derivation",
     "derivation-annotations"
   ).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
 
-val scalatags = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
+val scalatags  = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
 val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
@@ -98,11 +98,11 @@ val shapeless  = "com.chuusai"   %% "shapeless"   % Version.shapeless
 val enumeratum = "com.beachape"  %% "enumeratum"  % Version.enumeratum
 
 val akkaHttpLib     = "com.typesafe.akka"    %% "akka-http"            % Version.akkaHttp
-val akkaTestKit     = "com.typesafe.akka"    %% "akka-testkit"         % Version.akka % Test
+val akkaTestKit     = "com.typesafe.akka"    %% "akka-testkit"         % Version.akka     % Test
 val akkaHttpTestKit = "com.typesafe.akka"    %% "akka-http-testkit"    % Version.akkaHttp % Test
 val finagleHttp     = "com.twitter"          %% "finagle-http"         % Version.finagle
 val derevo          = "org.manatki"          %% "derevo-cats"          % Version.derevo
-val swaggerUILib    = "org.webjars.npm"      % "swagger-ui-dist"       % Version.swaggerUI
+val swaggerUILib    = "org.webjars.npm"       % "swagger-ui-dist"      % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"          %% "scalatags"            % Version.scalaTags
 val env             = "ru.tinkoff"           %% "tofu-env"             % Version.tofu
 val scalapb         = "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % Version.scalapb

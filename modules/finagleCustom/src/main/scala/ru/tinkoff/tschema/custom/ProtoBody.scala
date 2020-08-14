@@ -9,12 +9,12 @@ import shapeless.HList
 class ProtoBody[name, A] extends DSLAtom
 
 object ProtoBody {
-  implicit def protoBodyServe[F[_]: FlatMap, name, A, In <: HList](
-      implicit A: ProtoParseBody[F, A]
+  implicit def protoBodyServe[F[_]: FlatMap, name, A, In <: HList](implicit
+      A: ProtoParseBody[F, A]
   ): Add[ProtoBody[name, A], F, In, name, A] =
     add[ProtoBody[name, A], F, In, A, name](A.parse())
 
-  implicit def protoBodySwagger[name, A](
-      implicit ev: SwaggerMapper[ReqBody[name, A]]
+  implicit def protoBodySwagger[name, A](implicit
+      ev: SwaggerMapper[ReqBody[name, A]]
   ): SwaggerMapper[ProtoBody[name, A]] = ev.as[ProtoBody[name, A]]
 }

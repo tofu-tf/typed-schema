@@ -35,7 +35,8 @@ object typeDSL {
   }
 
   /**
-    * naming intermediate group of methods */
+    * naming intermediate group of methods
+    */
   class Group[key] extends DSLAtom
 
   object Group {
@@ -110,7 +111,8 @@ object typeDSL {
     * @tparam name name of param
     * @tparam x    type of param, should have instance of `FromQueryParam`
     */
-  final class QueryParam[name, x] extends DSLAtom with CanHoldApiKey
+  final class QueryParamAs[name, p, x] extends DSLAtom with CanHoldApiKey
+  type QueryParam[name, x] = QueryParamAs[name, name, x]
 
   /**
     * captures param from path element
@@ -118,7 +120,8 @@ object typeDSL {
     * @tparam name name of param, have no effect to routing
     * @tparam x    type of param, should have instance of `FromPathParam`
     */
-  final class Capture[name, x] extends DSLAtom
+  final class CaptureAs[name, p, x] extends DSLAtom
+  type Capture[name, x] = CaptureAs[name, name, x]
 
   /**
     * captures param list from query
@@ -126,21 +129,24 @@ object typeDSL {
     * @tparam name name of param
     * @tparam x    type of param, should have instance of `FromQueryParam`
     */
-  final class QueryParams[name, x] extends DSLAtom
+  final class QueryParamsAs[name, p, x] extends DSLAtom
+  type QueryParams[name, x] = QueryParamsAs[name, name, x]
 
   /**
     * captures fact of provision of param in query
     *
     * @tparam name name of param
     */
-  final class QueryFlag[name] extends DSLAtom
+  final class QueryFlagAs[name, p] extends DSLAtom
+  type QueryFlag[name] = QueryFlagAs[name, name]
 
   /**
     * captures request body and unmarshalls in to requested type
     *
     * @tparam x type of body, should have `FromRequestUnmarshaller` instance
     */
-  final class ReqBody[name, x] extends DSLAtom
+  final class ReqBodyAs[name, p, x] extends DSLAtom
+  type ReqBody[name, x] = ReqBodyAs[name, name, x]
 
   /**
     * captures header value
@@ -148,7 +154,8 @@ object typeDSL {
     * @tparam name header name
     * @tparam x    parameter type, should have `FromHeader` instance
     */
-  final class Header[name, x] extends DSLAtom with CanHoldApiKey
+  final class HeaderAs[name, p, x] extends DSLAtom with CanHoldApiKey
+  type Header[name, x] = HeaderAs[name, name, x]
 
   /**
     * captures field value from form data
@@ -156,12 +163,14 @@ object typeDSL {
     * @tparam name field name
     * @tparam x    parameter type, should have `FromFormParam` instance
     */
-  final class FormField[name, x] extends DSLAtom
+  final class FormFieldAs[name, p, x] extends DSLAtom
+  type FormField[name, x] = FormFieldAs[name, name, x]
 
   /**
     * captures field value from Cookie
     */
-  final class Cookie[name, x] extends DSLAtom with CanHoldApiKey
+  final class CookieAs[name, p, x] extends DSLAtom with CanHoldApiKey
+  type Cookie[name, x] = CookieAs[name, name, x]
 
   /**
     * defines basic authentication scheme
@@ -172,6 +181,11 @@ object typeDSL {
     * defines bearer authentication scheme
     */
   final class BearerAuth[realm, name, T] extends DSLAtomAuth
+
+  /**
+    * defines oauth2 authentication
+    */
+  final class OAuth2Auth[+T, R, conf, name] extends DSLAtomAuth
 
   /**
     * defines api key authentication scheme

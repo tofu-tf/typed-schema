@@ -7,6 +7,7 @@ import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
 import monix.eval.Task
 import monix.execution.Scheduler
+import ru.tinkoff.tschema.finagle.Rejection.Recover
 import ru.tinkoff.tschema.finagle._
 import ru.tinkoff.tschema.finagle.envRouting.TaskRouting.TaskHttp
 import ru.tinkoff.tschema.utils.SubString
@@ -25,21 +26,21 @@ object TaskRouting extends TaskInstanceDecl {
   implicit val taskRouted: RoutedPlus[TaskHttp] with ConvertService[TaskHttp] with LiftHttp[TaskHttp, Task] =
     new TaskRoutedConvert
 
-  implicit def envRunnable(
-      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
+  implicit def envRunnable(implicit
+      recover: Recover[TaskHttp] = Recover.default[TaskHttp]
   ): RunHttp[TaskHttp, Task] =
     response => Task.deferAction(implicit sched => Task.delay(execResponse(response, _)))
 
   private[this] def execResponse(
       envResponse: TaskHttp[Response],
       request: Request
-  )(implicit sc: Scheduler, handler: Rejection.Handler): Future[Response] = {
+  )(implicit sc: Scheduler, recover: Recover[TaskHttp]): Future[Response] = {
     val promise = Promise[Response]
     val routing = TaskRouting(request, SubString(request.path), 0)
 
-    val cancelable = envResponse.run(routing).onErrorRecover { case Rejected(rej) => handler(rej) }.runAsync {
+    val cancelable = envResponse.onErrorRecoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {
       case Right(res) => promise.setValue(res)
-      case Left(ex) =>
+      case Left(ex)   =>
         val resp = Response(Status.InternalServerError)
         resp.setContentString(ex.getMessage)
         promise.setValue(resp)
@@ -62,8 +63,8 @@ private[finagle] class TaskInstanceDecl {
 
     def withMatched[A](m: Int, fa: F[A]): F[A] = fa.local(_.copy(matched = m))
 
-    def path: F[CharSequence]    = Env.fromFunc(_.path)
-    def request: F[http.Request] = Env.fromFunc(_.request)
+    def path: F[CharSequence]                 = Env.fromFunc(_.path)
+    def request: F[http.Request]              = Env.fromFunc(_.request)
     def reject[A](rejection: Rejection): F[A] =
       Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
@@ -87,7 +88,7 @@ private[finagle] class TaskInstanceDecl {
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A] = Env.raiseError(envRouting.Rejected(map))
+    @inline private[this] def throwRej[A](map: Rejection): F[A]                = Env.raiseError(envRouting.Rejected(map))
   }
 
 }

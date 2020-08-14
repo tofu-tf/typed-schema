@@ -10,8 +10,8 @@ class MagnoliaSpec extends AnyFlatSpec {
   "magnolia" should "derive known types" in {
     implicit lazy val weirdThingSwaggerTypeable: SwaggerTypeable[WeirdThing] =
       SwaggerTypeable.make(SwaggerPrimitive.boolean).as[WeirdThing]
-    implicit lazy val lots: SwaggerTypeable[LotOfVariants] = MagnoliaSwagger.derivedInstance
-    lazy val testSwagger: SwaggerTypeable[TopStuff]        = magnoliaDerive
+    implicit lazy val lots: SwaggerTypeable[LotOfVariants]                   = MagnoliaSwagger.derivedInstance
+    lazy val testSwagger: SwaggerTypeable[TopStuff]                          = magnoliaDerive
   }
 
   it should "not derive unknown types" in {
@@ -23,5 +23,5 @@ object MagnoliaSpec {
 
   implicit val cfg: SwaggerTypeable.Config =
     SwaggerTypeable.defaultConfig.snakeCaseProps.snakeCaseAlts.withDiscriminator("type")
-  implicit val printer = Printer.spaces4.copy(dropNullValues = true)
+  implicit val printer                     = Printer.spaces4.copy(dropNullValues = true)
 }

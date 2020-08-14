@@ -15,7 +15,7 @@ import org.scalatest.propspec.AnyPropSpec
 trait ForAllTypes[S >: All <: ParamSource, L] {
   def check(checker: Checker[S]): Unit
 }
-object ForAllTypes {
+object ForAllTypes                            {
   def apply[L] = new Applier[L]
 
   class Applier[L] {
@@ -30,11 +30,13 @@ object ForAllTypes {
     def check(checker: Checker[S]) = ()
   }
 
-  implicit def hconsChecks[S >: All <: ParamSource, A, Tail <: HList](implicit F: SingleParam[S, A],
-                                                                      arb: Arbitrary[A],
-                                                                      tt: TypeTag[A],
-                                                                      eqt: Equality[A],
-                                                                      tail: ForAllTypes[S, Tail]) =
+  implicit def hconsChecks[S >: All <: ParamSource, A, Tail <: HList](implicit
+      F: SingleParam[S, A],
+      arb: Arbitrary[A],
+      tt: TypeTag[A],
+      eqt: Equality[A],
+      tail: ForAllTypes[S, Tail]
+  ) =
     new ForAllTypes[S, A :: Tail] {
       def check(checker: Checker[S]): Unit = {
         checker.check[A](F, arb, tt, eqt)
@@ -42,7 +44,10 @@ object ForAllTypes {
       }
     }
 
-  implicit def tupleCheck[S >: All <: ParamSource, T, L <: HList](implicit gen: Generic.Aux[T, L], forAll: ForAllTypes[S, L]) =
+  implicit def tupleCheck[S >: All <: ParamSource, T, L <: HList](implicit
+      gen: Generic.Aux[T, L],
+      forAll: ForAllTypes[S, L]
+  ) =
     new ForAllTypes[S, T] {
       def check(checker: Checker[S]): Unit = forAll.check(checker)
     }

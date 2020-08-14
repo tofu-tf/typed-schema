@@ -39,7 +39,7 @@ class DescrSpec extends AnyFlatSpec with Matchers {
         case SwaggerProperty("y", Some(`yDescr`), _) => true
         case _                                       => false
       }
-    case _ => false
+    case _                  => false
   })
 
 }

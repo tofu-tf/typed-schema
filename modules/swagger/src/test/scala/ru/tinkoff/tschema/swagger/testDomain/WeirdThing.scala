@@ -5,8 +5,6 @@ import ru.tinkoff.tschema.swagger.Swagger
 
 trait WeirdThing
 
-
-
 sealed trait LotOfVariants
 
 case object AnotherLol                                         extends LotOfVariants
@@ -15,10 +13,9 @@ final case class TopStuff(vars: LotOfVariants)                 extends LotOfVari
 
 final case class InnerStuff(shouldFind: String, shouldNotFind: WeirdThing, outer: Option[OuterStuff])
 
-
 @derive(Swagger, AsOpenApiParam)
 case class Person(
-  name: String,
-  lastName: Option[String],
-  child: Option[Person]
+    name: String,
+    lastName: Option[String],
+    child: Option[Person]
 )

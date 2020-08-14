@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.12.2"
+val pubVersion = "0.12.5.1"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -37,7 +37,7 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions := List("2.13.1", "2.12.10")
+val crossCompile = crossScalaVersions := List("2.13.2", "2.12.11")
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",
@@ -77,9 +77,11 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics = libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
+val tofuOptics =
+  libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe = libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
+val circe =
+  libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
     "derivation",
     "derivation-annotations"
   ).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
@@ -101,9 +103,9 @@ val akkaHttpTestKit = "com.typesafe.akka"    %% "akka-http-testkit"    % Version
 val finagleHttp     = "com.twitter"          %% "finagle-http"         % Version.finagle
 val derevo          = "org.manatki"          %% "derevo-cats"          % Version.derevo
 val swaggerUILib    = "org.webjars.npm"      % "swagger-ui-dist"       % Version.swaggerUI
-val scalapb         = "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % Version.scalapb
 val scalaTags       = "com.lihaoyi"          %% "scalatags"            % Version.scalaTags
 val env             = "ru.tinkoff"           %% "tofu-env"             % Version.tofu
+val scalapb         = "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % Version.scalapb
 
 val scalatest           = "org.scalatest"     %% "scalatest"                % Version.scalaTest           % Test
 val scalacheck          = "org.scalacheck"    %% "scalacheck"               % Version.scalaCheck          % Test
@@ -113,8 +115,9 @@ val akka   = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka
 val zio    = List("dev.zio" %% "zio" % Version.zio, "dev.zio" %% "zio-interop-cats" % Version.zioCats)
 val tethys = List("core", "jackson").map(module => "com.tethys-json" %% s"tethys-$module" % Version.tethys)
 
-val reflect  = libraryDependencies += scalaOrganization.value % "scala-reflect"  % scalaVersion.value
-val compiler = libraryDependencies += scalaOrganization.value % "scala-compiler" % scalaVersion.value
+val reflect          = libraryDependencies += scalaOrganization.value   % "scala-reflect"           % scalaVersion.value
+val compiler         = libraryDependencies += scalaOrganization.value   % "scala-compiler"          % scalaVersion.value
+val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
 
 val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
 
@@ -130,13 +133,14 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatestScalacheck :: Nil
 
 lazy val commonSettings = publishSettings ++ List(
-  scalaVersion := "2.13.1",
+  scalaVersion := "2.13.2",
+  collectionCompat,
   compilerPlugins,
   commonScalacOptions,
   specificScalacOptions,
   crossCompile,
   setMinorVersion,
-  testLibs
+  testLibs,
 )
 
 lazy val simulacrumSettings = Seq(
@@ -317,7 +321,7 @@ lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
-    scalaVersion := "2.13.1",
+    scalaVersion := "2.13.2",
     publish / skip := true,
     crossCompile,
     setMinorVersion,
@@ -330,7 +334,7 @@ lazy val typedschema =
     .dependsOn(macros, kernel, main)
     .settings(
       publish / skip := true,
-      scalaVersion := "2.13.1",
+      scalaVersion := "2.13.2",
       publishSettings,
       setMinorVersion,
       crossCompile
@@ -353,3 +357,6 @@ lazy val typedschema =
       swaggerUI,
       docs
     )
+
+addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
+addCommandAlias("checkfmt", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")

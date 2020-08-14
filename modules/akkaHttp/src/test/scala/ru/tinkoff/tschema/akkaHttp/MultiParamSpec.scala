@@ -59,7 +59,6 @@ class MultiParamSpec extends AnyFlatSpec with Matchers with ScalatestRouteTest {
     }
   }
 
-
 }
 
 object MultiParamSpec {
@@ -74,13 +73,16 @@ object MultiParamSpec {
     (operation("required") |> queryParam[Page]("page") |> complete[String]) <|>
       (operation("optional") |> queryParam[Option[Page]]("page") |> complete[String])
   }
-  val route = MkRoute(api)(new {
+
+  val handler = new {
     def required(page: Page): String         = page.toString
     def optional(page: Option[Page]): String = page.toString
-  })
+  }
+
+  val route = MkRoute(api)(handler)
 
   import Directives._
-  val kek = Directives.parameter("kek".as[Option[String]])( os => complete(os) )
+  val kek = Directives.parameter("kek".as[Option[String]])(os => complete(os))
 
-  parameters(("raw".as[Boolean], "offset".as[Int], "pageSize".as[Int]))
+  parameters("raw".as[Boolean], "offset".as[Int], "pageSize".as[Int])
 }

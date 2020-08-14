@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.swagger
 
-import OpenApi.defaultMediaTypeVec
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe._
 import io.circe.derivation._
@@ -12,10 +11,11 @@ import ru.tinkoff.tschema.utils.json.CirceKeyEnum
 import ru.tinkoff.tschema.utils.json.circeSyntax._
 import ru.tinkoff.tschema.utils.json.circeCodecs._
 import cats.syntax.option._
+import io.circe.derivation.annotations.Configuration.encodeOnly
 
 import scala.collection.immutable.TreeMap
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApi(
     openapi: String = "3.0.0",
     info: OpenApiInfo = OpenApiInfo(),
@@ -35,7 +35,7 @@ final case class OpenApi(
 
 object OpenApi {
   sealed trait Method extends EnumEntry
-  object Method extends Enum[Method] with CirceKeyEnum[Method] {
+  object Method       extends Enum[Method] with CirceKeyEnum[Method] {
     val values = findValues
 
     case object get     extends Method
@@ -53,7 +53,7 @@ object OpenApi {
   private[tschema] val defaultMediaTypeVec = Vector(none[MediaType])
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiInfo(
     title: String = "",
     description: Option[SwaggerDescription] = None,
@@ -64,7 +64,7 @@ final case class OpenApiInfo(
 )
 object OpenApiInfo
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiComponents(
     schemas: TreeMap[String, DescribedType] = TreeMap.empty,
     securitySchemes: TreeMap[String, OpenApiSecurity] = TreeMap.empty
@@ -72,18 +72,19 @@ final case class OpenApiComponents(
 
 object OpenApiComponents
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiSecurity(
     `type`: OpenApiSecurityType,
     scheme: Option[OpenApiSecurityScheme] = None,
     name: Option[String] = None,
     in: Option[OpenApiParam.In] = None,
-    description: Option[SwaggerDescription] = None
+    description: Option[SwaggerDescription] = None,
+    flows: TreeMap[String, OpenApiFlow]
 )
 object OpenApiSecurity
 
 sealed trait OpenApiSecurityType extends EnumEntry
-object OpenApiSecurityType extends Enum[OpenApiSecurityType] with CirceEnum[OpenApiSecurityType] {
+object OpenApiSecurityType       extends Enum[OpenApiSecurityType] with CirceEnum[OpenApiSecurityType] {
   val values = findValues
 
   case object apiKey        extends OpenApiSecurityType
@@ -93,24 +94,55 @@ object OpenApiSecurityType extends Enum[OpenApiSecurityType] with CirceEnum[Open
 }
 
 sealed trait OpenApiSecurityScheme extends EnumEntry
-object OpenApiSecurityScheme extends Enum[OpenApiSecurityScheme] with CirceEnum[OpenApiSecurityScheme] {
+object OpenApiSecurityScheme       extends Enum[OpenApiSecurityScheme] with CirceEnum[OpenApiSecurityScheme] {
   val values = findValues
 
   case object basic  extends OpenApiSecurityScheme
   case object bearer extends OpenApiSecurityScheme
 }
-@JsonCodec(Configuration.encodeOnly)
+
+@JsonCodec(encodeOnly.withDiscriminator("type"))
+sealed trait OpenApiFlow { self: Product =>
+  val name: String = productPrefix
+  val refreshUrl: Option[String] //TODO URL?
+  val scopes: Map[String, String]
+}
+object OpenApiFlow       {
+  @JsonCodec(encodeOnly) case class `implicit`(
+      authorizationUrl: String,
+      refreshUrl: Option[String],
+      scopes: Map[String, String]
+  ) extends OpenApiFlow
+  @JsonCodec(encodeOnly) case class password(
+      tokenUrl: String,
+      refreshUrl: Option[String],
+      scopes: Map[String, String]
+  ) extends OpenApiFlow
+  @JsonCodec(encodeOnly) case class clientCredentials(
+      tokenUrl: String,
+      refreshUrl: Option[String],
+      scopes: Map[String, String]
+  ) extends OpenApiFlow
+  @JsonCodec(encodeOnly) case class authorizationCode(
+      authorizationUrl: String,
+      tokenUrl: String,
+      refreshUrl: Option[String] = None,
+      scopes: Map[String, String] = Map.empty
+  ) extends OpenApiFlow
+}
+
+@JsonCodec(encodeOnly)
 final case class OpenApiSchema()
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiContact(name: Option[String] = None, url: Option[String] = None, email: Option[String] = None)
 object OpenApiContact
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpeApiLicense(name: String, url: Option[String] = None)
 object OpeApiLicense
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiParam(
     name: String,
     in: OpenApiParam.In,
@@ -125,7 +157,7 @@ object OpenApiParam {
   val description: Contains[OpenApiParam, Option[SwaggerDescription]] = GenContains[OpenApiParam](_.description)
 
   sealed trait In extends EnumEntry
-  object In extends Enum[In] with CirceEnum[In] {
+  object In       extends Enum[In] with CirceEnum[In] {
     override val values = findValues
     case object query    extends In
     case object header   extends In
@@ -151,7 +183,7 @@ sealed trait SwaggerValue {
   def typeName: String
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class SwaggerStringValue(
     format: Option[OpenApiFormat[SwaggerStringValue]] = None,
     default: Option[String] = None,
@@ -170,7 +202,7 @@ object SwaggerStringValue {
   val time        = SwaggerStringValue(pattern = Some(timePattern))
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class SwaggerNumberValue(
     format: Option[OpenApiFormat[SwaggerNumberValue]] = None,
     default: Option[BigDecimal] = None,
@@ -183,7 +215,7 @@ final case class SwaggerNumberValue(
 }
 object OpenApiNumberValue
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class SwaggerIntValue(
     format: Option[OpenApiFormat[SwaggerIntValue]] = None,
     default: Option[Int] = None,
@@ -196,7 +228,7 @@ final case class SwaggerIntValue(
 }
 object SwaggerIntValue
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class SwaggerBooleanValue(default: Option[Boolean] = None) extends SwaggerValue {
   override def typeName = "boolean"
 }
@@ -208,7 +240,7 @@ case object SwaggerFileValue extends SwaggerValue {
   implicit val encoder: Encoder.AsObject[SwaggerFileValue.type] = Encoder.AsObject.instance(_ => JsonObject.empty)
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class SwaggerArrayValue(
     items: SwaggerValue,
     default: Option[Vector[Json]] = None,
@@ -267,7 +299,7 @@ object OpenApiFormat {
     Encoder.encodeString.contramap[OpenApiFormat[T]](_.toString)
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiRequestBody(
     description: Option[String] = None,
     content: Map[MediaType, OpenApiMediaType] = Map.empty,
@@ -275,7 +307,7 @@ final case class OpenApiRequestBody(
 )
 
 object OpenApiRequestBody {
-  val description: Contains[OpenApiRequestBody, Option[String]] = GenContains[OpenApiRequestBody](_.description)
+  val description: Contains[OpenApiRequestBody, Option[String]]               = GenContains[OpenApiRequestBody](_.description)
   val content: Contains[OpenApiRequestBody, Map[MediaType, OpenApiMediaType]] =
     GenContains[OpenApiRequestBody](_.content)
 
@@ -300,7 +332,7 @@ object OpenApiRequestBody {
     )
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiTag(
     name: String,
     description: Option[SwaggerDescription] = None,
@@ -309,7 +341,7 @@ final case class OpenApiTag(
 
 object OpenApiTag
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiExternalDocs(description: Option[SwaggerDescription] = None, url: String)
 
 object OpenApiExternalDocs
@@ -364,7 +396,7 @@ object OpenApiResponses {
   }
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiResponse(
     description: Option[SwaggerDescription] = None,
     content: Map[MediaType, OpenApiMediaType] = Map.empty,
@@ -372,6 +404,10 @@ final case class OpenApiResponse(
 )
 
 object OpenApiResponse {
+  val description: OpenApiResponse Contains Option[String]               = GenContains[OpenApiResponse](_.description)
+  val content: OpenApiResponse Contains Map[MediaType, OpenApiMediaType] = GenContains[OpenApiResponse](_.content)
+  val headers: OpenApiResponse Contains Map[String, OpenApiHeader]       = GenContains[OpenApiResponse](_.headers)
+
   def make(description: Option[SwaggerDescription] = None, swaggerType: SwaggerType): OpenApiResponse =
     OpenApiResponse(
       description = description,
@@ -382,10 +418,10 @@ object OpenApiResponse {
     OpenApiResponse(content = types.iterator.map(t => t.mediaType -> OpenApiMediaType(t.some)).toMap)
 }
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiHeader(description: Option[SwaggerDescription] = None, schema: Option[SwaggerType] = None)
 
-@JsonCodec(Configuration.encodeOnly)
+@JsonCodec(encodeOnly)
 final case class OpenApiMediaType(schema: Option[SwaggerType] = None, example: Option[Json] = None)
 object OpenApiMediaType {
   val schema: Contains[OpenApiMediaType, Option[SwaggerType]] = GenContains[OpenApiMediaType](_.schema)

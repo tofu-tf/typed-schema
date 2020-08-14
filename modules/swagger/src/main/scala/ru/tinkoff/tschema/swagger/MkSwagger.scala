@@ -1,22 +1,20 @@
 package ru.tinkoff.tschema.swagger
 
-import cats.instances.map._
 import cats.syntax.option._
-import cats.{Monoid, MonoidK}
+import cats.{Endo, Monoid, MonoidK}
 import ru.tinkoff.tschema.macros._
 import ru.tinkoff.tschema.swagger.MkSwagger._
 import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
 import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
-import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.typeDSL._
-import ru.tinkoff.tschema.utils.subsets._
-import tofu.optics.functions.vecItems
+import ru.tinkoff.tschema.utils.optics
+import tofu.optics.functions.some
 import tofu.optics.macros.GenContains
-import tofu.optics.{Contains, chain}
+import tofu.optics.tags.every
+import tofu.optics.{Contains, Update}
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
-import scala.language.higherKinds
 
 trait SwaggerBuilder {
   def paths: PathSeq
@@ -29,7 +27,7 @@ trait SwaggerBuilder {
 
   def ++(other: SwaggerBuilder): SwaggerBuilder = new SwaggerBuilder.Concat(this, other)
 
-  def make(info: OpenApiInfo) = {
+  def make(info: OpenApiInfo = OpenApiInfo()) = {
     val openApiPaths =
       paths.groupBy(_.path).map {
         case (parts, specs) =>
@@ -50,7 +48,7 @@ trait SwaggerBuilder {
     )
   }
 
-  def map(f: PathSpec => PathSpec): SwaggerBuilder = new SwaggerBuilder.SMap(this, f)
+  def map(f: PathSpec => PathSpec): SwaggerBuilder           = new SwaggerBuilder.SMap(this, f)
   def describe(descriptions: DescriptionMap): SwaggerBuilder =
     new SwaggerBuilder.Describe(this, descriptions)
 }
@@ -90,7 +88,7 @@ object SwaggerBuilder {
         val method: MethodTarget => Option[SwaggerDescription] = {
           val fullKey = (groups :+ key).mkString(".")
           val paths   = op.tags.map(tag => descriptions.method(s"$tag.$fullKey")) :+ descriptions.method(fullKey)
-          target: PathDescription.MethodTarget =>
+          target =>
             paths.foldLeft(Option.empty[SwaggerDescription]) { (result, path) =>
               (result, path(target)) match {
                 case (None, desc @ Some(_)) => desc
@@ -99,25 +97,32 @@ object SwaggerBuilder {
             }
         }
 
+        def readDescr(setter: OpenApiOp Update Option[String], key: MethodTarget): Endo[OpenApiOp] =
+          op => setter.update(op, old => method(key) orElse old)
+
+        def readDescrSub[A](
+            setter: OpenApiOp Update A
+        )(subSet: A Update Option[String], key: A => MethodTarget): Endo[OpenApiOp] =
+          op => setter.update(op, a => subSet.update(a, old => method(key(a)) orElse old))
+
         PathSpec.op.update(
           spec,
-          (OpenApiOp.description.update(_, method(MethodTarget.Path) orElse _)) andThen
-            (OpenApiOp.summary.update(_, method(MethodTarget.Summary) orElse _)) andThen
-            (
-              (OpenApiOp.parameters >> vecItems[OpenApiParam, OpenApiParam])
-                .update(
-                  _,
-                  param => OpenApiParam.description.update(param, method(MethodTarget.Param(param.name)) orElse _)
-                )
-              ) andThen
-            ((oao: OpenApiOp) =>
-              chain(oao) >>
-                OpenApiOp.requestBody > _some >> OpenApiRequestBody.description update (method(
-                MethodTarget.Body
-              ) orElse _)
+          readDescr(OpenApiOp.description, MethodTarget.Path) andThen
+            readDescr(OpenApiOp.summary, MethodTarget.Summary) andThen
+            readDescr(
+              OpenApiOp.requestBody >> some[OpenApiRequestBody] >> OpenApiRequestBody.description,
+              MethodTarget.Body
+            ) andThen
+            readDescrSub(OpenApiOp.parameters > every end)(
+              OpenApiParam.description,
+              param => MethodTarget.Param(param.name)
+            ) andThen
+            readDescrSub(OpenApiOp.responses >> OpenApiResponses.codes >> optics.mapKeyVals)(
+              optics.second >> OpenApiResponse.description,
+              kv => MethodTarget.Status(kv._1)
             )
         )
-      case spec => spec
+      case spec                                         => spec
     }
     val types = {
       self.types.map {
@@ -128,10 +133,7 @@ object SwaggerBuilder {
             (DescribedType.title.update(_, typ(TypeTarget.Title) orElse _)) andThen
               (DescribedType.description.update(_, typ(TypeTarget.Type) orElse _)) andThen
               (
-                (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties >> vecItems[
-                  SwaggerProperty,
-                  SwaggerProperty
-                ]).update(
+                (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties > every end).update(
                   _,
                   prop => SwaggerProperty.description.update(prop, typ(TypeTarget.Field(prop.name)) orElse _)
                 )
@@ -140,7 +142,7 @@ object SwaggerBuilder {
           name -> setDescriptions(t)
       }
     }
-    val tags = self.tags ++ {
+    val tags  = self.tags ++ {
       import PathDescription.Target.Tag
       val allTags = paths.flatMap(_.op.tags).distinct
       allTags.flatMap(key => descriptions(Tag(key)).map((key, _)))
@@ -161,8 +163,8 @@ trait MkSwagger[T] extends SwaggerBuilder {
 
   override def ++(other: SwaggerBuilder): MkSwagger[T] = new SwaggerBuilder.Concat(this, other) with MkSwagger[T]
 
-  def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(
-      implicit typeable: SwaggerTypeable[U]
+  def addResponse[U](code: StatusCode, description: Option[SwaggerDescription] = None)(implicit
+      typeable: SwaggerTypeable[U]
   ) =
     new MkSwagger[U] {
       val paths: PathSeq = self.paths.map(
@@ -226,7 +228,7 @@ object MkSwagger {
       def apply(in: Unit)(key: String, groups: String*)(implicit swagger: MkSwagger[Complete[Out]]): SwaggerBuilder =
         swagger
     }
-    def makeResult[F[_], Out]: ResultPA1[Out]                               = new ResultPA1[Out]
+    def makeResult[F[_], Out]: ResultPA1[Out] = new ResultPA1[Out]
     def concatResults(x: SwaggerBuilder, y: SwaggerBuilder): SwaggerBuilder = x ++ y
 
     def serve[F[_], T](in: Unit) = new ServePA[T](true)
@@ -246,7 +248,7 @@ object MkSwagger {
       op: OpenApiOp,
       key: Option[String] = None,
       groups: Vector[String] = Vector.empty
-  ) {
+  )               {
     def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.update(this, f)
   }
   object PathSpec {
@@ -281,13 +283,13 @@ object MkSwagger {
   implicit def deriveJoin[left, right](implicit left: MkSwagger[left], right: MkSwagger[right]) =
     (left ++ right).as[left <|> right]
 
-  implicit def deriveCons[start, end](
-      implicit start: SwaggerMapper[start],
+  implicit def deriveCons[start, end](implicit
+      start: SwaggerMapper[start],
       end: MkSwagger[end]
   ): MkSwagger[start :> end] =
     start(end).as[start :> end]
 
-  implicit val monoidKInstance: MonoidK[MkSwagger] = new MonoidK[MkSwagger] {
+  implicit val monoidKInstance: MonoidK[MkSwagger]     = new MonoidK[MkSwagger] {
     def empty[A]: MkSwagger[A]                                      = MkSwagger.empty[A]
     def combineK[A](x: MkSwagger[A], y: MkSwagger[A]): MkSwagger[A] = x ++ y
   }

@@ -15,7 +15,7 @@ object jsonError extends Derivation[ErrorResponse] {
     }
 }
 
-object plainError extends Derivation[ErrorResponse]{
+object plainError extends Derivation[ErrorResponse] {
   def apply[T](status: Int)(implicit plain: AsResponse.Plain[T]): ErrorResponse[T] =
     new ErrorResponse[T](status) {
       def apply(a: T): Response = plain(a).statusCode(status)

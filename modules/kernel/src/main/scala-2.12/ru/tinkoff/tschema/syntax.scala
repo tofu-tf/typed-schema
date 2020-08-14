@@ -1,18 +1,25 @@
 package ru.tinkoff.tschema
+import ru.tinkoff.tschema.common.NameTrans
 import ru.tinkoff.tschema.typeDSL._
 import shapeless.Witness
 
-object syntax {
+object syntax extends CommonSyntax {
   def prefix[s](witness: Witness.Aux[s])      = new Prefix[s]
   def queryFlag[s](witness: Witness.Aux[s])   = new QueryFlag[s]
   def tag[s](witness: Witness.Aux[s])         = new Tag[s]
   def key[s](witness: Witness.Aux[s])         = new Key[s]
   def group[s](witness: Witness.Aux[s])       = new Group[s]
-  def deprecated                              = new Deprecated
   def tagPrefix[s](witness: Witness.Aux[s])   = prefix[s](witness) |> tag[s](witness)
   def keyPrefix[s](witness: Witness.Aux[s])   = prefix[s](witness) |> key[s](witness)
   def groupPrefix[s](witness: Witness.Aux[s]) = prefix[s](witness) |> group[s](witness)
   def operation[s](witness: Witness.Aux[s])   = keyPrefix[s](witness)
+
+  def snake[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.snakeCase] = new NameTrans
+  def kebab[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.kebabCase] = new NameTrans
+  def lower[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.lowerCase] = new NameTrans
+  def upper[name](name: Witness.Aux[name]): NameTrans[name, NameTrans.upperCase] = new NameTrans
+
+  def renamed[name, as](name: Witness.Aux[name], as: Witness.Aux[as]): Renamed[name, as] = new Renamed
 
   def allQuery[name](s: Witness.Aux[name]): AllQuery[name] = new AllQuery[name]
 
@@ -61,41 +68,6 @@ object syntax {
     def apply[s](witness: Witness.Aux[s]) = maker.make[s]
   }
 
-  implicit class TypeApiOps[x <: DSLDef](x: => x) {
-    def ~[y](y: => y): x <|> y                           = new <|>(x, y)
-    def <|>[y](y: => y): x <|> y                         = new <|>(x, y)
-    def <>[y](y: => y): x <|> y                          = new <|>(x, y)
-    def :>[y](y: => y): x :> y                           = new :>
-    def |>[y](y: => y): x :> y                           = new :>
-    def &[y](y: => y): x :> y                            = new :>
-    def apply[y](y: => y): x :> y                        = new :>
-    def as[name](name: Witness.Aux[name]): x :> As[name] = new :>
-  }
-
-  implicit class ResultMaker[x <: DSLMethod](x: => x) {
-    def apply[A]: x :> Complete[A] = x :> new Complete
-    def ! : x                      = x
-  }
-
-  def get: Get         = new Get
-  def post: Post       = new Post
-  def put: Put         = new Put
-  def delete: Delete   = new Delete
-  def head: Head       = new Head
-  def options: Options = new Options
-  def patch: Patch     = new Patch
-
-  def opGet     = key("get") |> new Get
-  def opPost    = key("post") |> new Post
-  def opPut     = key("put") |> new Put
-  def opDelete  = key("delete") |> new Delete
-  def opHead    = key("head") |> new Head
-  def opOptions = key("options") |> new Options
-  def opPatch   = key("patch") |> new Patch
-
-  def complete[x]: Complete[x] = new Complete[x]
-  def $$[x]: Complete[x]       = new Complete[x]
-
   def basicAuth[x] = new MkBasicAuth[x]
 
   class MkBasicAuth[x] {
@@ -112,4 +84,11 @@ object syntax {
 
   def apiKeyAuth[realm, Param <: CanHoldApiKey](realm: Witness.Aux[realm], param: Param): ApiKeyAuth[realm, Param] =
     new ApiKeyAuth
+
+  def oauth[R, T] = new MkOAuth[R, T]
+
+  class MkOAuth[R, T] {
+    def apply[name, conf](name: Witness.Aux[name], conf: Witness.Aux[conf]): OAuth2Auth[T, R, conf, name] =
+      new OAuth2Auth
+  }
 }

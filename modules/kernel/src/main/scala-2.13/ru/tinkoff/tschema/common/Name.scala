@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.common
 
-final class Name[name](val string: String) {
+final class Name[name](val string: String) extends AnyVal {
   def symbol: Symbol = Symbol(string)
 
   override def toString = string
@@ -12,9 +12,10 @@ object Name extends SymbolName {
   implicit def stringName[name <: String with Singleton](implicit value: ValueOf[name]): Name[name] =
     new Name[name](value.value)
 }
+
 trait SymbolName {
-  implicit def symbolName[name <: String with Singleton](
-      implicit value: ValueOf[name]
+  implicit def symbolName[name <: String with Singleton](implicit
+      value: ValueOf[name]
   ): Name[Symbol with shapeless.tag.Tagged[name]] =
     new Name(value.value)
 }

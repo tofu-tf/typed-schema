@@ -10,6 +10,7 @@ import com.twitter
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, http}
 import com.twitter.util.{Future, Promise}
+import ru.tinkoff.tschema.finagle.Rejection.{OptRecover, Recover}
 import ru.tinkoff.tschema.finagle.zioRouting.ReaderTRouting.ReaderHttp
 import ru.tinkoff.tschema.finagle.{ConvertService, LiftHttp, Rejection, Routed, RoutedPlus, RunHttp}
 import ru.tinkoff.tschema.utils.SubString
@@ -29,20 +30,22 @@ object ReaderTRouting extends ReaderTInstanceDecl {
     with ConvertService[ReaderHttp[F, R, *]] with LiftHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
     new ReaderTRoutedConvert[F, R]
 
-  implicit def envRunnable[F[_]: Effect, R](
-      implicit rejectionHandler: Rejection.Handler = Rejection.defaultHandler
-  ): RunHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] =
+  implicit def envRunnable[F[_]: Effect, R](implicit
+      optRecover: OptRecover[ReaderHttp[F, R, *]] = OptRecover.default[ReaderHttp[F, R, *]]
+  ): RunHttp[ReaderHttp[F, R, *], ReaderT[F, R, *]] = {
+    implicit val rec: Recover[ReaderHttp[F, R, *]] = optRecover.orDefault
     response => ReaderT(r => Sync[F].delay(execResponse(r, response, _)))
+  }
 
   private[this] def execResponse[F[_]: Effect, R](r: R, envResponse: ReaderHttp[F, R, Response], request: Request)(
-      implicit handler: Rejection.Handler
+      implicit recover: Recover[ReaderHttp[F, R, *]]
   ): Future[Response] = {
     val promise = Promise[Response]
     val routing = ReaderTRouting(request, SubString(request.path), 0, r)
 
-    envResponse.run(routing).recover { case Rejected(rej) => handler(rej) }.runAsync {
+    envResponse.recoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {
       case Right(res) => IO(promise.setValue(res))
-      case Left(ex) =>
+      case Left(ex)   =>
         IO {
           val resp    = Response(Status.InternalServerError)
           val message = Option(ex.getLocalizedMessage).getOrElse(ex.toString)
@@ -56,9 +59,6 @@ object ReaderTRouting extends ReaderTInstanceDecl {
 }
 
 private[finagle] class ReaderTInstanceDecl {
-
-  final case class Rejected(rej: Rejection) extends Throwable
-
   private def cachedMonadInstance[G[_]: Async, R] = Async[ReaderHttp[G, R, *]]
 
   protected class ReaderTRoutedConvert[G[_]: Async, R]
@@ -72,8 +72,8 @@ private[finagle] class ReaderTInstanceDecl {
 
     def withMatched[A](m: Int, fa: F[A]): F[A] = fa.local(_.copy(matched = m))
 
-    def path: F[CharSequence]    = ReaderT(_.path.pure[G])
-    def request: F[http.Request] = ReaderT(_.request.pure[G])
+    def path: F[CharSequence]                 = ReaderT(_.path.pure[G])
+    def request: F[http.Request]              = ReaderT(_.request.pure[G])
     def reject[A](rejection: Rejection): F[A] =
       Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
@@ -81,15 +81,13 @@ private[finagle] class ReaderTInstanceDecl {
       catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
 
     def convertService[A](svc: Service[http.Request, A]): F[A] =
-      ReaderT(
-        r =>
-          Async[G].async(
-            cb =>
-              svc(r.request).respond {
-                case twitter.util.Return(a) => cb(Right(a))
-                case twitter.util.Throw(ex) => cb(Left(ex))
-              }
-          )
+      ReaderT(r =>
+        Async[G].async(cb =>
+          svc(r.request).respond {
+            case twitter.util.Return(a) => cb(Right(a))
+            case twitter.util.Throw(ex) => cb(Left(ex))
+          }
+        )
       )
 
     def apply[A](fa: ReaderT[G, R, A]): F[A] = ReaderT(routing => fa.run(routing.embedded))
@@ -97,7 +95,7 @@ private[finagle] class ReaderTInstanceDecl {
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.recoverWith { case Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A] =
+    @inline private[this] def throwRej[A](map: Rejection): F[A]                =
       cached.raiseError(Rejected(map))
   }
 

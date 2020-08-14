@@ -31,10 +31,10 @@ class ServeSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
   }
 
   def api = (keyPrefix("int") :> get :> complete[Int]) ~
-            (keyPrefix("repeat") :> reqBody[String] :> queryParam[Int]("n") :> post :> complete[String]) ~
-            (keyPrefix("multiply") :> formField[Long]("x") :> formField[Double]("y") :> post :> complete[String]) ~
-            (keyPrefix("size") :> queryParams[Option[Int]]("args") :> post :> complete[Int]) ~
-            (keyPrefix("min") :> queryParams[Int]("args") :> post :> complete[Int])
+    (keyPrefix("repeat") :> reqBody[String] :> queryParam[Int]("n") :> post :> complete[String]) ~
+    (keyPrefix("multiply") :> formField[Long]("x") :> formField[Double]("y") :> post :> complete[String]) ~
+    (keyPrefix("size") :> queryParams[Option[Int]]("args") :> post :> complete[Int]) ~
+    (keyPrefix("min") :> queryParams[Int]("args") :> post :> complete[Int])
 
   val route = MkRoute(api)(handler)
 
@@ -52,14 +52,11 @@ class ServeSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
     }
 
     "multiply numbers from formdata" in {
-      Post(Uri("/multiply"),
-           FormData(Map(
-             "x" -> HttpEntity("3"),
-             "y" -> HttpEntity("1.211")))) ~>
-      route ~>
-      check {
-        responseAs[String] shouldEqual f"result is ${3.63}%.2f"
-      }
+      Post(Uri("/multiply"), FormData(Map("x" -> HttpEntity("3"), "y" -> HttpEntity("1.211")))) ~>
+        route ~>
+        check {
+          responseAs[String] shouldEqual f"result is ${3.63}%.2f"
+        }
     }
 
     "return size of empty args" in {

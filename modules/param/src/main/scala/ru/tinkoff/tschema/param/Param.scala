@@ -83,7 +83,7 @@ trait MultiParam[+S >: All <: ParamSource, A] extends Param[S, A] { self =>
   override def map[B](f: A => B): Self[B] = (values => applyOpt(values).map(f)): Clone[B]
 
   def optional: Self[Option[A]] = new HttpMultiParam[Option[A]] {
-    def names: List[String] = self.names
+    def names: List[String]                                                  = self.names
     def applyOpt(values: List[Option[CharSequence]]): MultiResult[Option[A]] =
       self.applyOpt(values) match {
         case Right(a)                 => Right(Some(a))
@@ -147,17 +147,17 @@ object HttpParam extends HttpParamInstances[HttpParam] with Derivation[HttpParam
         param.typeclass match {
           case single: HttpSingleParam[param.PType] =>
             new HttpMultiParam[List[Any]] {
-              def names: List[String] = param.label +: prev.names
+              def names: List[String]                                                  = param.label +: prev.names
               def applyOpt(values: List[Option[CharSequence]]): MultiResult[List[Any]] = values match {
                 case value :: rest =>
                   (single.applyOpt(value).leftMap(_.toMulti(param.label)), prev.applyOpt(rest)).parMapN(_ :: _)
-                case Nil => Left(MultiParamError(Map(param.label -> MissingParamError)))
+                case Nil           => Left(MultiParamError(Map(param.label -> MissingParamError)))
               }
             }
-          case multi: HttpMultiParam[param.PType] =>
+          case multi: HttpMultiParam[param.PType]   =>
             new HttpMultiParam[List[Any]] {
-              override val arity: Int = multi.arity + prev.arity
-              val names: List[String] = multi.names ++ prev.names
+              override val arity: Int                                                  = multi.arity + prev.arity
+              val names: List[String]                                                  = multi.names ++ prev.names
               def applyOpt(values: List[Option[CharSequence]]): MultiResult[List[Any]] =
                 (multi.applyOpt(values.take(multi.arity)), prev.applyOpt(values.drop(multi.arity))).parMapN(_ :: _)
             }
@@ -174,10 +174,10 @@ object HttpParam extends HttpParamInstances[HttpParam] with Derivation[HttpParam
 trait HttpSingleParam[A] extends SingleParam[All, A] with HttpParam[A] {
   type Self[a] = HttpSingleParam[a]
 }
-object HttpSingleParam extends HttpParamInstances[HttpSingleParam]
+object HttpSingleParam   extends HttpParamInstances[HttpSingleParam]
 
 trait HttpSingleParamReq[A] extends SingleParamReq[All, A] with HttpSingleParam[A]
-trait HttpMultiParam[A] extends MultiParam[All, A] with HttpParam[A] {
+trait HttpMultiParam[A]     extends MultiParam[All, A] with HttpParam[A] {
   override type Self[a] = HttpMultiParam[a]
 }
 
@@ -223,9 +223,9 @@ trait LowPriorParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]]
 trait ParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]]
     extends LowPriorParamInstances[P] with PrimitiveParamInstances[P[All, *]] {
 
-  implicit def optSingleParam[S >: All <: ParamSource, A](
-      implicit param: SingleParam[S, A]
-  ): SingleParam[S, Option[A]] =
+  implicit def optSingleParam[S >: All <: ParamSource, A](implicit
+      param: SingleParam[S, A]
+  ): SingleParam[S, Option[A]]                                                                                       =
     param.optional
   implicit def optMultiParam[S >: All <: ParamSource, A](implicit param: MultiParam[S, A]): MultiParam[S, Option[A]] =
     param.optional
@@ -239,7 +239,7 @@ trait HttpParamInstances[P[a] >: HttpSingleParam[a]]
     extends LowPriorHttpParamInstances[P] with PrimitiveParamInstances[P] {
   implicit def optSingleParam[A](implicit param: HttpSingleParam[A]): HttpSingleParam[Option[A]] =
     param.optional
-  implicit def optMultiParam[A](implicit param: HttpMultiParam[A]): HttpMultiParam[Option[A]] =
+  implicit def optMultiParam[A](implicit param: HttpMultiParam[A]): HttpMultiParam[Option[A]]    =
     param.optional
 }
 
@@ -256,11 +256,11 @@ trait PrimitiveParamInstances[P[a] >: HttpSingleParam[a]] {
 }
 
 sealed trait ParamError
-sealed trait SingleParamError extends ParamError {
+sealed trait SingleParamError                                         extends ParamError {
   def toMulti(name: String): MultiParamError = MultiParamError(Map(name -> this))
 }
-case object MissingParamError                     extends SingleParamError
-final case class ParseParamError(message: String) extends SingleParamError
+case object MissingParamError                                         extends SingleParamError
+final case class ParseParamError(message: String)                     extends SingleParamError
 final case class MultiParamError(list: Map[String, SingleParamError]) extends ParamError {
   def missing: Boolean = list.valuesIterator.forall { _ == MissingParamError }
 }

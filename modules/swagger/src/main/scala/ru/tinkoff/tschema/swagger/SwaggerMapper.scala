@@ -18,7 +18,7 @@ import ru.tinkoff.tschema.swagger.PathDescription.{DescriptionMap, TypeTarget}
 import ru.tinkoff.tschema.swagger.SwaggerBuilder.EmptySwaggerBuilder
 import ru.tinkoff.tschema.swagger.SwaggerMapper.derivedParamAtom
 import ru.tinkoff.tschema.typeDSL._
-import ru.tinkoff.tschema.utils.subsets._
+import ru.tinkoff.tschema.utils.optics._
 import tofu.optics.chain
 import tofu.optics.tags.at
 import shapeless.{Lazy, Witness}
@@ -27,6 +27,8 @@ import ru.tinkoff.tschema.common.Name
 import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
+import scala.collection.compat._
+
 @implicitNotFound("Could not find swagger atom for ${T}")
 trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
   self =>
@@ -57,7 +59,7 @@ trait SwaggerMapper[T] extends FunctionK[MkSwagger, MkSwagger] {
     def auths                             = self.auths
   }
 
-  def ++(that: TraversableOnce[(String, SwaggerType)]) = new SwaggerMapper[T] {
+  def ++(that: Iterable[(String, SwaggerType)]) = new SwaggerMapper[T] {
     def mapSpec(spec: PathSpec): PathSpec       = self.mapSpec(spec)
     def types: Map[String, DescribedType]       = self.types ++ that.map { case (name, typ) => name -> DescribedType(typ) }
     def auths: TreeMap[String, OpenApiSecurity] = self.auths
@@ -89,19 +91,19 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   }
 
   def fromAuth[T](name: String, auth: OpenApiSecurity) = new Empty[T] {
-    override def auths = TreeMap(name -> auth)
+    override def auths                             = TreeMap(name -> auth)
     override def mapSpec(spec: PathSpec): PathSpec =
       (PathSpec.op >> OpenApiOp.security).update(spec, _ :+ Map(name -> Vector.empty))
   }
 
-  private[swagger] def derivedParam[name, T, param[_, _]](in: In)(
-      implicit name: Name[name],
+  private[swagger] def derivedParam[name, p, T, param[_, _, _]](in: In)(implicit
+      name: Name[name],
       param: AsOpenApiParam[T]
-  ): SwaggerMapper[param[name, T]] =
-    derivedParamAtom[name, T, param[name, T]](in)
+  ): SwaggerMapper[param[name, p, T]] =
+    derivedParamAtom[name, T, param[name, p, T]](in)
 
-  private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(
-      implicit name: Name[name],
+  private[swagger] def derivedParamAtom[name, T, atom](in: In, flag: Boolean = false)(implicit
+      name: Name[name],
       param: AsOpenApiParam[T]
   ): SwaggerMapper[atom] = {
     def makeSingle(p: OpenApiParamInfo, name: String): OpenApiParam =
@@ -131,20 +133,20 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
-  implicit def deriveQueryParam[name: Name, T: AsOpenApiParam] =
-    derivedParam[name, T, QueryParam](In.query)
+  implicit def deriveQueryParam[name: Name, p, T: AsOpenApiParam] =
+    derivedParam[name, p, T, QueryParamAs](In.query)
 
-  implicit def deriveOptQueryParams[name: Name, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
-    derivedParamAtom[name, Option[List[T]], QueryParams[name, Option[T]]](In.query)
+  implicit def deriveOptQueryParams[name: Name, p, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
+    derivedParamAtom[name, Option[List[T]], QueryParamsAs[name, p, Option[T]]](In.query)
 
-  implicit def deriveQueryFlag[name: Name]: SwaggerMapper[QueryFlag[name]] =
-    derivedParamAtom[name, Option[Boolean], QueryFlag[name]](In.query, flag = true)
+  implicit def deriveQueryFlag[name: Name, p]: SwaggerMapper[QueryFlagAs[name, p]] =
+    derivedParamAtom[name, Option[Boolean], QueryFlagAs[name, p]](In.query, flag = true)
 
-  implicit def deriveHeader[name: Name, T: AsSingleOpenApiParam] =
-    derivedParam[name, T, Header](In.header)
+  implicit def deriveHeader[name: Name, p, T: AsSingleOpenApiParam] =
+    derivedParam[name, p, T, HeaderAs](In.header)
 
-  implicit def deriveFormField[name: Name, T](implicit asParam: AsOpenApiParam[T]) =
-    fromFunc[FormField[name, T]] {
+  implicit def deriveFormField[name: Name, p, T](implicit asParam: AsOpenApiParam[T]) =
+    fromFunc[FormFieldAs[name, p, T]] {
       def param(field: OpenApiParamInfo, name: String) = MakeFormField(name, field.typ, field.required)
 
       val params = asParam match {
@@ -155,17 +157,17 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
     }
 
-  implicit def deriveCookie[name: Name, T: AsOpenApiParam] =
-    derivedParam[name, T, Cookie](In.cookie)
+  implicit def deriveCookie[name: Name, p, T: AsOpenApiParam] =
+    derivedParam[name, p, T, CookieAs](In.cookie)
 
   implicit def deriveAllQuery[x]: SwaggerMapper[AllQuery[x]] = SwaggerMapper.empty
 
-  implicit def derivePathParam[name, T: AsOpenApiParam](implicit name: Name[name]) =
-    derivedParam[name, T, Capture](In.path).map(PathSpec.path.update(_, s"{$name}" +: _))
+  implicit def derivePathParam[name, p, T: AsOpenApiParam](implicit name: Name[name]) =
+    derivedParam[name, p, T, CaptureAs](In.path).map(PathSpec.path.update(_, s"{$name}" +: _))
 
-  implicit def deriveReqOptBody[name, T](
-      implicit content: SwaggerContent[T]
-  ): SwaggerMapper[ReqBody[name, Option[T]]] = {
+  implicit def deriveReqOptBody[name, p, T](implicit
+      content: SwaggerContent[T]
+  ): SwaggerMapper[ReqBodyAs[name, p, Option[T]]] = {
     fromFunc(
       (PathSpec.op >> OpenApiOp.requestBody).set(
         _,
@@ -176,17 +178,22 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
           )
           .some
       )
-    ) andThen fromTypes[ReqBody[name, Option[T]]](content.collectTypes)
+    ) andThen fromTypes[ReqBodyAs[name, p, Option[T]]](content.collectTypes)
   }
 
   implicit def deriveMethod[method](implicit methodDeclare: MethodDeclare[method]): SwaggerMapper[method] =
-    fromFunc[method](PathSpec.method.update(_, {
-      case None           => methodDeclare.method.some
-      case meth @ Some(_) => meth
-    }))
+    fromFunc[method](
+      PathSpec.method.update(
+        _,
+        {
+          case None           => methodDeclare.method.some
+          case meth @ Some(_) => meth
+        }
+      )
+    )
 
-  implicit def deriveCons[start, end](
-      implicit start: SwaggerMapper[start],
+  implicit def deriveCons[start, end](implicit
+      start: SwaggerMapper[start],
       end: SwaggerMapper[end]
   ): SwaggerMapper[start :> end] =
     (start andThen end).as[start :> end]
@@ -212,9 +219,10 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       scheme: Option[OpenApiSecurityScheme] = None,
       name: Option[String] = None,
       typ: OpenApiSecurityType = OpenApiSecurityType.http,
-      in: Option[OpenApiParam.In] = None
+      in: Option[OpenApiParam.In] = None,
+      flows: TreeMap[String, OpenApiFlow] = TreeMap.empty
   ): SwaggerMapper[T] =
-    fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name))
+    fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name, flows = flows))
 
   implicit def basicSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BasicAuth[realm, name, x]] =
     swaggerAuth[realm, x, BasicAuth[realm, name, x]](scheme = OpenApiSecurityScheme.basic.some)
@@ -222,8 +230,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def bearerSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BearerAuth[realm, name, x]] =
     swaggerAuth[realm, x, BearerAuth[realm, name, x]](scheme = OpenApiSecurityScheme.bearer.some)
 
-  implicit def apiKeyAuth[realm: Name, Param <: CanHoldApiKey, name, x](
-      implicit
+  implicit def apiKeyAuth[realm: Name, Param <: CanHoldApiKey, name, x](implicit
       param: ApiKeyParam[Param, name, x],
       name: Name[name]
   ): SwaggerMapper[ApiKeyAuth[realm, Param]] =
@@ -232,6 +239,15 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       in = param.in.some,
       name = Name[name].string.some
     )
+
+  implicit def oauth2SwaggerAuth[x, skip, conf: ConfigDesc.Aux[*, realm0], name, realm0]
+      : SwaggerMapper[OAuth2Auth[skip, x, conf, name]] = {
+    val conf = ConfigDesc[conf]
+    swaggerAuth[realm0, x, OAuth2Auth[skip, x, conf, name]](
+      typ = OpenApiSecurityType.oauth2,
+      flows = conf.flows
+    )(new Name[realm0](conf.realm))
+  }
 
   implicit val monoidKInstance = new MonoidK[SwaggerMapper] {
     def empty[A]: SwaggerMapper[A]                                              = SwaggerMapper.empty
@@ -243,7 +259,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   final class MakeFormField(val objType: SwaggerType) {
     def myMediaType: MediaType = "application/x-www-form-urlencoded"
 
-    def make: OpenApiRequestBody =
+    def make: OpenApiRequestBody                          =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
 
     def add(body: OpenApiRequestBody): OpenApiRequestBody =

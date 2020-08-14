@@ -18,7 +18,17 @@ import cats.instances.option._
 import cats.instances.either._
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.param.ParamSource.All
-import ru.tinkoff.tschema.param.{MissingParamError, MultiParam, MultiParamError, Param, ParamError, ParamSource, ParseParamError, SingleParam, SingleParamError}
+import ru.tinkoff.tschema.param.{
+  MissingParamError,
+  MultiParam,
+  MultiParamError,
+  Param,
+  ParamError,
+  ParamSource,
+  ParseParamError,
+  SingleParam,
+  SingleParamError
+}
 import ru.tinkoff.tschema.common.Name
 import shapeless.ops.record.Selector
 
@@ -47,14 +57,14 @@ private[akkaHttp] trait ServeTypes {
 }
 
 private[akkaHttp] trait ServeFunctions extends ServeTypes {
-  protected def resolveParam[S >: All <: ParamSource, name, A](
-      implicit param: Param[S, A],
+  protected def resolveParam[S >: All <: ParamSource, name, A](implicit
+      param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S]
   ): Directive1[A] = param match {
     case single: SingleParam[S, A] =>
       directives.getByName(w.string).flatMap(s => directives.provideOrReject(w.string, single.applyOpt(s)))
-    case multi: MultiParam[S, A] =>
+    case multi: MultiParam[S, A]   =>
       multi.names.traverse(directives.getByName).flatMap(ls => directives.provideOrReject(w.string, multi.applyOpt(ls)))
   }
 
@@ -105,8 +115,8 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
     def directive(in: In): Directive1[Out] = provide(field[nameB](f(select(in))) :: in)
   }
 
-  def serveMap2[T, In <: HList, nameA, nameB, nameC, A, B, C](f: (A, B) => C)(
-      implicit selectA: Selector.Aux[In, nameA, A],
+  def serveMap2[T, In <: HList, nameA, nameB, nameC, A, B, C](f: (A, B) => C)(implicit
+      selectA: Selector.Aux[In, nameA, A],
       selectB: Selector.Aux[In, nameB, B]
   ): Aux[T, In, FieldType[nameC, C] :: In] = new Serve[T, In] {
     type Out = FieldType[nameC, C] :: In
@@ -121,7 +131,7 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
       def directive(in: In): Directive1[Out] = Directive { handle => ctx =>
         for {
           b   <- f(select(in): A)
-          out = field[nameB](b) :: in
+          out  = field[nameB](b) :: in
           res <- handle(Tuple1(out))(ctx)
         } yield res
       }
@@ -153,31 +163,33 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def queryMap[name: Name, x, In <: HList] =
     serveAdd[AllQuery[name], In, Map[String, String], name](parameterMap)
 
-  implicit def queryParamServe[name: Name, x: Param.PQuery, In <: HList] =
-    serveAdd[QueryParam[name, x], In, x, name](resolveParam[ParamSource.Query, name, x])
+  implicit def queryParamServe[name: Name, p, x: Param.PQuery, In <: HList] =
+    serveAdd[QueryParamAs[name, p, x], In, x, p](resolveParam[ParamSource.Query, name, x])
 
-  implicit def queryFlagServe[name: Name, x, In <: HList] = serveAdd[QueryFlag[name], In, Boolean, name](
-    parameterMap.map(_.contains(Name[name].string))
-  )
+  implicit def queryFlagServe[name: Name, p, x, In <: HList] =
+    serveAdd[QueryFlagAs[name, p], In, Boolean, p](
+      parameterMap.map(_.contains(Name[name].string))
+    )
 
-  implicit def captureServe[name: Name, x: Param.PPath, In <: HList] =
-    serveAdd[Capture[name, x], In, x, name](resolveParam[ParamSource.Path, name, x])
+  implicit def captureServe[name: Name, p, x: Param.PPath, In <: HList] =
+    serveAdd[CaptureAs[name, p, x], In, x, p](resolveParam[ParamSource.Path, name, x])
 
-  implicit def reqBodyServe[name: Name, x: FromRequestUnmarshaller, In <: HList] =
-    serveAdd[ReqBody[name, x], In, x, name] {
+  implicit def reqBodyServe[name: Name, p, x: FromRequestUnmarshaller, In <: HList] =
+    serveAdd[ReqBodyAs[name, p, x], In, x, p] {
       entity(as[x])
     }
 
-  implicit def headerServe[name: Name, x: Param.PHeader, In <: HList] =
-    serveAdd[Header[name, x], In, x, name](resolveParam[ParamSource.Header, name, x])
+  implicit def headerServe[name: Name, p, x: Param.PHeader, In <: HList] =
+    serveAdd[HeaderAs[name, p, x], In, x, p](resolveParam[ParamSource.Header, name, x])
 
-  implicit def cookieServe[name: Name, x: Param.PCookie, In <: HList] =
-    serveAdd[Cookie[name, x], In, x, name](resolveParam[ParamSource.Cookie, name, x])
+  implicit def cookieServe[name: Name, p, x: Param.PCookie, In <: HList] =
+    serveAdd[CookieAs[name, p, x], In, x, p](resolveParam[ParamSource.Cookie, name, x])
 
-  implicit def formFieldServe[name: Name, x: Param.PForm, In <: HList] =
-    serveAdd[FormField[name, x], In, x, name](resolveParam[ParamSource.Form, name, x])
+  implicit def formFieldServe[name: Name, p, x: Param.PForm, In <: HList] =
+    serveAdd[FormFieldAs[name, p, x], In, x, p](resolveParam[ParamSource.Form, name, x])
 
-  implicit def asServe[x, name, In <: HList, Head, old]: Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
+  implicit def asServe[x, name, In <: HList, Head, old]
+      : Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
     Serve.identity.asInstanceOf[Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In]]
 
   implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
@@ -202,11 +214,11 @@ object MethodCheck {
 
 private[akkaHttp] trait ServeInstances1 { self: Serve.type =>
 
-  implicit def queryParamsServe[name: Name, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
-    serveAdd[QueryParams[name, x], In, List[x], name](extractQueryParams[name, x](allowEmpty = false))
+  implicit def queryParamsServe[name: Name, p, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
+    serveAdd[QueryParamsAs[name, p, x], In, List[x], p](extractQueryParams[name, x](allowEmpty = false))
 
-  implicit def queryOptParamsServe[name: Name, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
-    serveAdd[QueryParams[name, Option[x]], In, List[x], name](extractQueryParams[name, x](allowEmpty = true))
+  implicit def queryOptParamsServe[name: Name, p, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
+    serveAdd[QueryParamsAs[name, p, Option[x]], In, List[x], p](extractQueryParams[name, x](allowEmpty = true))
 
   private def extractQueryParams[name: Name, x](
       allowEmpty: Boolean
@@ -253,8 +265,8 @@ private[akkaHttp] trait ServeAuthInstances extends ServeFunctions {
       BearerAuthenticator[x].directive(Name[realm].string).optional
     }
 
-  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](
-      implicit serve: Serve[Param, In]
+  implicit def apiKeyAuthServe[realm, Param <: CanHoldApiKey, In <: HList](implicit
+      serve: Serve[Param, In]
   ): Serve.Aux[ApiKeyAuth[realm, Param], In, serve.Out] =
     serve.as[ApiKeyAuth[realm, Param]]
 }
@@ -273,7 +285,7 @@ trait ParamDirectives[S <: ParamSource] {
   def errorReject[A](name: String, error: ParamError): Directive1[A] =
     error match {
       case single: SingleParamError => reject(singleRejection(name, single))
-      case MultiParamError(vals) =>
+      case MultiParamError(vals)    =>
         reject(vals.map { case (field, err) => singleRejection(field, err) }.toSeq: _*)
     }
 

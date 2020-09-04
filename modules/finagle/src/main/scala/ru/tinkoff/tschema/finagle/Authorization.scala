@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.finagle
 import cats.{Applicative, Monad}
-import cats.instances.option._
 import cats.syntax.applicative._
 import cats.syntax.apply._
 import cats.syntax.traverse._

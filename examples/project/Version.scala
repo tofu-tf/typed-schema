@@ -7,7 +7,7 @@ object Version {
 
   val scalaTags = "0.9.1"
 
-  val catsCore = "2.1.1"
+  val catsCore = "2.2.0"
 
   val simulacrum = "1.0.0"
 

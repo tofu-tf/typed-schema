@@ -1,6 +1,4 @@
 package ru.tinkoff.tschema.finagle
-
-import cats.instances.list._
 import cats.syntax.order._
 import cats.{Applicative, Monoid, Order}
 import com.twitter.finagle.http

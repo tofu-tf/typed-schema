@@ -1,7 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
 import cats.Eval
-import cats.instances.list._
 import cats.syntax.option._
 import derevo.Derivation
 import magnolia.{CaseClass, Magnolia, SealedTrait, TypeName}

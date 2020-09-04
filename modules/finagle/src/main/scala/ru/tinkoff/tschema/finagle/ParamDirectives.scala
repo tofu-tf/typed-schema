@@ -2,7 +2,6 @@ package ru.tinkoff.tschema
 package finagle
 
 import cats.Monad
-import cats.instances.list._
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import com.twitter.finagle.http.{Request, Response}

@@ -13,8 +13,6 @@ import SwaggerTypeable.{Config, seq}
 import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptySet, NonEmptyStream, NonEmptyVector}
 import magnolia.{CaseClass, Magnolia, SealedTrait, TypeName}
 import cats.syntax.traverse._
-import cats.instances.vector._
-import cats.instances.list._
 import derevo.Derivation
 import enumeratum.values.{ValueEnum, ValueEnumEntry}
 import tofu.optics.Contains

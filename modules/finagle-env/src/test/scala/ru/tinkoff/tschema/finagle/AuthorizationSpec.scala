@@ -1,5 +1,7 @@
 package ru.tinkoff.tschema.finagle
 
+import scala.language.reflectiveCalls
+
 import com.twitter.finagle.http.Response
 import monix.eval.Task
 import org.scalatest.flatspec.AnyFlatSpec

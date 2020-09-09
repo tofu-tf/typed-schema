@@ -1,11 +1,11 @@
 package ru.tinkoff.tschema.swagger
 
-import cats.Eval
+import cats.{Endo, Eval}
 import cats.syntax.option._
 import derevo.Derivation
 import magnolia.{CaseClass, Magnolia, SealedTrait, TypeName}
+import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable.{Config, seq}
-import ru.tinkoff.tschema.swagger.{SwaggerTypeable, _}
 
 object Swagger extends Derivation[SwaggerTypeable] {
   type Typeclass[T] = SwaggerTypeable[T]
@@ -45,9 +45,11 @@ object Swagger extends Derivation[SwaggerTypeable] {
                   typ = Eval.later(param.typeclass.typ)
                 )
               }.toVector,
-              required = Eval.later(caseClass.parameters.toVector.collect {
-                case prop if !prop.typeclass.optional && prop.default.isEmpty => cfg.propMod(prop.label)
-              })
+              required = Eval.later(
+                caseClass.parameters.toVector.collect {
+                  case prop if !prop.typeclass.optional && prop.default.isEmpty => cfg.propMod(prop.label)
+                }
+              )
             )
           )
         )
@@ -58,14 +60,38 @@ object Swagger extends Derivation[SwaggerTypeable] {
       desc: DescribeTypeable[T] = DescribeTypeable.empty[T]
   ): Typeclass[T] =
     new Typeclass[T] {
+      private val typeName = calcTypeName(sealedTrait.typeName, cfg)
+
+      private val dtr = cfg.discriminator.map(cfg.propMod)
+
+      private def addDiscriminator(caseName: String): Endo[SwaggerType] = {
+        case SwaggerObject(properties, required, discriminator) =>
+          SwaggerObject(
+            properties ++ dtr.map(
+              SwaggerProperty(
+                _,
+                None,
+                Eval.later(SwaggerPrimitive.string.mod(_.copy(pattern = Some(cfg.altMod(caseName)))))
+              )
+            ),
+            required.map(_ ++ dtr),
+            discriminator
+          )
+        case SwaggerRef(_, descr, typ)                          =>
+          SwaggerRef(s"$typeName.$caseName", descr, typ.map(addDiscriminator(caseName)))
+        case other                                              => other
+      }
+
       lazy val typ: SwaggerType =
         SwaggerRef(
-          name = calcTypeName(sealedTrait.typeName, cfg),
+          name = typeName,
           descr = desc.whole,
           typ = Eval.now(
             SwaggerOneOf(
               alts = sealedTrait.subtypes.map { sub =>
-                cfg.altMod(sub.typeName.short).some -> Eval.later(sub.typeclass.typ)
+                cfg.altMod(sub.typeName.short).some -> Eval.later(
+                  sub.typeclass.updateTyp(addDiscriminator(sub.typeName.short)).typ
+                )
               }.toVector,
               discriminator = cfg.discriminator
             )

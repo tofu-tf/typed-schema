@@ -95,7 +95,7 @@ object typeDSL {
     * indicates result of element of type `x`
     * via PATCH HTTP method
     */
-  final class Patch extends DSLAtom
+  final class Patch extends DSLMethod
 
   /**
     * Indicated single path prefix

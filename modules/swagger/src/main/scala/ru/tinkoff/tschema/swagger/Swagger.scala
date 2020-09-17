@@ -47,7 +47,7 @@ object Swagger extends Derivation[SwaggerTypeable] {
                 )
               }.toVector,
               required = Eval.later(caseClass.parameters.toVector.collect {
-                case prop if !prop.typeclass.optional => cfg.propMod(prop.label)
+                case prop if !prop.typeclass.optional && prop.default.isEmpty => cfg.propMod(prop.label)
               })
             )
           )

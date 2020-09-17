@@ -29,10 +29,9 @@ trait SwaggerBuilder {
 
   def make(info: OpenApiInfo = OpenApiInfo()) = {
     val openApiPaths =
-      paths.groupBy(_.path).map {
-        case (parts, specs) =>
-          parts.mkString("/", "/", "") ->
-            specs.collect { case PathSpec(_, Some(method), op, _, _) => method -> op }.toMap
+      paths.groupBy(_.path).map { case (parts, specs) =>
+        parts.mkString("/", "/", "") ->
+          specs.collect { case PathSpec(_, Some(method), op, _, _) => method -> op }.toMap
       }
     OpenApi(
       info = info,
@@ -41,9 +40,8 @@ trait SwaggerBuilder {
         schemas = types,
         securitySchemes = auths
       ),
-      tags = tags.map {
-        case (name, descr) =>
-          OpenApiTag(name = name, description = descr.some)
+      tags = tags.map { case (name, descr) =>
+        OpenApiTag(name = name, description = descr.some)
       }.toVector
     )
   }
@@ -125,21 +123,20 @@ object SwaggerBuilder {
       case spec                                         => spec
     }
     val types = {
-      self.types.map {
-        case (name, t) =>
-          val typ = descriptions.typ(name)
+      self.types.map { case (name, t) =>
+        val typ = descriptions.typ(name)
 
-          val setDescriptions =
-            (DescribedType.title.update(_, typ(TypeTarget.Title) orElse _)) andThen
-              (DescribedType.description.update(_, typ(TypeTarget.Type) orElse _)) andThen
-              (
-                (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties > every end).update(
-                  _,
-                  prop => SwaggerProperty.description.update(prop, typ(TypeTarget.Field(prop.name)) orElse _)
-                )
+        val setDescriptions =
+          (DescribedType.title.update(_, typ(TypeTarget.Title) orElse _)) andThen
+            (DescribedType.description.update(_, typ(TypeTarget.Type) orElse _)) andThen
+            (
+              (DescribedType.typ >> SwaggerType.objProp >> SwaggerObject.properties > every end).update(
+                _,
+                prop => SwaggerProperty.description.update(prop, typ(TypeTarget.Field(prop.name)) orElse _)
               )
+            )
 
-          name -> setDescriptions(t)
+        name -> setDescriptions(t)
       }
     }
     val tags  = self.tags ++ {
@@ -274,8 +271,8 @@ object MkSwagger {
 
   implicit def derivedComplete[T](implicit content: SwaggerContent[T]) =
     single[Complete[T]](
-      op = OpenApiOp(responses = OpenApiResponses(codes = content.content.groupBy(_._1).map {
-        case (i, contents) => (i, OpenApiResponse.makeMany(contents.flatMap(_._2): _*))
+      op = OpenApiOp(responses = OpenApiResponses(codes = content.content.groupBy(_._1).map { case (i, contents) =>
+        (i, OpenApiResponse.makeMany(contents.flatMap(_._2): _*))
       })),
       typeList = TreeMap(content.collectTypes.toSeq: _*)
     )

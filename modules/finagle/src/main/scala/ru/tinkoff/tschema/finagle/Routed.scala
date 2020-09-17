@@ -115,8 +115,8 @@ object RunHttp {
         G: Monad[G]
     ): G[Service[Request, Response]]                                                                    =
       resps
-        .foldM[G, HttpMuxer](HttpMuxer) {
-          case (mux, (name, svc)) => runnable.run(svc).map(s => mux withHandler Route(name, s))
+        .foldM[G, HttpMuxer](HttpMuxer) { case (mux, (name, svc)) =>
+          runnable.run(svc).map(s => mux withHandler Route(name, s))
         }
         .widen
   }

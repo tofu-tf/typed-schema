@@ -44,10 +44,9 @@ class ParamMakerMacro(val c: whitebox.Context) extends SymbolMacros {
   def extractNamesTypes(ref: Type): List[(String, Type)] = ref match {
     case RefinedType(tpes, scope) =>
       info(tpes)
-      scope.collect {
-        case m: MethodSymbol =>
-          info(m)
-          m.name.decodedName.toString -> m.returnType
+      scope.collect { case m: MethodSymbol =>
+        info(m)
+        m.name.decodedName.toString -> m.returnType
       }.toList
     case _                        => List.empty
   }

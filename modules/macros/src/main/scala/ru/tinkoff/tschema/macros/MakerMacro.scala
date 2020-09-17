@@ -119,7 +119,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   private class RouteTreeMaker(impl: Option[Tree]) {
     type DSL = DSLTree[Type]
     def makeRouteTree(ft: Type, dsl: DSL, input: Tree): Tree = dsl match {
-      case DSLLeaf(resTyp, groups, key)  =>
+      case DSLLeaf(resTyp, groups, key) =>
         impl match {
           case None       => q"""{
               $interface.makeResult[$ft, $resTyp]($input)($key, ..$groups)
@@ -136,7 +136,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
         val rest      = makeRouteTree(ft, DSLBranch(next, dsls), Ident(identName))
         q"""$interface.serve[$ft, $pref]($input).apply(($ident) => $rest)"""
 
-      case DSLBranch(_, dsls)            => makeRouteSumTree(ft, dsls, input)
+      case DSLBranch(_, dsls) => makeRouteSumTree(ft, dsls, input)
     }
 
     def makeRouteSumTree(ft: Type, dsls: Vector[DSL], input: Tree): Tree =
@@ -154,8 +154,8 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
           case base: TypeSymbol if base != typ => base.toType
         }.flatMap {
           extractMeth(_, name)
-        }.collectFirst {
-          case x => x
+        }.collectFirst { case x =>
+          x
         }
     }
 
@@ -200,7 +200,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   }
 
   def constructDslTree(t: Type, prefix: PrefixInfo[Type]): DSLTree[Type] = t match {
-    case Complete(res)      =>
+    case Complete(res) =>
       prefix.key match {
         case Some(str) => DSLLeaf(res, prefix.groups, str)
         case None      =>
@@ -208,14 +208,14 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
           abort(s"method key for $typLine is not defined")
       }
 
-    case Cons(x, y)         =>
+    case Cons(x, y) =>
       val px = constructDefPrefix(x)
       constructDslTree(y, prefix |+| px) match {
         case DSLBranch(p2, cdn) => DSLBranch(px.prefix ++ p2, cdn)
         case res                => DSLBranch(px.prefix, Vector(res))
       }
 
-    case Split(x, y)        =>
+    case Split(x, y) =>
       val t1 = constructDslTree(x, prefix)
       constructDslTree(y, prefix) match {
         case DSLBranch(Vector(), cdn) => DSLBranch(Vector(), t1 +: cdn)

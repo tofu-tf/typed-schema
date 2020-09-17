@@ -79,19 +79,18 @@ object SwaggerPrimitive {
 }
 
 final case class SwaggerEnumeration(alts: Vector[String]) extends SwaggerType {
-  override def merge = {
-    case SwaggerEnumeration(alts2) => SwaggerEnumeration((alts ++ alts2).distinct)
+  override def merge = { case SwaggerEnumeration(alts2) =>
+    SwaggerEnumeration((alts ++ alts2).distinct)
   }
 }
 final case class SwaggerArray(items: Eval[SwaggerType], minLength: Option[Int] = None, maxLength: Option[Int] = None)
     extends SwaggerType {
-  override def merge = {
-    case SwaggerArray(items2, min1, max1) =>
-      SwaggerArray(
-        items.map2(items2)(_ or _),
-        mergeOptWith(minLength, min1)(_ min _),
-        mergeOptWith(maxLength, max1)(_ max _)
-      )
+  override def merge = { case SwaggerArray(items2, min1, max1) =>
+    SwaggerArray(
+      items.map2(items2)(_ or _),
+      mergeOptWith(minLength, min1)(_ min _),
+      mergeOptWith(maxLength, max1)(_ max _)
+    )
   }
 }
 
@@ -106,19 +105,18 @@ final case class SwaggerObject(
     required: Eval[Vector[String]] = Eval.now(Vector.empty),
     discriminator: Option[String] = None,
 ) extends SwaggerType {
-  override def merge = {
-    case SwaggerObject(p2, req2, disc2) =>
-      val thisMap    = properties.map(prop => prop.name -> prop).toMap
-      val thatMap    = p2.map(prop => prop.name -> prop).toMap
-      val unionProps = (thisMap -- thatMap.keySet).values.toVector ++ thatMap.values.map {
-        case SwaggerProperty(name, descr, prop) =>
-          SwaggerProperty(name, descr, thisMap.get(name).map(_.typ.map2(prop)(_ or _)).getOrElse(prop))
-      }
-      val reqs       = required.map2(req2) { (r1, r2) =>
-        r1.toSet.intersect(r2.toSet).toVector
-      }
-      val discr      = discriminator orElse disc2
-      SwaggerObject(unionProps, reqs, discr)
+  override def merge = { case SwaggerObject(p2, req2, disc2) =>
+    val thisMap    = properties.map(prop => prop.name -> prop).toMap
+    val thatMap    = p2.map(prop => prop.name -> prop).toMap
+    val unionProps = (thisMap -- thatMap.keySet).values.toVector ++ thatMap.values.map {
+      case SwaggerProperty(name, descr, prop) =>
+        SwaggerProperty(name, descr, thisMap.get(name).map(_.typ.map2(prop)(_ or _)).getOrElse(prop))
+    }
+    val reqs       = required.map2(req2) { (r1, r2) =>
+      r1.toSet.intersect(r2.toSet).toVector
+    }
+    val discr      = discriminator orElse disc2
+    SwaggerObject(unionProps, reqs, discr)
   }
 
   private def updateProps[T](updates: Seq[(String, T)])(update: T => SwaggerProperty => SwaggerProperty) = {
@@ -153,8 +151,8 @@ object SwaggerObject {
 }
 
 final case class SwaggerRef(name: String, descr: Option[String], typ: Eval[SwaggerType]) extends SwaggerType {
-  override def merge                   = {
-    case SwaggerRef(`name`, descr2, t2) => SwaggerRef(name, descr.orElse(descr2), typ.map2(typ)(_ or _))
+  override def merge                   = { case SwaggerRef(`name`, descr2, t2) =>
+    SwaggerRef(name, descr.orElse(descr2), typ.map2(typ)(_ or _))
   }
   override def deref                   = typ.flatMap(_.deref)
   override val nameOpt: Option[String] = Some(name)
@@ -244,7 +242,7 @@ object SwaggerType {
 
   implicit val encodeSwaggerType: Encoder.AsObject[SwaggerType] = new Encoder.AsObject[SwaggerType] {
     def encode(a: SwaggerType): Eval[JsonObject] = a match {
-      case pt: SwaggerPrimitive[_]                   =>
+      case pt: SwaggerPrimitive[_] =>
         val typeJson = (pt.typ: SwaggerValue).asJsonObject
         val result   = pt.format match {
           case None    => typeJson
@@ -252,7 +250,7 @@ object SwaggerType {
         }
         result.pure[Eval]
 
-      case SwaggerEnumeration(alts)                  =>
+      case SwaggerEnumeration(alts) =>
         JsonObject
           .fromIterable(
             Vector(
@@ -262,7 +260,7 @@ object SwaggerType {
           )
           .pure[Eval]
 
-      case SwaggerRef(name, _, _)                    =>
+      case SwaggerRef(name, _, _) =>
         JsonObject
           .singleton(
             "$ref",
@@ -282,12 +280,12 @@ object SwaggerType {
             )
           )
 
-      case SwaggerXML(typ, options)                  => encode(typ).map(o1 => o1.add("xml", options.asJson))
+      case SwaggerXML(typ, options) => encode(typ).map(o1 => o1.add("xml", options.asJson))
 
       case SwaggerObject(properties, required, discr) =>
         properties
-          .traverse[Eval, (String, Option[String], JsonObject)] {
-            case SwaggerProperty(name, descr, prop) => prop.flatMap(encode).map(typ => (name, descr, typ.asJsonObject))
+          .traverse[Eval, (String, Option[String], JsonObject)] { case SwaggerProperty(name, descr, prop) =>
+            prop.flatMap(encode).map(typ => (name, descr, typ.asJsonObject))
           }
           .map { enc =>
             val fields = enc.map {
@@ -303,17 +301,16 @@ object SwaggerType {
             )
           }
 
-      case SwaggerOneOf(alts, discriminator)          =>
+      case SwaggerOneOf(alts, discriminator) =>
         alts
-          .traverse[Eval, Json] {
-            case (nameOpt, etyp) =>
-              nameOpt
-                .filter(_ => discriminator.isEmpty)
-                .fold(etyp) { name =>
-                  Eval.now(SwaggerObject(Vector(SwaggerProperty(name, None, etyp)), Eval.now(Vector(name))))
-                }
-                .flatMap(encode)
-                .map(Json.fromJsonObject)
+          .traverse[Eval, Json] { case (nameOpt, etyp) =>
+            nameOpt
+              .filter(_ => discriminator.isEmpty)
+              .fold(etyp) { name =>
+                Eval.now(SwaggerObject(Vector(SwaggerProperty(name, None, etyp)), Eval.now(Vector(name))))
+              }
+              .flatMap(encode)
+              .map(Json.fromJsonObject)
           }
           .map2(alts.flatTraverse {
             case (Some(name), typ) =>
@@ -327,17 +324,17 @@ object SwaggerType {
             JsonObject("type" -> "object".asJson, "oneOf" -> Json.arr(alts: _*), "discriminator" -> disObj)
           }
 
-      case SwaggerAllOf(conjs)                        =>
+      case SwaggerAllOf(conjs) =>
         conjs
           .traverse(_.flatMap(encode).map(Json.fromJsonObject))
           .map(c => JsonObject("allOf" -> Json.arr(c: _*)))
 
-      case SwaggerAnyOf(conjs)                        =>
+      case SwaggerAnyOf(conjs) =>
         conjs
           .traverse(_.flatMap(encode).map(Json.fromJsonObject))
           .map(c => JsonObject("anyOf" -> Json.arr(c: _*)))
 
-      case SwaggerMap(values)                         =>
+      case SwaggerMap(values)  =>
         values
           .flatMap(encode)
           .map(enc =>
@@ -347,7 +344,7 @@ object SwaggerType {
             )
           )
 
-      case SwaggerMedia(typ, _)                       => encode(typ)
+      case SwaggerMedia(typ, _) => encode(typ)
     }
 
     override def encodeObject(a: SwaggerType): JsonObject = encode(a).value

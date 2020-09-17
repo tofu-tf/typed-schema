@@ -3,7 +3,7 @@ package ru.tinkoff.tschema.swagger
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.{Date, UUID}
 
-import cats.Eval
+import cats.{Endo, Eval}
 import enumeratum.{Enum, EnumEntry}
 import io.circe.JsonObject
 import cats.syntax.option._
@@ -272,11 +272,16 @@ object GenericSwaggerTypeable {
   implicit def genericProductTypeable[T, L <: HList](implicit
       lgen: LabelledGeneric.Aux[T, L],
       list: HListProps[L],
-      descr: DescribeTypeable[T] = DescribeTypeable.empty[T]
+      descr: DescribeTypeable[T] = DescribeTypeable.empty[T],
+      cfg: Config = SwaggerTypeable.defaultConfig
   ): GenericSwaggerTypeable[T] = {
-    def required = Eval.later(list.props.collect { case (name, tt) if !tt.value._2 => name }.toVector)
+    def required = Eval.later(list.props.collect {
+      case (name, tt) if !tt.value._2 => cfg.propMod(name)
+    }.toVector)
 
-    def props = list.props.map { case (name, tt) => SwaggerProperty(name, descr.element(name), tt.map(_._1)) }.toVector
+    def props = list.props.map { case (name, tt) =>
+      SwaggerProperty(name, descr.element(name), tt.map(_._1))
+    }.toVector
 
     make[T](SwaggerObject(props, required), descr.whole)
   }
@@ -299,14 +304,29 @@ object GenericSwaggerTypeable {
       sum: CoproductAlts[C],
       cfg: Config = SwaggerTypeable.defaultConfig,
       descr: DescribeTypeable[T] = DescribeTypeable.empty[T]
-  ): GenericSwaggerTypeable[T] =
+  ): GenericSwaggerTypeable[T] = {
+    val dtr = cfg.discriminator.map(cfg.propMod)
+
+    val addDiscriminator: Endo[SwaggerType] = {
+      case SwaggerObject(properties, required, discriminator) =>
+        SwaggerObject(
+          properties ++ dtr.map(SwaggerProperty(_, None, Eval.later(SwaggerPrimitive.string))),
+          required.map(_ ++ dtr),
+          discriminator
+        )
+      case other                                              => other
+    }
+
     make[T](
       SwaggerOneOf(
-        sum.alts.map { case (name, typ) => name -> typ.map(_.describeWith(name.flatMap(descr.element))) }.toVector,
+        sum.alts.map { case (name, typ) =>
+          name -> typ.map(addDiscriminator).map(_.describeWith(name.flatMap(descr.element)))
+        }.toVector,
         cfg.discriminator
       ),
       descr.whole
     )
+  }
 }
 
 sealed trait CirceSwaggerTypeableInstances {

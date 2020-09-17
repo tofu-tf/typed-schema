@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.finagle
 import cats.arrow.FunctionK
-import cats.instances.list._
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.foldable._

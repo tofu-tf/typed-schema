@@ -5,7 +5,6 @@ import cats.arrow.Arrow
 import cats.data.ContT
 import cats.effect.Resource
 import cats.free.Free
-import cats.instances.list._
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.functor._

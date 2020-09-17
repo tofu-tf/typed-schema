@@ -1,7 +1,6 @@
 package ru.tinkoff.tschema.swagger
 
 import cats.Eval
-import cats.instances.vector._
 import cats.syntax.applicative._
 import cats.syntax.apply._
 import cats.syntax.option._

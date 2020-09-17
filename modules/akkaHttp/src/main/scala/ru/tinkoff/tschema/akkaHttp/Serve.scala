@@ -13,9 +13,6 @@ import shapeless.{Segment => _, _}
 import shapeless.labelled.{FieldType, field}
 import catsInstances._
 import cats.syntax.traverse._
-import cats.instances.list._
-import cats.instances.option._
-import cats.instances.either._
 import ru.tinkoff.tschema.akkaHttp.auth.{BasicAuthenticator, BearerAuthenticator}
 import ru.tinkoff.tschema.param.ParamSource.All
 import ru.tinkoff.tschema.param.{

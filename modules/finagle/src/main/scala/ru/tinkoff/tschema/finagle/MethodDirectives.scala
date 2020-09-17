@@ -4,7 +4,6 @@ import ru.tinkoff.tschema.typeDSL._
 import cats.syntax.flatMap._
 import cats.syntax.applicative._
 import cats.syntax.order._
-import cats.instances.string._
 import shapeless.HList
 
 private[finagle] trait MethodDirectives { self: Serve.type =>

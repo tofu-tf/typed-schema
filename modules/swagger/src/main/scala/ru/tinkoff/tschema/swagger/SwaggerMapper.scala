@@ -7,8 +7,6 @@ import cats.data.NonEmptyList
 import cats.syntax.option._
 import cats.syntax.foldable._
 import cats.syntax.reducible._
-import cats.instances.map._
-import cats.instances.vector._
 import cats.kernel.Semigroup
 import cats.{Eval, Monoid, MonoidK}
 import ru.tinkoff.tschema.macros.MakerMacro

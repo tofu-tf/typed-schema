@@ -8,7 +8,6 @@ import derevo.Derivation
 import magnolia.{CaseClass, Magnolia, SealedTrait}
 import ru.tinkoff.tschema.swagger.SwaggerContent.Content
 import cats.syntax.foldable._
-import cats.instances.list._
 
 import scala.annotation.implicitNotFound
 

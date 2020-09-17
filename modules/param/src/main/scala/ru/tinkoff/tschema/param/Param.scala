@@ -1,10 +1,6 @@
 package ru.tinkoff.tschema.param
 
 import java.util.UUID
-
-import cats.instances.either._
-import cats.instances.list._
-import cats.instances.parallel._
 import cats.kernel.Semigroup
 import cats.syntax.either._
 import cats.syntax.parallel._

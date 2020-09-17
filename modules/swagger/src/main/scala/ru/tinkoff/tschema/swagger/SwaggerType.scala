@@ -177,6 +177,8 @@ final case class SwaggerAllOf(conjs: Vector[Eval[SwaggerType]]) extends SwaggerT
   override def and(that: SwaggerType) = SwaggerAllOf(conjs :+ Eval.now(that))
 }
 
+final case class SwaggerAnyOf(conjs: Vector[Eval[SwaggerType]]) extends SwaggerType
+
 final case class SwaggerMap(value: Eval[SwaggerType]) extends SwaggerType
 
 final case class SwaggerXML(typ: SwaggerType, options: SwaggerXMLOptions) extends SwaggerType {
@@ -330,6 +332,11 @@ object SwaggerType {
         conjs
           .traverse(_.flatMap(encode).map(Json.fromJsonObject))
           .map(c => JsonObject("allOf" -> Json.arr(c: _*)))
+
+      case SwaggerAnyOf(conjs)                        =>
+        conjs
+          .traverse(_.flatMap(encode).map(Json.fromJsonObject))
+          .map(c => JsonObject("anyOf" -> Json.arr(c: _*)))
 
       case SwaggerMap(values)                         =>
         values

@@ -40,7 +40,7 @@ object Version {
 
   val tofu = "0.7.10"
 
-  val swaggerUI = "3.33.0"
+  val swaggerUI = "3.34.0"
 
   val scalaTags = "0.9.1"
 

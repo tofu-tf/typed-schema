@@ -13,6 +13,7 @@ import ru.tinkoff.tschema.swagger.{AsOpenApiParam, SwaggerBuilder}
 import syntax._
 import ru.tinkoff.tschema.swagger.{MkSwagger, Swagger}
 import ru.tinkoff.tschema.finagle.MkService
+import cats.Show
 
 object MultiParams {
   @derive(Swagger, HttpParam, AsOpenApiParam, show)
@@ -23,10 +24,12 @@ object MultiParams {
 
   final case class Child(childName: String, childAge: Int)
 
+  //Just an example of a manual instance declaration
   object Child {
     implicit val params: HttpParam[Child] = HttpParam.generate
     implicit val swaggerParam: AsOpenApiParam[Child] = AsOpenApiParam.instance
     implicit val swagger: Swagger[Child] = Swagger.instance
+    implicit val catsShow: Show[Child] = show.instance
   }
 
   object handler {

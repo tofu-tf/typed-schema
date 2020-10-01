@@ -26,7 +26,7 @@ object Server extends App {
       ReceiveModule
     )
 
-  val svc: Http[Response] = modules.foldMapK(_.route) <+> ExampleSwagger.route
+  val svc: Http[Response] = modules.foldMapK(_.route) combineK ExampleSwagger.route
 
   val server = for {
     srv <- RunHttp.run[Example](svc)
@@ -39,6 +39,6 @@ object Server extends App {
   val layer: URLayer[Blocking with Console, FullEnv] =
     ZLayer.identity[Blocking with Console] ++ ExampleEnv.live
 
-  def run(args: List[String]): URIO[Blocking with Console, Int] =
-    layer.build.use(r => server.catchAll(ex => putStr(ex.getMessage)).provide(r)) as 0
+  def run(args: List[String]): URIO[Blocking with Console, ExitCode] =
+    layer.build.use(r => server.catchAll(ex => putStr(ex.getMessage)).provide(r)) as ExitCode.success
 }

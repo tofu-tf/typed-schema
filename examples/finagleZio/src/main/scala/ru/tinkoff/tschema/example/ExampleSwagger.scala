@@ -60,5 +60,5 @@ object ExampleSwagger {
     Routed.checkPath[Http, Response]("/swagger", ZIO.succeed(response))
   }
 
-  val route: Http[Response] = swaggerResources <+> swaggerHttp <+> swaggerJson
+  val route: Http[Response] = swaggerResources combineK swaggerHttp combineK swaggerJson
 }

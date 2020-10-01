@@ -34,13 +34,13 @@ object Version {
 
   val zioCats = "2.1.4.0"
 
-  val finagle = "20.8.1"
+  val finagle = "20.9.0"
 
   val derevo = "0.11.5"
 
-  val tofu = "0.7.9"
+  val tofu = "0.8.0"
 
-  val swaggerUI = "3.33.0"
+  val swaggerUI = "3.34.0"
 
   val scalaTags = "0.9.1"
 

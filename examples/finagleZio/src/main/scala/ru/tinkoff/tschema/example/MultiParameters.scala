@@ -12,14 +12,17 @@ import ru.tinkoff.tschema.finagle.showInstances._
 import cats.instances.string._
 import cats.instances.int._
 import cats.instances.option._
+import cats.Show
 
 object MultiParameters extends ExampleModule {
   final case class Child(childName: String, childAge: Int)
 
+  //Just an example of a manual instance declaration
   object Child {
     implicit val params: HttpParam[Child] = HttpParam.generate
     implicit val swaggerParam: AsOpenApiParam[Child] = AsOpenApiParam.generate
     implicit val swagger: Swagger[Child] = Swagger.instance
+    implicit val catsShow: Show[Child] = show.instance
   }
 
   @derive(Swagger, HttpParam, AsOpenApiParam, show)

@@ -11,6 +11,7 @@ object Version {
 
   val simulacrum = "1.0.0"
 
-  val typedSchema = "0.12.2"
+  val typedSchema = "0.12.6"
 
+  val swaggerUI = "3.34.0"
 }

@@ -2,14 +2,17 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
 lazy val typedSchemaVersion = SettingKey[String]("typedSchemaVersion")
 
+val scala212V = "2.12.12"
+val scala213V = "2.13.3"
+
 val commonSettings = List(
-  scalaVersion := "2.12.10",
+  scalaVersion := scala213V,
   typedSchemaVersion := {
     val branch = git.gitCurrentBranch.value
     if (branch == "master") Version.typedSchema
     else s"${Version.typedSchema}-$branch-SNAPSHOT"
   },
-  crossScalaVersions := List("2.12.10", "2.13.1"),
+  crossScalaVersions := List(scala212V, scala213V),
   swaggerUIVersion := {
     libraryDependencies.value
       .find(_.name == "swagger-ui-dist")
@@ -31,18 +34,20 @@ val commonSettings = List(
   libraryDependencies += "org.manatki" %% "derevo-circe" % Version.derevo,
   libraryDependencies += "org.manatki" %% "derevo-tethys" % Version.derevo,
   libraryDependencies += { "ru.tinkoff" %% "typed-schema-swagger" % typedSchemaVersion.value },
+  libraryDependencies += { "ru.tinkoff" %% "typed-schema-swagger-ui" % typedSchemaVersion.value }
+    .exclude("org.webjars.npm", "swagger-ui-dist"),
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.patch),
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
   scalacOptions ++= List(
     "language:higherKinds"
   ),
   libraryDependencies ++= {
-    if (scalaVersion.value == "2.12.10")
+    if (scalaVersion.value == scala212V)
       List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch))
     else Nil
   },
   scalacOptions ++= {
-    if (scalaVersion.value == "2.13.1") List("-Ymacro-annotations")
+    if (scalaVersion.value == scala213V) List("-Ymacro-annotations")
     else Nil
   }
 )

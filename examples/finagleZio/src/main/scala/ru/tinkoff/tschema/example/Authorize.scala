@@ -6,7 +6,7 @@ import com.twitter.util.Base64StringEncoder
 import derevo.circe.{decoder, encoder}
 import derevo.derive
 import derevo.tethys.{tethysReader, tethysWriter}
-import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind}
+import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, Kind, AuthorizationS}
 import ru.tinkoff.tschema.finagle.{Authorization, Credentials, Rejection, Routed, SimpleAuth, BearerToken}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.finagle._
@@ -51,11 +51,11 @@ object Authorize extends ExampleModule {
     "y" -> List.empty
   )
 
-  implicit val userAuth: Authorization[Basic, Http, User] = SimpleAuth {
+  implicit val userAuth: AuthorizationS[Basic, Http, User] = SimpleAuth {
     case Credentials(id @ users(pass, roles), pwd) if secure_equals(pass, pwd) => User(id, roles)
   }
 
-  implicit val clientAuth: Authorization[Bearer, Http, Client] = SimpleAuth {
+  implicit val clientAuth: AuthorizationS[Bearer, Http, Client] = SimpleAuth {
     case BearerToken(clients(client)) => client
   }
 

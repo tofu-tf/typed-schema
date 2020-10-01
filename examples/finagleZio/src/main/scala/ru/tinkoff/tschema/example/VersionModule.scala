@@ -52,7 +52,7 @@ object version {
     Serve.checkCont[version[v], Http, In] { cnt =>
       val shouldBe = Name[v].string
 
-      Routed.checkPath[Http, Response](Name[v].string, cnt) <+>
+      Routed.checkPath[Http, Response](Name[v].string, cnt) combineK
         (uriParam[Http, String]("version").flatMap { s =>
           reject[Http, Unit](wrongVersion(shouldBe, s)).whenA(s =!= shouldBe)
         } *> cnt)

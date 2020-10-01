@@ -5,7 +5,7 @@ import com.twitter.finagle.http.Response
 import derevo.derive
 import derevo.tethys.{tethysReader, tethysWriter}
 import ru.tinkoff.tschema.custom.syntax._
-import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer}
+import ru.tinkoff.tschema.finagle.Authorization.{Basic, Bearer, AuthorizationS}
 import ru.tinkoff.tschema.finagle.Credentials.secure_equals
 import ru.tinkoff.tschema.finagle.util.Unapply
 import ru.tinkoff.tschema.finagle._
@@ -57,11 +57,11 @@ object Authorize {
     def numbers(sessionId: Option[String]): List[Int] = sessionId.flatMap(sessions.get).getOrElse(List(-1))
   }
 
-  implicit def userAuth[H[_]: Monad: Routed]: Authorization[Basic, H, User] = SimpleAuth {
+  implicit def userAuth[H[_]: Monad: Routed]: AuthorizationS[Basic, H, User] = SimpleAuth {
     case Credentials(id @ users(pass, roles), pwd) if secure_equals(pass, pwd) => User(id, roles)
   }
 
-  implicit def clientAuth[H[_]: Monad: Routed]: Authorization[Bearer, H, Client] = SimpleAuth {
+  implicit def clientAuth[H[_]: Monad: Routed]: AuthorizationS[Bearer, H, Client] = SimpleAuth {
     case BearerToken(clients(client)) => client
   }
 }

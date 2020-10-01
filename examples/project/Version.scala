@@ -1,6 +1,8 @@
 object Version {
   val akkaHttpCirce = "1.32.0"
 
+  val swaggerUI = "3.33.0"
+
   val derevo = "0.11.5"
 
   val scalaTags = "0.9.1"

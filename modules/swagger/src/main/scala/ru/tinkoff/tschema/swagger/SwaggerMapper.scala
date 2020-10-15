@@ -153,7 +153,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       }
 
       (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
-    }
+    } andThen fromTypes[FormFieldAs[name, p, T]](asParam.types)
 
   implicit def deriveCookie[name: Name, p, T: AsOpenApiParam] =
     derivedParam[name, p, T, CookieAs](In.cookie)

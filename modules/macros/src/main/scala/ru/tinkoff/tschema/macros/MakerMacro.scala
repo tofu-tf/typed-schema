@@ -197,6 +197,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     case Cons(x, y)          => constructDefPrefix(x) |+| constructDefPrefix(y)
     case Split(t1, t2)       => abort(s"split over $t1 and $t2 in prefix: this is not allowed")
     case Complete(_)         => abort(s"$t is usable only as tail element in the DSL")
+    case t                   => abort(s"can't use type $t in the DSL,make sure your atom is subtype of DslAtom")
   }
 
   def constructDslTree(t: Type, prefix: PrefixInfo[Type]): DSLTree[Type] = t match {
@@ -241,6 +242,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
     case SingletonTypeStr(s)              => s
     case TypeRef(_, s, Nil)               => symbolName(s)
     case TypeRef(_, s, xs) if xs.nonEmpty => xs.map(showType).mkString(s"${symbolName(s)}[", ",", "]")
+    case t1                               => t1.toString()
   }
 
   def getPackage(t: Type): Tree       =

@@ -21,6 +21,7 @@ import ru.tinkoff.tschema.utils.transform
 
 import scala.collection.{immutable, mutable}
 import scala.reflect.runtime.universe.TypeTag
+import tofu.compat.{LazySeq, NELazySeq}
 
 trait SwaggerTypeable[T] {
   self =>
@@ -31,6 +32,9 @@ trait SwaggerTypeable[T] {
 
   def updateTyp(f: SwaggerType => SwaggerType): SwaggerTypeable[T] =
     SwaggerTypeable.make[T](f(self.typ))
+
+  def updateObject(f: SwaggerObject => SwaggerObject): SwaggerTypeable[T] =
+    updateTyp(SwaggerType.objProp.update(_, f))
 
   def anon: SwaggerTypeable[T] = new SwaggerTypeable[T] {
     override def typ: SwaggerType = self.typ.deref.value
@@ -127,19 +131,19 @@ trait SwaggerTypeableInstances
 
   final implicit val swaggerTypeableJsonObject: SwaggerTypeable[JsonObject] = make[JsonObject](SwaggerObject())
 
-  final implicit def swaggerVectorTypeable[T: SwaggerTypeable]: SwaggerTypeable[Vector[T]] = seq[Vector, T]
-  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeable[List[T]]     = seq[List, T]
-  final implicit def swaggerSetTypeable[T: SwaggerTypeable]: SwaggerTypeable[Set[T]]       = seq[Set, T]
-  final implicit def swaggerStreamTypeable[T: SwaggerTypeable]: SwaggerTypeable[Stream[T]] = seq[Stream, T]
-  final implicit def swaggerChainTypeable[T: SwaggerTypeable]: SwaggerTypeable[Chain[T]]   = seq[Chain, T]
+  final implicit def swaggerVectorTypeable[T: SwaggerTypeable]: SwaggerTypeable[Vector[T]]  = seq[Vector, T]
+  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeable[List[T]]      = seq[List, T]
+  final implicit def swaggerSetTypeable[T: SwaggerTypeable]: SwaggerTypeable[Set[T]]        = seq[Set, T]
+  final implicit def swaggerStreamTypeable[T: SwaggerTypeable]: SwaggerTypeable[LazySeq[T]] = seq[LazySeq, T]
+  final implicit def swaggerChainTypeable[T: SwaggerTypeable]: SwaggerTypeable[Chain[T]]    = seq[Chain, T]
 
   final implicit def swaggerNEVectorTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyVector[T]] =
     neseq[NonEmptyVector, T]
   final implicit def swaggerNEListTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyList[T]]     =
     neseq[NonEmptyList, T]
   final implicit def swaggerNESetTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptySet[T]]       = neseq[NonEmptySet, T]
-  final implicit def swaggerNEStreamTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyStream[T]] =
-    neseq[NonEmptyStream, T]
+  final implicit def swaggerNEStreamTypeable[T: SwaggerTypeable]: SwaggerTypeable[NELazySeq[T]]      =
+    neseq[NELazySeq, T]
   final implicit def swaggerNEChainTypeable[T: SwaggerTypeable]: SwaggerTypeable[NonEmptyChain[T]]   =
     neseq[NonEmptyChain, T]
 

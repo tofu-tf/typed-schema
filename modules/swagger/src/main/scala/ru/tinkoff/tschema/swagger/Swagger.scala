@@ -7,7 +7,7 @@ import magnolia.{CaseClass, Magnolia, SealedTrait, TypeName}
 import ru.tinkoff.tschema.swagger._
 import ru.tinkoff.tschema.swagger.SwaggerTypeable.{Config, seq}
 
-object Swagger extends Derivation[SwaggerTypeable] with SwaggerFunctions{
+object Swagger extends Derivation[SwaggerTypeable] with SwaggerFunctions {
   type Typeclass[T] = SwaggerTypeable[T]
 
   def apply[A](implicit swagger: Swagger[A]): Swagger[A] = swagger

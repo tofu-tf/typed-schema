@@ -33,8 +33,7 @@ sealed trait SwaggerType {
 
   def nameOpt: Option[String] = None
 
-  /**
-    * set ot change type description if this is named type
+  /** set ot change type description if this is named type
     */
   def describe(descr: String) = this
 
@@ -126,14 +125,12 @@ final case class SwaggerObject(
     })
   }
 
-  /**
-    * set or change fields description if this is ObjectType
+  /** set or change fields description if this is ObjectType
     */
   def describeFields(descrs: (String, String)*) =
     updateProps(descrs)(descr => SwaggerProperty.description.set(_, descr.some))
 
-  /**
-    * set or change XML options if fields
+  /** set or change XML options if fields
     *
     * @param opts
     */

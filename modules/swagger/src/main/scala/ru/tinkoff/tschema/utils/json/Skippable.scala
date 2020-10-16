@@ -6,8 +6,7 @@ import shapeless.tag
 import tag.@@
 import simulacrum.typeclass
 
-/**
-  * tag for types that should be omitted with default value in json
+/** tag for types that should be omitted with default value in json
   */
 final abstract class Skippable
 

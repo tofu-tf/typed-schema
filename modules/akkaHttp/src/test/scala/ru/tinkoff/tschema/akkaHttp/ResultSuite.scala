@@ -10,8 +10,12 @@ import syntax._
 import scala.concurrent.Future
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import ru.tinkoff.tschema.typeDSL.DSLAtom
+import shapeless.HList
 
 class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
+  @volatile var redundantAtomServed = false
+
   object hello {
     @volatile var testCalled = false
 
@@ -28,10 +32,30 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
       testCalled = true
       s"$name, age $age"
     }
+
+    def testNoRedundantAtomServing: String = {
+      testCalled = true
+      "Hello"
+    }
   }
 
-  def helloApi = (keyPrefix("test") |> get |> $$[String]) <> (keyPrefix("testAsync") |> get |> $$[String]) <>
-    (keyPrefix("testCapture") |> get |> capture[String]("name") |> capture[Int]("age") |> $$[String])
+  class SomeAtom extends DSLAtom
+
+  def someAtom: SomeAtom = null
+
+  object SomeAtom {
+    implicit def serve[In <: HList]: Serve.Check[SomeAtom, In] =
+      Serve.serveCheck {
+        redundantAtomServed = true
+        akka.http.scaladsl.server.Directives.pass
+      }
+  }
+
+  def helloApi =
+    (keyPrefix("test") |> get |> $$[String]) <>
+      (keyPrefix("testAsync") |> get |> $$[String]) <>
+      (keyPrefix("testCapture") |> get |> capture[String]("name") |> capture[Int]("age") |> $$[String]) <>
+      (keyPrefix("testNoRedundantAtomServing") |> get |> someAtom |> $$[String])
 
   val helloRoute = MkRoute(helloApi)(hello)
 
@@ -60,6 +84,12 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
       }
     }
 
+    "reject empty string capture" in (Get("/testCapture//131") ~> helloRoute ~> check {
+      handled shouldBe false
+
+      rejections shouldBe Nil
+    })
+
     "reject bad http method" in (Post("/test") ~> helloRoute ~> check {
       handled shouldBe false
 
@@ -71,6 +101,14 @@ class ResultSuite extends AsyncWordSpec with ScalatestRouteTest with Matchers {
 
       rejections shouldBe Nil
     })
+
+    "reject prefix and don't serve redundant atoms" in
+      (Get("/testNoRedundantAtomServing1") ~> helloRoute ~> check {
+        handled shouldBe false
+        redundantAtomServed shouldBe false
+
+        rejections shouldBe Nil
+      })
   }
 
   object methods {

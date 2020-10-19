@@ -66,7 +66,7 @@ class RoutedFunctions {
 
   def checkPathEnd[F[_]: Monad: Routed, A](fa: F[A]): F[A] = checkPath("", fa)
 
-  private[this] val SegmentPattern = "/?([^/]*)".r
+  private[this] val SegmentPattern = "/?([^/]+)".r
 
   def customSegment[F[_]: Monad: Routed, A](pattern: Regex, groupId: Int, f: Option[CharSequence] => F[A]): F[A] =
     for {
@@ -85,11 +85,25 @@ class RoutedFunctions {
   def headerParam[F[_]: Routed: Monad, T: Param.PHeader](name: String) = param[F, ParamSource.Header, T](name)
   def cookieParam[F[_]: Routed: Monad, T: Param.PCookie](name: String) = param[F, ParamSource.Cookie, T](name)
 
-  private[this] def commonPathPrefix(path: CharSequence, pref: CharSequence): Int =
-    if (pref.length() <= path.length() && path.subSequence(0, pref.length()) == pref) pref.length()
-    else if (pref.length() < path.length() && path.charAt(0) == '/' && path.subSequence(1, pref.length() + 1) == pref)
+  private[this] def commonPathPrefix(path: CharSequence, pref: CharSequence): Int = {
+    def slashOrEnd(path: CharSequence, index: Int): Boolean =
+      path.length() - 1 < index || path.charAt(index) == '/'
+
+    if (
+      pref.length() <= path.length() &&
+      path.subSequence(0, pref.length()) == pref &&
+      slashOrEnd(path, pref.length())
+    )
+      pref.length()
+    else if (
+      pref.length() < path.length() &&
+      path.charAt(0) == '/' &&
+      path.subSequence(1, pref.length() + 1) == pref &&
+      slashOrEnd(path, pref.length() + 1)
+    )
       pref.length() + 1
     else -1
+  }
 }
 
 trait LiftHttp[F[_], G[_]] { self =>

@@ -152,7 +152,7 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
 private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstances1 with ServeAuthInstances {
   self: Serve.type =>
   implicit def prefixServe[pref, In <: HList](implicit n: Name[pref]) =
-    serveCheck[Prefix[pref], In](pathPrefix(n.string))
+    serveCheck[Prefix[pref], In](pathPrefix(n.string) & rawPathPrefixTest(Slash | PathEnd))
 
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
     serveCheck[method, In](method(check.method))

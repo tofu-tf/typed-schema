@@ -7,7 +7,7 @@ object Version {
 
   val catsCore = "2.2.0"
 
-  val simulacrum = "1.0.0"
+  val simulacrum = "1.0.1"
 
   val typedSchema = "0.12.6"
 

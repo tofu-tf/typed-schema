@@ -14,6 +14,10 @@ object Version {
 
   val kindProjector = "0.10.3"
 
+  val bm4 = "0.3.1"
+
+  val macroParadise = "2.1.1"
+
   val akkaHttpCirce = "1.35.0"
 
   val cats = "2.2.0"

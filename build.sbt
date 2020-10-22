@@ -37,7 +37,10 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val crossCompile = crossScalaVersions := List("2.13.2", "2.12.11")
+val scala212V = "2.12.12"
+val scala213V = "2.13.3"
+
+val crossCompile = crossScalaVersions := List(scala212V, scala213V)
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",
@@ -65,12 +68,12 @@ val setMinorVersion = minorVersion := {
 
 lazy val compilerPlugins = libraryDependencies ++= List(
   compilerPlugin("org.typelevel" %% "kind-projector"     % Version.kindProjector),
-  compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
+  compilerPlugin("com.olegpy"    %% "better-monadic-for" % Version.bm4),
 )
 
 val paradise = libraryDependencies ++= {
   minorVersion.value match {
-    case 12 => List(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch))
+    case 12 => List(compilerPlugin("org.scalamacros" % "paradise" % Version.macroParadise cross CrossVersion.patch))
     case 13 => List()
   }
 }
@@ -132,7 +135,7 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatestScalacheck :: Nil
 
 lazy val commonSettings = publishSettings ++ List(
-  scalaVersion := "2.13.2",
+  scalaVersion := scala213V,
   collectionCompat,
   compilerPlugins,
   commonScalacOptions,
@@ -311,7 +314,7 @@ lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
-    scalaVersion := "2.13.2",
+    scalaVersion := scala213V,
     publish / skip := true,
     crossCompile,
     setMinorVersion,
@@ -324,7 +327,7 @@ lazy val typedschema =
     .dependsOn(macros, kernel, main)
     .settings(
       publish / skip := true,
-      scalaVersion := "2.13.2",
+      scalaVersion := scala213V,
       publishSettings,
       setMinorVersion,
       crossCompile

@@ -26,7 +26,7 @@ object Version {
 
   val monocle = "1.6.0"
 
-  val simulacrum = "1.0.0"
+  val simulacrum = "1.0.1"
 
   val magnolia = "0.17.0"
 

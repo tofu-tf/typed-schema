@@ -145,7 +145,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   implicit def deriveFormField[name: Name, p, T](implicit asParam: AsOpenApiParam[T]) =
     fromFunc[FormFieldAs[name, p, T]] {
-      def param(field: OpenApiParamInfo, name: String) = MakeFormField(name, field.typ, field.required)
+      def param(field: OpenApiParamInfo, name: String) = MakeFormField.urlencoded(name, field.typ, field.required)
 
       val params = asParam match {
         case ps: AsSingleOpenApiParam[T] => param(ps, Name[name].string)
@@ -154,6 +154,18 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
       (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
     } andThen fromTypes[FormFieldAs[name, p, T]](asParam.types)
+
+  implicit def deriveMultipartField[name: Name, p, T](implicit asParam: AsOpenApiParam[T]) =
+    fromFunc[MultipartFieldAs[name, p, T]] {
+      def param(field: OpenApiParamInfo, name: String) = MakeFormField.multipart(name, field.typ, field.required)
+
+      val params = asParam match {
+        case ps: AsSingleOpenApiParam[T] => param(ps, Name[name].string)
+        case pm: AsMultiOpenApiParam[T]  => pm.fields.reduceMap(p => param(p, p.name))
+      }
+
+      (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
+    } andThen fromTypes[MultipartFieldAs[name, p, T]](asParam.types)
 
   implicit def deriveCookie[name: Name, p, T: AsOpenApiParam] =
     derivedParam[name, p, T, CookieAs](In.cookie)
@@ -254,8 +266,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   implicit def monoidInstance[A] = monoidKInstance.algebra[A]
 
-  final class MakeFormField(val objType: SwaggerType) {
-    def myMediaType: MediaType = "application/x-www-form-urlencoded"
+  sealed abstract class MakeFormField(val objType: SwaggerType) {
+    def myMediaType: MediaType
 
     def make: OpenApiRequestBody                          =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
@@ -264,17 +276,28 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       chain(body) >> OpenApiRequestBody.content > at >@ myMediaType > _some >>
         OpenApiMediaType.schema > _some >@ {} update (_ merge objType)
   }
+  final class MakeUrlencodedField(override val objType: SwaggerType) extends MakeFormField(objType) {
+    def myMediaType: MediaType = "application/x-www-form-urlencoded"
+  }
+  final class MakeMultipartField(override val objType: SwaggerType) extends MakeFormField(objType) {
+    def myMediaType: MediaType = "multipart/form-data"
+  }
 
   object MakeFormField {
-    def apply(name: String, typ: SwaggerType, required: Boolean): MakeFormField =
-      new MakeFormField(
-        SwaggerObject(
-          required = Eval.now(Vector(name).filter(_ => required)),
-          properties = Vector(SwaggerProperty(name, typ = Eval.now(typ), description = None))
-        )
+    def urlencoded(name: String, typ: SwaggerType, required: Boolean): MakeUrlencodedField =
+      new MakeUrlencodedField(swaggerType(name, typ, required))
+
+    def multipart(name: String, typ: SwaggerType, required: Boolean): MakeMultipartField =
+      new MakeMultipartField(swaggerType(name, typ, required))
+
+    private def swaggerType(name: String, typ: SwaggerType, required: Boolean) =
+      SwaggerObject(
+        required = Eval.now(Vector(name).filter(_ => required)),
+        properties = Vector(SwaggerProperty(name, typ = Eval.now(typ), description = None))
       )
 
-    implicit val semigroup: Semigroup[MakeFormField] = (x, y) => new MakeFormField(x.objType merge y.objType)
+    implicit val urlencodedSemigroup: Semigroup[MakeUrlencodedField] = (x, y) => new MakeUrlencodedField(x.objType merge y.objType)
+    implicit val multipartSemigroup: Semigroup[MakeMultipartField] = (x, y) => new MakeMultipartField(x.objType merge y.objType)
   }
 }
 

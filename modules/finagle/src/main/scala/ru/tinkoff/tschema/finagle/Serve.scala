@@ -63,7 +63,7 @@ object Serve
       param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S]
-  ): Add[D, F, In, p, A] =
+  ): (In, labelled.FieldType[p,A] :: In => F[Response]) => F[Response] =
     param match {
       case single: SingleParam[S, A] =>
         (in, k) =>
@@ -77,7 +77,7 @@ object Serve
 
   implicit def queryParamServe[F[_]: Routed: Monad, name: Name, p, x: Param.PQuery, In <: HList]
       : Add[QueryParamAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Query, name, p, x, QueryParamAs[name, p, x], In]
+    resolveParam[F, ParamSource.Query, name, p, x, QueryParamAs[name, p, x], In].apply(_, _)
 
   implicit def allQueryServe[F[_]: Routed: Monad, name, In <: HList]
       : Add[AllQuery[name], F, In, name, Map[String, String]] =
@@ -89,19 +89,19 @@ object Serve
 
   implicit def captureServe[F[_]: Routed: Monad, name: Name, p, x: Param.PPath, In <: HList]
       : Add[CaptureAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Path, name, p, x, CaptureAs[name, p, x], In]
+    resolveParam[F, ParamSource.Path, name, p, x, CaptureAs[name, p, x], In].apply(_, _)
 
   implicit def headerServe[F[_]: Routed: Monad, name: Name, p, x: Param.PHeader, In <: HList]
       : Add[HeaderAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Header, name, p, x, HeaderAs[name, p, x], In]
+    resolveParam[F, ParamSource.Header, name, p, x, HeaderAs[name, p, x], In].apply(_, _)
 
   implicit def cookieServe[F[_]: Routed: Monad, name: Name, p, x: Param.PCookie, In <: HList]
       : Add[CookieAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Cookie, name, p, x, CookieAs[name, p, x], In]
+    resolveParam[F, ParamSource.Cookie, name, p, x, CookieAs[name, p, x], In].apply(_, _)
 
   implicit def formFieldServe[F[_]: Routed: Monad, name: Name, p, x: Param.PForm, In <: HList]
       : Add[FormFieldAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Form, name, p, x, FormFieldAs[name, p, x], In]
+    resolveParam[F, ParamSource.Form, name, p, x, FormFieldAs[name, p, x], In].apply(_, _)
 
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))
@@ -149,14 +149,7 @@ private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 
     (in, k) => {
       println("\t --> typed-schema --> USING ALREADY PARSED MULTIPART")
       implicit val directives = ParamDirectives.multipartFieldParamDirectives(multipart(in))
-      param match {
-        case single: SingleParam[ParamSource.MultipartField, x] =>
-          directives.getByName[F, Response](name.string, s => directives.direct(name.string, single.applyOpt(s), in, k))
-        case multi: MultiParam[ParamSource.MultipartField, x]   =>
-          cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
-            directives.direct(name.string, multi.applyOpt(ls), in, k)
-          )
-      }
+      resolveParam[F, ParamSource.MultipartField, name, p, x, MultipartFieldAs[name, p, x], In].apply(in, k)
     }
 }
 

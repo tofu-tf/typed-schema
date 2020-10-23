@@ -144,6 +144,14 @@ object typeDSL {
   final class FormFieldAs[name, p, x] extends DSLAtom
   type FormField[name, x] = FormFieldAs[name, name, x]
 
+  /** captures field value from multipart field data
+    *
+    * @tparam name field name
+    * @tparam x    parameter type, should have `FromMultipartParam` instance
+    */
+  final class MultipartFieldAs[name, p, x] extends DSLAtom
+  type MultipartField[name, x] = MultipartFieldAs[name, name, x]
+
   /** captures field value from Cookie
     */
   final class CookieAs[name, p, x] extends DSLAtom with CanHoldApiKey

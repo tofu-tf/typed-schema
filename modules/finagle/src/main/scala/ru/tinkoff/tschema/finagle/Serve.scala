@@ -13,14 +13,16 @@ import cats.syntax.applicative._
 import cats.{Applicative, Apply, Defer, FlatMap, Functor, Monad, StackSafeMonad}
 import com.twitter.finagle.http
 import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.exp.{Multipart, MultipartDecoder}
 import ru.tinkoff.tschema.finagle.Rejection.missingParam
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.cont
-import shapeless._
+import shapeless.{Witness => W, _}
 import shapeless.labelled.{FieldType, field}
+import shapeless.ops.record.Selector
 
 import scala.annotation.implicitNotFound
 
@@ -44,7 +46,7 @@ trait Serve[T, F[_], In, Out] {
 
 object Serve
     extends ServeAuthInstances with ServeParamsInstances with ServeReqBodyInstances with ServeFunctions
-    with ServeCatsInstance with ServeMethodInstances {
+    with ServeCatsInstance with ServeMethodInstances with ServeMultipartInstances {
 
   import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
@@ -130,6 +132,71 @@ private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
   ): Add[ReqBody[name, A], F, In, name, A] =
     add[ReqBody[name, A], F, In, A, name](A.parse())
 }
+
+object ServeMultipartInstances {
+  type multipartKey = W.`"multipart"`.T
+}
+
+private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 { self: Serve.type =>
+  import ServeMultipartInstances.multipartKey
+
+  implicit def parsedMultipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](
+    implicit
+    name: Name[name],
+    param: Param.PMultipartField[x],
+    multipart: Selector.Aux[In, multipartKey, Multipart]
+  ): Add[MultipartFieldAs[name, p, x], F, In, p, x] =
+    (in, k) => {
+      println("\t --> typed-schema --> USING ALREADY PARSED MULTIPART")
+      implicit val directives = ParamDirectives.multipartFieldParamDirectives(multipart(in))
+      param match {
+        case single: SingleParam[ParamSource.MultipartField, x] =>
+          directives.getByName[F, Response](name.string, s => directives.direct(name.string, single.applyOpt(s), in, k))
+        case multi: MultiParam[ParamSource.MultipartField, x]   =>
+          cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
+            directives.direct(name.string, multi.applyOpt(ls), in, k)
+          )
+      }
+    }
+}
+
+private[finagle] trait ServeMultipartInstances1 { self: Serve.type =>
+  import ServeMultipartInstances.multipartKey
+
+  implicit def multipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](
+    implicit
+    param: Param.PMultipartField[x],
+    name: Name[name]
+  ): Serve[MultipartFieldAs[name, p, x], F, In, FieldType[multipartKey, Multipart] :: FieldType[name, x] :: In] =
+    (in, k) => {
+      Routed.request.flatMap { req =>
+        println("\t --> typed-schema --> PARSING MULTIPART")
+        MultipartDecoder.decode(req).fold[F[Response]](
+          Routed.reject(Rejection.missingParam(name.string, ParamSource.MultipartField))
+        ){ multipart =>
+          val directives = ParamDirectives.multipartFieldParamDirectives(multipart)
+          param match {
+            case single: SingleParam[ParamSource.MultipartField, x] =>
+              directives.getByName[F, Response](
+                name.string,
+                single.applyOpt(_).fold(
+                  directives.errorReject[F, Response](name.string, _),
+                  a => k(field[multipartKey](multipart) :: field[name](a) :: in)
+                )
+              )
+            case multi: MultiParam[ParamSource.MultipartField, x]   =>
+              cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(
+                multi.applyOpt(_).fold(
+                  directives.errorReject[F, Response](name.string, _),
+                  a => k(field[multipartKey](multipart) :: field[name](a) :: in)
+                )
+              )
+          }
+        }
+      }
+    }
+}
+
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>
 

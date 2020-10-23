@@ -5,6 +5,7 @@ import cats.Monad
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.http.exp.Multipart
 import ru.tinkoff.tschema.param._
 import shapeless._
 import shapeless.labelled.{FieldType, field}
@@ -70,6 +71,14 @@ object ParamDirectives {
 
   implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {
     def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
+  }
+
+  implicit def multipartFieldParamDirectives(
+    implicit multipart: Multipart
+  ): TC[MultipartField] = new TC[MultipartField] {
+    val source: MultipartField = MultipartField
+    def getByName[F[_]: Routed: Monad, A](name: String, fa: Option[CharSequence] => F[A]): F[A] =
+      fa(multipart.attributes.get(name).flatMap(_.headOption))
   }
 
   implicit val headerParamDirectives: TC[Header] = new TCS[Header](Header) {

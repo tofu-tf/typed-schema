@@ -143,7 +143,6 @@ private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 
     multipart: Selector.Aux[In, multipartKey, Multipart]
   ): Add[MultipartFieldAs[name, p, x], F, In, p, x] =
     (in, k) => {
-      println("\t --> typed-schema --> USING ALREADY PARSED MULTIPART")
       implicit val directives = ParamDirectives.multipartFieldParamDirectives(multipart(in))
       resolveParam[F, ParamSource.MultipartField, name, p, x, MultipartFieldAs[name, p, x], In].apply(in, k)
     }
@@ -159,7 +158,6 @@ private[finagle] trait ServeMultipartInstances1 { self: Serve.type =>
   ): Serve[MultipartFieldAs[name, p, x], F, In, FieldType[multipartKey, Multipart] :: FieldType[name, x] :: In] =
     (in, k) => {
       Routed.request.flatMap { req =>
-        println("\t --> typed-schema --> PARSING MULTIPART")
         MultipartDecoder.decode(req).fold[F[Response]](
           Routed.reject(Rejection.missingParam(name.string, ParamSource.MultipartField))
         ){ multipart =>

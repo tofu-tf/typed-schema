@@ -20,7 +20,7 @@ import ru.tinkoff.tschema.param._
 import ru.tinkoff.tschema.common.Name
 import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.cont
-import shapeless.{Witness => W, _}
+import shapeless._
 import shapeless.labelled.{FieldType, field}
 import shapeless.ops.record.Selector
 
@@ -133,12 +133,8 @@ private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
     add[ReqBody[name, A], F, In, A, name](A.parse())
 }
 
-object ServeMultipartInstances {
-  type multipartKey = W.`"multipart"`.T
-}
-
 private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 { self: Serve.type =>
-  import ServeMultipartInstances.multipartKey
+  import ParamDirectives.multipartKey
 
   implicit def parsedMultipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](
     implicit
@@ -154,7 +150,7 @@ private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 
 }
 
 private[finagle] trait ServeMultipartInstances1 { self: Serve.type =>
-  import ServeMultipartInstances.multipartKey
+  import ParamDirectives.multipartKey
 
   implicit def multipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](
     implicit
@@ -170,19 +166,10 @@ private[finagle] trait ServeMultipartInstances1 { self: Serve.type =>
           val directives = ParamDirectives.multipartFieldParamDirectives(multipart)
           param match {
             case single: SingleParam[ParamSource.MultipartField, x] =>
-              directives.getByName[F, Response](
-                name.string,
-                single.applyOpt(_).fold(
-                  directives.errorReject[F, Response](name.string, _),
-                  a => k(field[multipartKey](multipart) :: field[name](a) :: in)
-                )
-              )
+              directives.getByName[F, Response](name.string, s => directives.direct(name.string, single.applyOpt(s), multipart, in, k))
             case multi: MultiParam[ParamSource.MultipartField, x]   =>
-              cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(
-                multi.applyOpt(_).fold(
-                  directives.errorReject[F, Response](name.string, _),
-                  a => k(field[multipartKey](multipart) :: field[name](a) :: in)
-                )
+              cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
+                directives.direct(name.string, multi.applyOpt(ls), multipart, in, k)
               )
           }
         }

@@ -1,5 +1,16 @@
 # Typed Schema Example
 
+## Akka
 ```sh
-sbt run
+sbt akkaHttp/run
+```
+
+## FinagleEnv
+```sh
+sbt finagleEnv/run
+```
+
+## FinagleZio
+```sh
+sbt finagleZio/run
 ```

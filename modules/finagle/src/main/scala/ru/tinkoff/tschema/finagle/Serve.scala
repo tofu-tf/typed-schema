@@ -63,7 +63,7 @@ object Serve
       param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S]
-  ): (In, labelled.FieldType[p,A] :: In => F[Response]) => F[Response] =
+  ): (In, labelled.FieldType[p, A] :: In => F[Response]) => F[Response] =
     param match {
       case single: SingleParam[S, A] =>
         (in, k) =>
@@ -136,11 +136,10 @@ private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
 private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 { self: Serve.type =>
   import ParamDirectives.multipartKey
 
-  implicit def parsedMultipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](
-    implicit
-    name: Name[name],
-    param: Param.PMultipartField[x],
-    multipart: Selector.Aux[In, multipartKey, Multipart]
+  implicit def parsedMultipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](implicit
+      name: Name[name],
+      param: Param.PMultipartField[x],
+      multipart: Selector.Aux[In, multipartKey, Multipart]
   ): Add[MultipartFieldAs[name, p, x], F, In, p, x] =
     (in, k) => {
       implicit val directives = ParamDirectives.multipartFieldParamDirectives(multipart(in))
@@ -151,30 +150,33 @@ private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 
 private[finagle] trait ServeMultipartInstances1 { self: Serve.type =>
   import ParamDirectives.multipartKey
 
-  implicit def multipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](
-    implicit
-    param: Param.PMultipartField[x],
-    name: Name[name]
+  implicit def multipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](implicit
+      param: Param.PMultipartField[x],
+      name: Name[name]
   ): Serve[MultipartFieldAs[name, p, x], F, In, FieldType[multipartKey, Multipart] :: FieldType[name, x] :: In] =
     (in, k) => {
       Routed.request.flatMap { req =>
-        MultipartDecoder.decode(req).fold[F[Response]](
-          Routed.reject(Rejection.missingParam(name.string, ParamSource.MultipartField))
-        ){ multipart =>
-          val directives = ParamDirectives.multipartFieldParamDirectives(multipart)
-          param match {
-            case single: SingleParam[ParamSource.MultipartField, x] =>
-              directives.getByName[F, Response](name.string, s => directives.direct(name.string, single.applyOpt(s), multipart, in, k))
-            case multi: MultiParam[ParamSource.MultipartField, x]   =>
-              cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
-                directives.direct(name.string, multi.applyOpt(ls), multipart, in, k)
-              )
+        MultipartDecoder
+          .decode(req)
+          .fold[F[Response]](
+            Routed.reject(Rejection.missingParam(name.string, ParamSource.MultipartField))
+          ) { multipart =>
+            val directives = ParamDirectives.multipartFieldParamDirectives(multipart)
+            param match {
+              case single: SingleParam[ParamSource.MultipartField, x] =>
+                directives.getByName[F, Response](
+                  name.string,
+                  s => directives.direct(name.string, single.applyOpt(s), multipart, in, k)
+                )
+              case multi: MultiParam[ParamSource.MultipartField, x]   =>
+                cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
+                  directives.direct(name.string, multi.applyOpt(ls), multipart, in, k)
+                )
+            }
           }
-        }
       }
     }
 }
-
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>
 

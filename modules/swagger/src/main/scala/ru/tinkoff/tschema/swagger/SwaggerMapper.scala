@@ -296,8 +296,10 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
         properties = Vector(SwaggerProperty(name, typ = Eval.now(typ), description = None))
       )
 
-    implicit val urlencodedSemigroup: Semigroup[MakeUrlencodedField] = (x, y) => new MakeUrlencodedField(x.objType merge y.objType)
-    implicit val multipartSemigroup: Semigroup[MakeMultipartField] = (x, y) => new MakeMultipartField(x.objType merge y.objType)
+    implicit val urlencodedSemigroup: Semigroup[MakeUrlencodedField] = (x, y) =>
+      new MakeUrlencodedField(x.objType merge y.objType)
+    implicit val multipartSemigroup: Semigroup[MakeMultipartField]   = (x, y) =>
+      new MakeMultipartField(x.objType merge y.objType)
   }
 }
 

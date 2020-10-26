@@ -47,7 +47,7 @@ trait ParamDirectives[S <: ParamSource] {
       in: In,
       k: (FieldType[multipartKey, Multipart] :: FieldType[name, A] :: In) => F[Response]
   ): F[Response] =
-    result.fold(errorReject[F, Response](name, _), a => k(field[multipartKey](multipart) ::field[name](a) :: in))
+    result.fold(errorReject[F, Response](name, _), a => k(field[multipartKey](multipart) :: field[name](a) :: in))
 
   def provideOrReject[F[_]: Routed: Monad, A](name: String, result: Param.Result[A]): F[A] =
     result.fold(errorReject[F, A](name, _), _.pure[F])
@@ -64,6 +64,7 @@ object ParamDirectives {
   def apply[S <: ParamSource](implicit dir: ParamDirectives[S]): ParamDirectives[S] = dir
 
   type multipartKey = W.`"multipart"`.T
+
   type TC[A <: ParamSource]  = ParamDirectives[A]
   type TCS[A <: ParamSource] = ParamDirectivesSimple[A]
   import ParamSource._
@@ -85,10 +86,11 @@ object ParamDirectives {
     def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
   }
 
-  implicit def multipartFieldParamDirectives(
-    implicit multipart: Multipart
+  implicit def multipartFieldParamDirectives(implicit
+      multipart: Multipart
   ): TC[MultipartField] = new TC[MultipartField] {
     val source: MultipartField = MultipartField
+
     def getByName[F[_]: Routed: Monad, A](name: String, fa: Option[CharSequence] => F[A]): F[A] =
       fa(multipart.attributes.get(name).flatMap(_.headOption))
   }

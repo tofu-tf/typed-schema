@@ -185,6 +185,9 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def formFieldServe[name: Name, p, x: Param.PForm, In <: HList] =
     serveAdd[FormFieldAs[name, p, x], In, x, p](resolveParam[ParamSource.Form, name, x])
 
+  implicit def multipartFormFieldServe[name: Name, p, x: Param.PMultipartField, In <: HList] =
+    serveAdd[MultipartFieldAs[name, p, x], In, x, p](resolveParam[ParamSource.MultipartField, name, x])
+
   implicit def asServe[x, name, In <: HList, Head, old]
       : Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
     Serve.identity.asInstanceOf[Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In]]
@@ -312,6 +315,12 @@ object ParamDirectives {
   }
 
   implicit val formDataParamDirectives: TC[Form] = new TC[Form] {
+    def getByName(name: String): Directive1[Option[String]] = formField(name.?)
+    def notFound(name: String): Rejection                   = MissingFormFieldRejection(name)
+    def malformed(name: String, error: String): Rejection   = MalformedFormFieldRejection(name, error)
+  }
+
+  implicit val multipartFormDataParamDirectives: TC[MultipartField] = new TC[MultipartField] {
     def getByName(name: String): Directive1[Option[String]] = formField(name.?)
     def notFound(name: String): Rejection                   = MissingFormFieldRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedFormFieldRejection(name, error)

@@ -13,7 +13,6 @@ import cats.syntax.applicative._
 import cats.{Applicative, Apply, Defer, FlatMap, Functor, Monad, StackSafeMonad}
 import com.twitter.finagle.http
 import com.twitter.finagle.http.Response
-import com.twitter.finagle.http.exp.{Multipart, MultipartDecoder}
 import ru.tinkoff.tschema.finagle.Rejection.missingParam
 import ru.tinkoff.tschema.param.ParamSource.{All, Query}
 import ru.tinkoff.tschema.param._
@@ -22,7 +21,6 @@ import ru.tinkoff.tschema.typeDSL._
 import ru.tinkoff.tschema.utils.cont
 import shapeless._
 import shapeless.labelled.{FieldType, field}
-import shapeless.ops.record.Selector
 
 import scala.annotation.implicitNotFound
 
@@ -63,7 +61,7 @@ object Serve
       param: Param[S, A],
       w: Name[name],
       directives: ParamDirectives[S]
-  ): (In, labelled.FieldType[p, A] :: In => F[Response]) => F[Response] =
+  ): Add[D, F, In, p, A] =
     param match {
       case single: SingleParam[S, A] =>
         (in, k) =>
@@ -77,7 +75,7 @@ object Serve
 
   implicit def queryParamServe[F[_]: Routed: Monad, name: Name, p, x: Param.PQuery, In <: HList]
       : Add[QueryParamAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Query, name, p, x, QueryParamAs[name, p, x], In].apply(_, _)
+    resolveParam[F, ParamSource.Query, name, p, x, QueryParamAs[name, p, x], In]
 
   implicit def allQueryServe[F[_]: Routed: Monad, name, In <: HList]
       : Add[AllQuery[name], F, In, name, Map[String, String]] =
@@ -89,23 +87,23 @@ object Serve
 
   implicit def captureServe[F[_]: Routed: Monad, name: Name, p, x: Param.PPath, In <: HList]
       : Add[CaptureAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Path, name, p, x, CaptureAs[name, p, x], In].apply(_, _)
+    resolveParam[F, ParamSource.Path, name, p, x, CaptureAs[name, p, x], In]
 
   implicit def headerServe[F[_]: Routed: Monad, name: Name, p, x: Param.PHeader, In <: HList]
       : Add[HeaderAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Header, name, p, x, HeaderAs[name, p, x], In].apply(_, _)
+    resolveParam[F, ParamSource.Header, name, p, x, HeaderAs[name, p, x], In]
 
   implicit def cookieServe[F[_]: Routed: Monad, name: Name, p, x: Param.PCookie, In <: HList]
       : Add[CookieAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Cookie, name, p, x, CookieAs[name, p, x], In].apply(_, _)
+    resolveParam[F, ParamSource.Cookie, name, p, x, CookieAs[name, p, x], In]
 
   implicit def formFieldServe[F[_]: Routed: Monad, name: Name, p, x: Param.PForm, In <: HList]
       : Add[FormFieldAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.Form, name, p, x, FormFieldAs[name, p, x], In].apply(_, _)
+    resolveParam[F, ParamSource.Form, name, p, x, FormFieldAs[name, p, x], In]
 
   implicit def multipartFieldServe[F[_]: Routed: Monad, name: Name, p, x: Param.PMultipartField, In <: HList]
       : Add[MultipartFieldAs[name, p, x], F, In, p, x] =
-    resolveParam[F, ParamSource.MultipartField, name, p, x, MultipartFieldAs[name, p, x], In].apply(_, _)
+    resolveParam[F, ParamSource.MultipartField, name, p, x, MultipartFieldAs[name, p, x], In]
 
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))

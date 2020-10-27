@@ -7,10 +7,8 @@ import cats.syntax.flatMap._
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.http.exp.{Multipart, MultipartDecoder}
 import ru.tinkoff.tschema.param._
-import shapeless.{Witness => W, _}
+import shapeless._
 import shapeless.labelled.{FieldType, field}
-
-import ParamDirectives.multipartKey
 
 trait ParamDirectives[S <: ParamSource] {
   def source: S
@@ -53,8 +51,6 @@ abstract class ParamDirectivesSimple[S <: ParamSource](val source: S) extends Pa
 
 object ParamDirectives {
   def apply[S <: ParamSource](implicit dir: ParamDirectives[S]): ParamDirectives[S] = dir
-
-  type multipartKey = W.`"multipart"`.T
 
   type TC[A <: ParamSource]  = ParamDirectives[A]
   type TCS[A <: ParamSource] = ParamDirectivesSimple[A]

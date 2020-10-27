@@ -5,7 +5,7 @@ import cats.Monad
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import com.twitter.finagle.http.{Request, Response}
-import com.twitter.finagle.http.exp.Multipart
+import com.twitter.finagle.http.exp.{Multipart, MultipartDecoder}
 import ru.tinkoff.tschema.param._
 import shapeless.{Witness => W, _}
 import shapeless.labelled.{FieldType, field}
@@ -39,15 +39,6 @@ trait ParamDirectives[S <: ParamSource] {
       k: (FieldType[name, A] :: In) => F[Response]
   ): F[Response] =
     result.fold(errorReject[F, Response](name, _), a => k(field[name](a) :: in))
-
-  def direct[F[_]: Routed: Monad, A, name, In <: HList](
-      name: String,
-      result: Param.Result[A],
-      multipart: Multipart,
-      in: In,
-      k: (FieldType[multipartKey, Multipart] :: FieldType[name, A] :: In) => F[Response]
-  ): F[Response] =
-    result.fold(errorReject[F, Response](name, _), a => k(field[multipartKey](multipart) :: field[name](a) :: in))
 
   def provideOrReject[F[_]: Routed: Monad, A](name: String, result: Param.Result[A]): F[A] =
     result.fold(errorReject[F, A](name, _), _.pure[F])
@@ -86,13 +77,23 @@ object ParamDirectives {
     def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
   }
 
-  implicit def multipartFieldParamDirectives(implicit
-      multipart: Multipart
-  ): TC[MultipartField] = new TC[MultipartField] {
-    val source: MultipartField = MultipartField
+  implicit val multipartFieldParamDirectives: TC[MultipartField] = new TCS[MultipartField](MultipartField) {
+    private val field = Request.Schema.newField[Option[Multipart]](null)
 
-    def getByName[F[_]: Routed: Monad, A](name: String, fa: Option[CharSequence] => F[A]): F[A] =
-      fa(multipart.attributes.get(name).flatMap(_.headOption))
+    private def decodeNow(req: Request): Option[Multipart] =
+      try MultipartDecoder.decode(req)
+      catch { case scala.util.control.NonFatal(_) => None }
+
+    private def decodeIfNeeded(req: Request): Option[Multipart] = req.ctx(field) match {
+      case null => // was never decoded for this request
+        val value = decodeNow(req)
+        req.ctx.update(field, value)
+        value
+      case value => value // was already decoded for this request
+    }
+
+    def getFromRequest(name: String)(req: Request): Option[String] =
+      decodeIfNeeded(req).flatMap(_.attributes.get(name).flatMap(_.headOption))
   }
 
   implicit val headerParamDirectives: TC[Header] = new TCS[Header](Header) {

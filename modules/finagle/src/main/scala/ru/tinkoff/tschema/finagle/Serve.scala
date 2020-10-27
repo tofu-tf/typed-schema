@@ -46,7 +46,7 @@ trait Serve[T, F[_], In, Out] {
 
 object Serve
     extends ServeAuthInstances with ServeParamsInstances with ServeReqBodyInstances with ServeFunctions
-    with ServeCatsInstance with ServeMethodInstances with ServeMultipartInstances {
+    with ServeCatsInstance with ServeMethodInstances {
 
   import ru.tinkoff.tschema.typeDSL._
   type Filter[T, F[_], L]                 = Serve[T, F, L, L]
@@ -103,6 +103,10 @@ object Serve
       : Add[FormFieldAs[name, p, x], F, In, p, x] =
     resolveParam[F, ParamSource.Form, name, p, x, FormFieldAs[name, p, x], In].apply(_, _)
 
+  implicit def multipartFieldServe[F[_]: Routed: Monad, name: Name, p, x: Param.PMultipartField, In <: HList]
+      : Add[MultipartFieldAs[name, p, x], F, In, p, x] =
+    resolveParam[F, ParamSource.MultipartField, name, p, x, MultipartFieldAs[name, p, x], In].apply(_, _)
+
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))
 
@@ -131,51 +135,6 @@ private[finagle] trait ServeReqBodyInstances1 { self: Serve.type =>
       A: ParseBody[F, A]
   ): Add[ReqBody[name, A], F, In, name, A] =
     add[ReqBody[name, A], F, In, A, name](A.parse())
-}
-
-private[finagle] trait ServeMultipartInstances extends ServeMultipartInstances1 { self: Serve.type =>
-  import ParamDirectives.multipartKey
-
-  implicit def parsedMultipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](implicit
-      name: Name[name],
-      param: Param.PMultipartField[x],
-      multipart: Selector.Aux[In, multipartKey, Multipart]
-  ): Add[MultipartFieldAs[name, p, x], F, In, p, x] =
-    (in, k) => {
-      implicit val directives = ParamDirectives.multipartFieldParamDirectives(multipart(in))
-      resolveParam[F, ParamSource.MultipartField, name, p, x, MultipartFieldAs[name, p, x], In].apply(in, k)
-    }
-}
-
-private[finagle] trait ServeMultipartInstances1 { self: Serve.type =>
-  import ParamDirectives.multipartKey
-
-  implicit def multipartFieldServe[F[_]: Routed: Monad, name, p, x, In <: HList](implicit
-      param: Param.PMultipartField[x],
-      name: Name[name]
-  ): Serve[MultipartFieldAs[name, p, x], F, In, FieldType[multipartKey, Multipart] :: FieldType[name, x] :: In] =
-    (in, k) => {
-      Routed.request.flatMap { req =>
-        MultipartDecoder
-          .decode(req)
-          .fold[F[Response]](
-            Routed.reject(Rejection.missingParam(name.string, ParamSource.MultipartField))
-          ) { multipart =>
-            val directives = ParamDirectives.multipartFieldParamDirectives(multipart)
-            param match {
-              case single: SingleParam[ParamSource.MultipartField, x] =>
-                directives.getByName[F, Response](
-                  name.string,
-                  s => directives.direct(name.string, single.applyOpt(s), multipart, in, k)
-                )
-              case multi: MultiParam[ParamSource.MultipartField, x]   =>
-                cont.traverseCont[String, Option[CharSequence], Response, F](multi.names)(directives.getByName)(ls =>
-                  directives.direct(name.string, multi.applyOpt(ls), multipart, in, k)
-                )
-            }
-          }
-      }
-    }
 }
 
 private[finagle] trait ServeParamsInstances { self: Serve.type =>

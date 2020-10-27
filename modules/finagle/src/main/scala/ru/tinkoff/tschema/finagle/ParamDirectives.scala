@@ -76,12 +76,12 @@ object ParamDirectives {
   implicit val multipartFieldParamDirectives: TC[MultipartField] = new TCS[MultipartField](MultipartField) {
     private val field = Request.Schema.newField[Option[Multipart]](null)
 
-    private def decodeNow(req: Request): Option[Multipart] =
+    private def decodeNow(req: Request): Option[Multipart]      =
       try MultipartDecoder.decode(req)
       catch { case scala.util.control.NonFatal(_) => None }
 
     private def decodeIfNeeded(req: Request): Option[Multipart] = req.ctx(field) match {
-      case null => // was never decoded for this request
+      case null  =>       // was never decoded for this request
         val value = decodeNow(req)
         req.ctx.update(field, value)
         value

@@ -40,7 +40,7 @@ object ReaderTRouting extends ReaderTInstanceDecl {
   private[this] def execResponse[F[_]: Effect, R](r: R, envResponse: ReaderHttp[F, R, Response], request: Request)(
       implicit recover: Recover[ReaderHttp[F, R, *]]
   ): Future[Response] = {
-    val promise = Promise[Response]
+    val promise = Promise[Response]()
     val routing = ReaderTRouting(request, SubString(request.path), 0, r)
 
     envResponse.recoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {

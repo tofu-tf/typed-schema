@@ -77,7 +77,7 @@ private[finagle] trait ServeAuthInstances { self: Serve.type =>
   implicit def oauth2Serve[F[_]: Routed: Monad, conf, T, R, In <: HList, name](implicit
       A: Authorization[OAuth2, F, T, R],
       P: Provision[F, R]
-  ): Add[OAuth2Auth[T, R, conf, name], F, In, name, T] = add(P.provide >>= A.apply)
+  ): Add[OAuth2Auth[T, R, conf, name], F, In, name, T] = add(P.provide() >>= A.apply)
 }
 
 object Credentials {

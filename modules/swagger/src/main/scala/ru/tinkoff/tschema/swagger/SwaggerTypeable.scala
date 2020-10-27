@@ -80,7 +80,7 @@ trait SwaggerTypeable[T] {
   def withMediaType(mediaType: MediaType): SwaggerTypeable[T]                 = updateTyp(_.withMediaType(mediaType))
 
   def withDiscriminator(discr: String): Swagger[T] = updateTyp(
-    SwaggerType.objProp >> SwaggerObject.discriminator set (_, Some(discr))
+    (SwaggerType.objProp >> SwaggerObject.discriminator).set(_, Some(discr))
   )
 
   def and[Q: Swagger]: Swagger[T] = updateTyp(_.and(Swagger[Q].typ))

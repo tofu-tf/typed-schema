@@ -50,7 +50,7 @@ object Version {
 
   val scalaTest = "3.2.2"
 
-  val scalaCheck = "1.14.3"
+  val scalaCheck = "1.15.0"
 
   val scalaTestScalaCheck = "3.1.0.0-RC2"
 

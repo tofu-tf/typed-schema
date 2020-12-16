@@ -40,7 +40,7 @@ object Routing extends FInstanceDecl {
   private[this] def execResponse[F[_]: Effect](envResponse: FHttp[F, Response], request: Request)(implicit
       recover: Recover[FHttp[F, *]]
   ): Future[Response] = {
-    val promise = Promise[Response]
+    val promise = Promise[Response]()
     val routing = Routing(request, SubString(request.path), 0)
 
     envResponse.recoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {

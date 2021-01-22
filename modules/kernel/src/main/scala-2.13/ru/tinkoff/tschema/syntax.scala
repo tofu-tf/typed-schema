@@ -46,6 +46,11 @@ object syntax extends CommonSyntax {
       override def make[s]: FormField[s, x] = new FormField
     })
 
+  def multipartField[x] =
+    new MkComplex(new Maker[x, MultipartField] {
+      override def make[s]: MultipartField[s, x] = new MultipartField
+    })
+
   def cookie[x] =
     new MkComplex(new Maker[x, Cookie] {
       override def make[s]: Cookie[s, x] = new Cookie

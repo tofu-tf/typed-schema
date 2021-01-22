@@ -87,6 +87,26 @@ class FromFormParamSpec extends ParamSpec[ParamSource.Form] {
   })
 }
 
+class FromMultipartParamSpec extends ParamSpec[ParamSource.MultipartField] {
+  ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.MultipartField] {
+    def check[T: SingleParam[MultipartField, *]: Arbitrary: TypeTag: Equality]: Unit = {
+      val name = typeTag[T].tpe.toString
+
+      property(s"$name should be parsed as itself") {
+        forAll((value: T) => fromParam[T](value.toString) === value)
+      }
+
+      property(s"List[$name] should be parsed as itself ") {
+        forAll((list: List[T]) => fromParam[List[T]](list.mkString(",")) === list)
+      }
+
+      property(s"List[List[$name]] should be parsed as itself") {
+        forAll((list2: List[List[T]]) => fromParam[List[List[T]]](list2.map(_.mkString(",")).mkString(";")) === list2)
+      }
+    }
+  })
+}
+
 class FromQueryParamSpec extends ParamSpec[ParamSource.Query] {
   ForAllTypes[(Int, Long, String, BigInt, Float, Double, Boolean)](new Checker[ParamSource.Query] {
     def check[T: SingleParam[Query, *]: Arbitrary: TypeTag: Equality]: Unit = {

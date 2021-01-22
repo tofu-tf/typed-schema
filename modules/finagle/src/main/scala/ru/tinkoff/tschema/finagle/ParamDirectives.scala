@@ -5,6 +5,7 @@ import cats.Monad
 import cats.syntax.applicative._
 import cats.syntax.flatMap._
 import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.http.exp.{Multipart, MultipartDecoder}
 import ru.tinkoff.tschema.param._
 import shapeless._
 import shapeless.labelled.{FieldType, field}
@@ -70,6 +71,25 @@ object ParamDirectives {
 
   implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {
     def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
+  }
+
+  implicit val multipartFieldParamDirectives: TC[MultipartField] = new TCS[MultipartField](MultipartField) {
+    private val field = Request.Schema.newField[Option[Multipart]](null)
+
+    private def decodeNow(req: Request): Option[Multipart]      =
+      try MultipartDecoder.decode(req)
+      catch { case scala.util.control.NonFatal(_) => None }
+
+    private def decodeIfNeeded(req: Request): Option[Multipart] = req.ctx(field) match {
+      case null  =>       // was never decoded for this request
+        val value = decodeNow(req)
+        req.ctx.update(field, value)
+        value
+      case value => value // was already decoded for this request
+    }
+
+    def getFromRequest(name: String)(req: Request): Option[String] =
+      decodeIfNeeded(req).flatMap(_.attributes.get(name).flatMap(_.headOption))
   }
 
   implicit val headerParamDirectives: TC[Header] = new TCS[Header](Header) {

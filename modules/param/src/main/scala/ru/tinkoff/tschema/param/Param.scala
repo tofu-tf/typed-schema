@@ -17,19 +17,21 @@ import scala.util.matching.Regex
 sealed trait ParamSource
 
 object ParamSource {
-  trait Query  extends ParamSource
-  trait Path   extends ParamSource
-  trait Header extends ParamSource
-  trait Form   extends ParamSource
-  trait Cookie extends ParamSource
+  trait Query          extends ParamSource
+  trait Path           extends ParamSource
+  trait Header         extends ParamSource
+  trait Form           extends ParamSource
+  trait MultipartField extends ParamSource
+  trait Cookie         extends ParamSource
 
-  trait All extends Query with Path with Header with Form with Cookie
+  trait All extends Query with Path with Header with Form with MultipartField with Cookie
 
-  case object Query  extends Query
-  case object Path   extends Path
-  case object Header extends Header
-  case object Form   extends Form
-  case object Cookie extends Cookie
+  case object Query          extends Query
+  case object Path           extends Path
+  case object Header         extends Header
+  case object Form           extends Form
+  case object MultipartField extends MultipartField
+  case object Cookie         extends Cookie
 }
 
 sealed trait Param[+S >: All <: ParamSource, A] { self =>
@@ -178,15 +180,16 @@ trait HttpMultiParam[A]     extends MultiParam[All, A] with HttpParam[A] {
 }
 
 object Param extends ParamInstances[Param] {
-  type Result[+x]       = Either[ParamError, x]
-  type SingleResult[+x] = Either[SingleParamError, x]
-  type MultiResult[+x]  = Either[MultiParamError, x]
-  type PQuery[A]        = Param[ParamSource.Query, A]
-  type PCookie[A]       = Param[ParamSource.Cookie, A]
-  type PForm[A]         = Param[ParamSource.Form, A]
-  type PHeader[A]       = Param[ParamSource.Header, A]
-  type PPath[A]         = Param[ParamSource.Path, A]
-  type PAll[A]          = Param[ParamSource.All, A]
+  type Result[+x]         = Either[ParamError, x]
+  type SingleResult[+x]   = Either[SingleParamError, x]
+  type MultiResult[+x]    = Either[MultiParamError, x]
+  type PQuery[A]          = Param[ParamSource.Query, A]
+  type PCookie[A]         = Param[ParamSource.Cookie, A]
+  type PForm[A]           = Param[ParamSource.Form, A]
+  type PMultipartField[A] = Param[ParamSource.MultipartField, A]
+  type PHeader[A]         = Param[ParamSource.Header, A]
+  type PPath[A]           = Param[ParamSource.Path, A]
+  type PAll[A]            = Param[ParamSource.All, A]
 
   object PAll
 

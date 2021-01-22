@@ -55,10 +55,11 @@ trait NamedSyntaxOps[trans, orig] {
   def queryParam[x]  = new QueryParam[trans, x]
   def queryParams[x] = new QueryParams[trans, x]
 
-  def header[x]    = new Header[trans, x]
-  def formField[x] = new FormField[trans, x]
-  def cookie[x]    = new Cookie[trans, x]
-  def body[x]      = new ReqBody[trans, x]
+  def header[x]         = new Header[trans, x]
+  def formField[x]      = new FormField[trans, x]
+  def multipartField[x] = new MultipartField[trans, x]
+  def cookie[x]         = new Cookie[trans, x]
+  def body[x]           = new ReqBody[trans, x]
 }
 
 class Renamed[orig, param] extends NamedSyntaxOps[orig, param]

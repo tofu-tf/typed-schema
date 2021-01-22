@@ -101,6 +101,10 @@ object Serve
       : Add[FormFieldAs[name, p, x], F, In, p, x] =
     resolveParam[F, ParamSource.Form, name, p, x, FormFieldAs[name, p, x], In]
 
+  implicit def multipartFieldServe[F[_]: Routed: Monad, name: Name, p, x: Param.PMultipartField, In <: HList]
+      : Add[MultipartFieldAs[name, p, x], F, In, p, x] =
+    resolveParam[F, ParamSource.MultipartField, name, p, x, MultipartFieldAs[name, p, x], In]
+
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))
 

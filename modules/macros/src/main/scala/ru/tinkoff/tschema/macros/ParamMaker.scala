@@ -1,7 +1,7 @@
 package ru.tinkoff.tschema.macros
 import ru.tinkoff.tschema.macros.ParamMaker.Applyer
 import ru.tinkoff.tschema.typeDSL
-import ru.tinkoff.tschema.typeDSL.{Capture, DSLAtom, FormField, Header, QueryParam}
+import ru.tinkoff.tschema.typeDSL.{Capture, DSLAtom, FormField, Header, QueryParam, MultipartField}
 
 import scala.language.{dynamics, higherKinds}
 import scala.language.experimental.macros
@@ -17,10 +17,11 @@ object ParamMaker {
   type Applyer = { def apply[A](x: => A): DSLAtom }
   def apply[T[_, _]]: ParamMaker[T] = new ParamMaker[T]
 
-  object query   extends ParamMaker[QueryParam]
-  object path    extends ParamMaker[Capture]
-  object headers extends ParamMaker[Header]
-  object form    extends ParamMaker[FormField]
+  object query          extends ParamMaker[QueryParam]
+  object path           extends ParamMaker[Capture]
+  object headers        extends ParamMaker[Header]
+  object form           extends ParamMaker[FormField]
+  object multipartField extends ParamMaker[MultipartField]
 }
 
 class ParamMakerMacro(val c: whitebox.Context) extends SymbolMacros {

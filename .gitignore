@@ -6,3 +6,4 @@
 .attach_pid*
 metals.sbt
 .vscode
+.bsp

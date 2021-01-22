@@ -187,6 +187,7 @@ sealed trait SwaggerValue {
 final case class SwaggerStringValue(
     format: Option[OpenApiFormat[SwaggerStringValue]] = None,
     default: Option[String] = None,
+    example: Option[String] = None,
     maxLength: Option[Int] = None,
     minLength: Option[Int] = None,
     pattern: Option[String] = None,
@@ -206,6 +207,7 @@ object SwaggerStringValue {
 final case class SwaggerNumberValue(
     format: Option[OpenApiFormat[SwaggerNumberValue]] = None,
     default: Option[BigDecimal] = None,
+    example: Option[BigDecimal] = None,
     maximum: Option[BigDecimal] = None,
     exclusiveMaximum: Boolean = false,
     minimum: Option[BigDecimal] = None,
@@ -219,6 +221,7 @@ object OpenApiNumberValue
 final case class SwaggerIntValue(
     format: Option[OpenApiFormat[SwaggerIntValue]] = None,
     default: Option[Int] = None,
+    example: Option[Int] = None,
     maximum: Option[Int] = None,
     exclusiveMaximum: Option[Boolean] = None,
     minimum: Option[Int] = None,
@@ -229,7 +232,8 @@ final case class SwaggerIntValue(
 object SwaggerIntValue
 
 @JsonCodec(encodeOnly)
-final case class SwaggerBooleanValue(default: Option[Boolean] = None) extends SwaggerValue {
+final case class SwaggerBooleanValue(default: Option[Boolean] = None, example: Option[Boolean] = None)
+    extends SwaggerValue {
   override def typeName = "boolean"
 }
 object SwaggerBooleanValue
@@ -244,6 +248,7 @@ case object SwaggerFileValue extends SwaggerValue {
 final case class SwaggerArrayValue(
     items: SwaggerValue,
     default: Option[Vector[Json]] = None,
+    example: Option[Vector[Json]] = None,
     collFormat: Option[SwaggerValue.CollectionFormat] = None,
     minItems: Option[Int] = None,
     maxItems: Option[Int] = None

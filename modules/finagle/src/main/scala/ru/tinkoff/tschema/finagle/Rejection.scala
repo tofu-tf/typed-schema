@@ -38,7 +38,7 @@ object Rejection {
   def malformedParam(name: String, error: String, source: ParamSource) =
     Rejection(4, BadRequest, malformed = List(MalformedParam(name, error, source)))
   def body(error: String)                                              = Rejection(5, BadRequest, messages = List(error))
-  val unauthorized                                                     = Rejection(6, Unauthorized)
+  val unauthorized                                                     = Rejection(6, Unauthorized, unauthorized = true)
 
   case class MissingParam(name: String, source: ParamSource)
   case class MalformedParam(name: String, error: String, source: ParamSource)

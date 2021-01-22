@@ -18,7 +18,7 @@ object Version {
 
   val macroParadise = "2.1.1"
 
-  val akkaHttpCirce = "1.35.0"
+  val akkaHttpCirce = "1.35.3"
 
   val cats = "2.3.1"
 

@@ -8,7 +8,7 @@ object Version {
 
   val akka = "2.6.11"
 
-  val akkaHttp = "10.2.1"
+  val akkaHttp = "10.2.3"
 
   val shapeless = "2.3.3"
 

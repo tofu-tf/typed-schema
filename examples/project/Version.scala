@@ -11,5 +11,5 @@ object Version {
 
   val typedSchema = "0.12.7"
 
-  val swaggerUI = "3.35.2"
+  val swaggerUI = "3.40.0"
 }

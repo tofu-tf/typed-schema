@@ -3,7 +3,7 @@ object Version {
 
   val derevo = "0.11.6"
 
-  val scalaTags = "0.9.2"
+  val scalaTags = "0.9.3"
 
   val catsCore = "2.3.1"
 

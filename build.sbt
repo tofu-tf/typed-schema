@@ -13,7 +13,9 @@ val publishSettings = List(
     else
       sonatypePublishToBundle.value
   ),
-  credentials += Credentials(Path.userHome / ".sbt" / ".ossrh-credentials"),
+  credentials ++= Option(Path.userHome / ".sbt" / ".ossrh-credentials")
+    .filter(_.exists())
+    .map(Credentials(_)),
   version := {
     val branch = git.gitCurrentBranch.value
     if (branch == "master") pubVersion
@@ -37,8 +39,8 @@ developers in ThisBuild := List(
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val scala212V = "2.12.12"
-val scala213V = "2.13.3"
+val scala212V = "2.12.13"
+val scala213V = "2.13.4"
 
 val crossCompile = crossScalaVersions := List(scala212V, scala213V)
 
@@ -109,9 +111,9 @@ val swaggerUILib    = "org.webjars.npm"    % "swagger-ui-dist"   % Version.swagg
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
 val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
 
-val scalatest           = "org.scalatest"     %% "scalatest"                % Version.scalaTest           % Test
-val scalacheck          = "org.scalacheck"    %% "scalacheck"               % Version.scalaCheck          % Test
-val scalatestScalacheck = "org.scalatestplus" %% "scalatestplus-scalacheck" % Version.scalaTestScalaCheck % Test
+val scalatest           = "org.scalatest"     %% "scalatest"       % Version.scalaTest           % Test
+val scalacheck          = "org.scalacheck"    %% "scalacheck"      % Version.scalaCheck          % Test
+val scalatestScalacheck = "org.scalatestplus" %% "scalacheck-1-15" % Version.scalaTestScalaCheck % Test
 
 val akka   = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
 val zio    = List("dev.zio" %% "zio" % Version.zio, "dev.zio" %% "zio-interop-cats" % Version.zioCats)

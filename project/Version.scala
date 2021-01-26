@@ -1,10 +1,9 @@
 object Version {
-
   val circe = "0.13.0"
 
   val circeDerivation = "0.12.0-M7"
 
-  val tethys = "0.11.0"
+  val tethys = "0.20.0"
 
   val akka = "2.6.11"
 
@@ -38,7 +37,7 @@ object Version {
 
   val zioCats = "2.2.0.1"
 
-  val finagle = "20.9.0"
+  val finagle = "21.1.0"
 
   val derevo = "0.11.6"
 
@@ -46,13 +45,13 @@ object Version {
 
   val swaggerUI = "3.40.0"
 
-  val scalaTags = "0.9.2"
+  val scalaTags = "0.9.3"
 
   val scalaTest = "3.2.3"
 
   val scalaCheck = "1.15.2"
 
-  val scalaTestScalaCheck = "3.1.0.0-RC2"
+  val scalaTestScalaCheck = "3.2.3.0"
 
   val scalazDeriving = "1.0.0"
 }

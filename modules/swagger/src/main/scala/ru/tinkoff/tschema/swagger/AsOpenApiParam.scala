@@ -27,6 +27,9 @@ object AsOpenApiParam extends AsOpenParamInstances[AsOpenApiParam] with Derivati
 
   def generate[T]: Typeclass[T] = macro Magnolia.gen[T]
   def instance[T]: Typeclass[T] = macro Magnolia.gen[T]
+
+  implicit def optParam[T](implicit param: AsOpenApiParam[T]): AsOpenApiParam[Option[T]] =
+    param.optional
 }
 
 trait OpenApiParamInfo {
@@ -46,10 +49,12 @@ final case class AsSingleOpenApiParam[T](typ: SwaggerType, required: Boolean = t
   def optional: AsOpenApiParam[Option[T]] = AsSingleOpenApiParam(typ, required = false)
 }
 
-object AsSingleOpenApiParam extends AsOpenParamInstances[AsSingleOpenApiParam]
+object AsSingleOpenApiParam extends AsOpenParamInstances[AsSingleOpenApiParam] {
+  final implicit def optSingleParam[T](implicit typ: SwaggerTypeable[T]): AsSingleOpenApiParam[Option[T]] =
+    AsSingleOpenApiParam[Option[T]](typ = typ.typ, required = false)
+}
 
 trait AsOpenParamInstances[TC[x] >: AsSingleOpenApiParam[x]] {
-  final implicit def requiredParam[T](implicit typ: SwaggerTypeable[T]): TC[T]                 =
+  final implicit def requiredSingleParam[T](implicit typ: SwaggerTypeable[T]): TC[T] =
     AsSingleOpenApiParam[T](typ = typ.typ, required = true)
-  final implicit def optParam[T](implicit param: AsOpenApiParam[T]): AsOpenApiParam[Option[T]] = param.optional
 }

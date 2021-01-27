@@ -59,4 +59,18 @@ class MkSwaggerSpec extends AnyFlatSpec {
 
     assert((foo ++ bar).describe(description).make(OpenApiInfo()).tags == output)
   }
+
+  "optional header" should "has required = false in OpenAPI" in {
+    val swagger = MkSwagger(
+      (
+        tag("tag") :>
+          get :>
+          operation("operation") :>
+          header[Option[String]]("X-Kek-Id") :>
+          $$[String]
+      )
+    )
+
+    assert(!swagger.paths.head.op.parameters.find(_.name == "X-Kek-Id").get.required)
+  }
 }

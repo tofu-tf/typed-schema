@@ -2,6 +2,11 @@ import com.typesafe.sbt.SbtGit.git
 
 val pubVersion = "0.13.1"
 
+val scala212V = "2.12.13"
+val scala213V = "2.13.4"
+
+val crossCompile = crossScalaVersions := List(scala212V, scala213V)
+
 val publishSettings = List(
   name := "Typed Schema",
   organization := "ru.tinkoff",
@@ -13,36 +18,29 @@ val publishSettings = List(
     else
       sonatypePublishToBundle.value
   ),
-  credentials ++= Option(Path.userHome / ".sbt" / ".ossrh-credentials")
+  credentials ++= ((Path.userHome / ".sbt" / ".ossrh-credentials") :: Nil)
     .filter(_.exists())
     .map(Credentials(_)),
   version := {
-    val branch = git.gitCurrentBranch.value
-    if (branch == "master") pubVersion
-    else s"$pubVersion-$branch-SNAPSHOT"
+    git.gitCurrentBranch.value match {
+      case "master" => pubVersion
+      case branch   => s"$pubVersion-$branch-SNAPSHOT"
+    }
   },
+  licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
+  homepage := Some(url("https://github.com/TinkoffCreditSystems/typed-schema")),
   scmInfo := Some(
     ScmInfo(
       url("https://github.com/TinkoffCreditSystems/typed-schema"),
-      "git@github.com:username/projectname.git"
+      "git@github.com:TinkoffCreditSystems/typed-schema.git"
     )
+  ),
+  developers := List(
+    Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
   )
 )
 
-licenses in ThisBuild += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
-publishMavenStyle in ThisBuild := true
-
-homepage in ThisBuild := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
-developers in ThisBuild := List(
-  Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
-)
-
 val minorVersion = SettingKey[Int]("minor scala version")
-
-val scala212V = "2.12.13"
-val scala213V = "2.13.4"
-
-val crossCompile = crossScalaVersions := List(scala212V, scala213V)
 
 val commonScalacOptions = scalacOptions ++= List(
   "-deprecation",
@@ -54,13 +52,6 @@ val commonScalacOptions = scalacOptions ++= List(
   "-language:postfixOps"
 )
 
-val specificScalacOptions = scalacOptions ++= {
-  minorVersion.value match {
-    case 12 => List("-Ypartial-unification")
-    case 13 => List("-Ymacro-annotations")
-  }
-}
-
 val setMinorVersion = minorVersion := {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, v)) => v.toInt
@@ -68,83 +59,35 @@ val setMinorVersion = minorVersion := {
   }
 }
 
-lazy val compilerPlugins = libraryDependencies ++= List(
-  compilerPlugin("org.typelevel" %% "kind-projector"     % Version.kindProjector),
-  compilerPlugin("com.olegpy"    %% "better-monadic-for" % Version.bm4),
-)
-
-val paradise = libraryDependencies ++= {
-  minorVersion.value match {
-    case 12 => List(compilerPlugin("org.scalamacros" % "paradise" % Version.macroParadise cross CrossVersion.patch))
-    case 13 => List()
-  }
-}
-
-val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
-
-val tofuOptics =
-  libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
-
-val circe      =
-  libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
-    "derivation",
-    "derivation-annotations"
-  ).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
-
-val scalatags  = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
-
-val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
-
-val catsCore   = "org.typelevel" %% "cats-core"   % Version.cats
-val catsFree   = "org.typelevel" %% "cats-free"   % Version.cats
-val catsEffect = "org.typelevel" %% "cats-effect" % Version.catsEffect
-val simulacrum = "org.typelevel" %% "simulacrum"  % Version.simulacrum
-val shapeless  = "com.chuusai"   %% "shapeless"   % Version.shapeless
-val enumeratum = "com.beachape"  %% "enumeratum"  % Version.enumeratum
-
-val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaHttp
-val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka     % Test
-val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
-val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
-val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
-val swaggerUILib    = "org.webjars.npm"    % "swagger-ui-dist"   % Version.swaggerUI
-val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
-val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
-
-val scalatest           = "org.scalatest"     %% "scalatest"       % Version.scalaTest           % Test
-val scalacheck          = "org.scalacheck"    %% "scalacheck"      % Version.scalaCheck          % Test
-val scalatestScalacheck = "org.scalatestplus" %% "scalacheck-1-15" % Version.scalaTestScalaCheck % Test
-
-val akka   = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
-val zio    = List("dev.zio" %% "zio" % Version.zio, "dev.zio" %% "zio-interop-cats" % Version.zioCats)
-val tethys = List("core", "jackson").map(module => "com.tethys-json" %% s"tethys-$module" % Version.tethys)
-
-val reflect          = libraryDependencies += scalaOrganization.value   % "scala-reflect"           % scalaVersion.value
-val compiler         = libraryDependencies += scalaOrganization.value   % "scala-compiler"          % scalaVersion.value
-val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.1"
-
-val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
-
-def resourcesOnCompilerCp(config: Configuration): Setting[_] =
-  managedClasspath in config := {
-    val res = (resourceDirectory in config).value
-    val old = (managedClasspath in config).value
-    Attributed.blank(res) +: old
-  }
-
-val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
-
-lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatestScalacheck :: Nil
-
 lazy val commonSettings = publishSettings ++ List(
   scalaVersion := scala213V,
-  collectionCompat,
-  compilerPlugins,
+  libraryDependencies ++= List(
+    kindProjector,
+    bm4,
+    collectionCompat,
+
+    scalatest,
+    scalacheck,
+    scalatestScalacheck
+  ),
   commonScalacOptions,
-  specificScalacOptions,
+  scalacOptions ++= {
+    minorVersion.value match {
+      case 12 => List("-Ypartial-unification")
+      case 13 => List("-Ymacro-annotations")
+    }
+  },
   crossCompile,
   setMinorVersion,
-  testLibs,
+)
+
+lazy val macroParadiseSettings = Seq(
+  libraryDependencies ++= {
+    minorVersion.value match {
+      case 12 => List(paradise)
+      case 13 => Nil
+    }
+  }
 )
 
 lazy val simulacrumSettings = Seq(
@@ -168,8 +111,8 @@ lazy val simulacrumSettings = Seq(
   }
 )
 
-lazy val kernel = project
-  .in(file("modules/kernel"))
+lazy val typeDsl = project
+  .in(file("modules/typedsl"))
   .settings(
     commonSettings,
     simulacrumSettings,
@@ -179,69 +122,73 @@ lazy val kernel = project
 
 lazy val param = project
   .in(file("modules/param"))
-  .dependsOn(kernel)
+  .dependsOn(typeDsl)
   .settings(
     commonSettings,
     moduleName := "typed-schema-param",
-    libraryDependencies += derevo,
-    magnolia,
-    paradise,
+    libraryDependencies ++= magnolia :: derevo :: Nil,
+    macroParadiseSettings,
   )
 
 lazy val macros = project
   .in(file("modules/macros"))
-  .dependsOn(kernel)
+  .dependsOn(typeDsl)
   .settings(
     commonSettings,
     moduleName := "typed-schema-macros",
     libraryDependencies ++= shapeless :: catsCore :: akkaHttpTestKit :: Nil,
-    reflect
+    libraryDependencies += scalaOrganization.value % "scala-reflect" % scalaVersion.value
   )
 
 lazy val swagger = project
   .in(file("modules/swagger"))
-  .dependsOn(kernel, macros)
+  .dependsOn(typeDsl, macros)
   .settings(
     commonSettings,
     simulacrumSettings,
     moduleName := "typed-schema-swagger",
-    libraryDependencies ++= enumeratum :: derevo :: enumeratumCirce :: Nil,
-    magnolia,
-    tofuOptics,
-    paradise,
-    circe,
+    libraryDependencies ++= enumeratum :: tofuOptics :: magnolia :: derevo :: enumeratumCirce :: Nil,
+    macroParadiseSettings,
+    circe
   )
 
 lazy val akkaHttp = project
-  .in(file("modules/akkaHttp"))
-  .dependsOn(kernel, macros, param)
+  .in(file("modules/akka-http"))
+  .dependsOn(typeDsl, macros, param)
   .settings(
     commonSettings,
     moduleName := "typed-schema-akka-http",
-    libraryDependencies ++= akkaHttpLib :: akkaTestKit :: akkaHttpTestKit :: akka,
-    akkaHttpCirce
+    libraryDependencies ++= akkaHttpLib :: akkaHttpCirce :: :: akkaTestKit :: akkaHttpTestKit :: akka,
   )
 
 lazy val finagle = project
-  .in(file("modules/finagle"))
-  .dependsOn(kernel, macros, param)
+  .in(file("modules/finagle/finagle-core"))
+  .dependsOn(typeDsl, macros, param)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle",
     libraryDependencies ++= finagleHttp :: catsEffect :: catsFree :: Nil
   )
 
+lazy val finagleCommon = project
+  .in(file("modules/finagle/finagle-common"))
+  .dependsOn(finagle, swagger)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-finagle-common"
+  )
+
 lazy val finagleCirce = project
-  .in(file("modules/finagleCirce"))
+  .in(file("modules/finagle/finagle-circe"))
   .dependsOn(finagle)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-circe",
-    circe
+    libraryDependencies ++= circe :: Nil
   )
 
 lazy val finagleTethys = project
-  .in(file("modules/finagleTethys"))
+  .in(file("modules/finagle/finagle-tethys"))
   .dependsOn(finagle)
   .settings(
     commonSettings,
@@ -250,7 +197,7 @@ lazy val finagleTethys = project
   )
 
 lazy val finagleCustom = project
-  .in(file("modules/finagleCustom"))
+  .in(file("modules/finagle/finagle-custom"))
   .dependsOn(finagleCirce, finagleTethys, swagger)
   .settings(
     commonSettings,
@@ -259,20 +206,12 @@ lazy val finagleCustom = project
   )
 
 lazy val finagleZio = project
-  .in(file("modules/finagle-zio"))
+  .in(file("modules/finagle/finagle-zio"))
   .dependsOn(finagle)
   .settings(
     commonSettings,
     moduleName := "typed-schema-finagle-zio",
     libraryDependencies ++= catsEffect :: zio
-  )
-
-lazy val finagleCommon = project
-  .in(file("modules/finagle-common"))
-  .dependsOn(finagle, swagger)
-  .settings(
-    commonSettings,
-    moduleName := "typed-schema-finagle-common"
   )
 
 lazy val finagleEnv = project
@@ -284,34 +223,6 @@ lazy val finagleEnv = project
     libraryDependencies ++= catsEffect :: env :: Nil
   )
 
-lazy val main = project
-  .in(file("modules/main"))
-  .dependsOn(kernel, macros, swagger, akkaHttp)
-  .settings(
-    commonSettings,
-    moduleName := "typed-schema-base",
-    libraryDependencies ++= akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: akka
-  )
-
-lazy val swaggerUI =
-  (project in file("modules/swaggerUI"))
-    .dependsOn(swagger)
-    .enablePlugins(BuildInfoPlugin)
-    .settings(
-      commonSettings,
-      moduleName := "typed-schema-swagger-ui",
-      libraryDependencies ++= swaggerUILib :: Nil,
-      swaggerUIVersion := {
-        libraryDependencies.value
-          .find(_.name == "swagger-ui-dist")
-          .map(_.revision)
-          .get
-      },
-      scalatags,
-      buildInfoKeys := swaggerUIVersion :: Nil,
-      buildInfoPackage := "ru.tinkoff.tschema.swagger"
-    )
-
 lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
@@ -320,13 +231,27 @@ lazy val docs = project
     publish / skip := true,
     crossCompile,
     setMinorVersion,
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(typeDsl, macros, swagger, akkaHttp)
   )
-  .dependsOn(kernel, macros, main, akkaHttp)
+  .dependsOn(typeDsl, macros, akkaHttp)
+
+lazy val contribSwaggerUI =
+  (project in file("contrib/swagger-ui"))
+    .dependsOn(swagger)
+    .enablePlugins(BuildInfoPlugin)
+    .settings(
+      commonSettings,
+      moduleName := "typed-schema-swagger-ui",
+      libraryDependencies ++= scalaTags :: swaggerUILib :: Nil,
+      buildInfoKeys := Seq(
+        "swaggerUIVersion" -> swaggerUILib.revision
+      ),
+      buildInfoPackage := "ru.tinkoff.tschema.swagger"
+    )
 
 lazy val typedschema =
   (project in file("."))
-    .dependsOn(macros, kernel, main)
+    .dependsOn(macros, typeDsl)
     .settings(
       publish / skip := true,
       scalaVersion := scala213V,
@@ -336,8 +261,7 @@ lazy val typedschema =
     )
     .aggregate(
       macros,
-      kernel,
-      main,
+      typeDsl,
       param,
       swagger,
       akkaHttp,
@@ -348,7 +272,7 @@ lazy val typedschema =
       finagleTethys,
       finagleCommon,
       finagleCustom,
-      swaggerUI,
+      contribSwaggerUI,
       docs
     )
 

@@ -125,6 +125,8 @@ val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala
 
 val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
 
+val typesafeConfig = "com.typesafe" % "config" % Version.typesafeConfig
+
 def resourcesOnCompilerCp(config: Configuration): Setting[_] =
   managedClasspath in config := {
     val res = (resourceDirectory in config).value
@@ -312,6 +314,17 @@ lazy val swaggerUI =
       buildInfoPackage := "ru.tinkoff.tschema.swagger"
     )
 
+lazy val swaggerTypesafe = project
+  .in(file("modules/swaggerTypesafe"))
+  .dependsOn(kernel, swagger)
+  .settings(
+    commonSettings,
+    simulacrumSettings,
+    paradise,
+    moduleName := "typed-schema-swagger-typesafe",
+    libraryDependencies += typesafeConfig,
+  )
+
 lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)
@@ -340,6 +353,7 @@ lazy val typedschema =
       main,
       param,
       swagger,
+      swaggerTypesafe,
       akkaHttp,
       finagle,
       finagleZio,

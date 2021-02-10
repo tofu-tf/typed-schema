@@ -19,7 +19,7 @@ object Version {
 
   val akkaHttpCirce = "1.35.3"
 
-  val cats = "2.4.0"
+  val cats = "2.4.1"
 
   val catsEffect = "2.3.1"
 

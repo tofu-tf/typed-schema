@@ -325,6 +325,16 @@ lazy val swaggerTypesafe = project
     libraryDependencies += typesafeConfig,
   )
 
+lazy val swaggerTypesafeCheck = project
+  .in(file("modules/swaggerTypesafeCheck"))
+  .dependsOn(swaggerTypesafe)
+  .settings(
+    commonSettings,
+    simulacrumSettings,
+    paradise,
+    moduleName := "typed-schema-swagger-typesafe-check"
+  )
+
 lazy val docs = project
   .in(file("modules/docs"))
   .enablePlugins(ScalaUnidocPlugin)

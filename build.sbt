@@ -106,6 +106,7 @@ val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaH
 val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka     % Test
 val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
 val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
+val http4sDsl       = "org.http4s"        %% "http4s-dsl"        % Version.http4s
 val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
 val swaggerUILib    = "org.webjars.npm"    % "swagger-ui-dist"   % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
@@ -222,6 +223,15 @@ lazy val akkaHttp = project
     moduleName := "typed-schema-akka-http",
     libraryDependencies ++= akkaHttpLib :: akkaTestKit :: akkaHttpTestKit :: akka,
     akkaHttpCirce
+  )
+
+lazy val http4s = project
+  .in(file("modules/http4s"))
+  .dependsOn(kernel, macros, param)
+  .settings(
+    commonSettings,
+    moduleName := "typed-schema-http4s",
+    libraryDependencies ++= http4sDsl :: env :: Nil
   )
 
 lazy val finagle = project
@@ -355,6 +365,7 @@ lazy val typedschema =
       swagger,
       swaggerTypesafe,
       akkaHttp,
+      http4s,
       finagle,
       finagleZio,
       finagleEnv,

@@ -83,7 +83,7 @@ val paradise = libraryDependencies ++= {
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
 val tofuOptics =
-  libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
+  libraryDependencies ++= List("core", "macro").map(module => "tf.tofu" %% s"tofu-optics-$module" % Version.tofu)
 
 val circe      =
   libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
@@ -109,7 +109,7 @@ val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finag
 val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
 val swaggerUILib    = "org.webjars.npm"    % "swagger-ui-dist"   % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
-val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
+val env             = "tf.tofu"           %% "tofu-env"          % Version.tofu
 
 val scalatest           = "org.scalatest"     %% "scalatest"       % Version.scalaTest           % Test
 val scalacheck          = "org.scalacheck"    %% "scalacheck"      % Version.scalaCheck          % Test

@@ -27,8 +27,6 @@ object Version {
 
   val enumeratumCirce = "1.6.1"
 
-  val monocle = "1.6.0"
-
   val simulacrum = "1.0.1"
 
   val magnolia = "0.17.0"
@@ -39,7 +37,7 @@ object Version {
 
   val finagle = "21.2.0"
 
-  val derevo = "0.11.6"
+  val derevo = "0.12.1"
 
   val tofu = "0.10.0"
 
@@ -52,8 +50,6 @@ object Version {
   val scalaCheck = "1.15.3"
 
   val scalaTestScalaCheck = "3.2.5.0"
-
-  val scalazDeriving = "1.0.0"
 
   val typesafeConfig = "1.4.1"
 }

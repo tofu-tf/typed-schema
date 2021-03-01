@@ -82,16 +82,14 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics =
+val tofuOptics    =
   libraryDependencies ++= List("core", "macro").map(module => "tf.tofu" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe      =
+val circe         =
   libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
     "derivation",
     "derivation-annotations"
   ).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
-
-val scalatags  = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
 val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
@@ -106,7 +104,7 @@ val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaH
 val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka     % Test
 val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
 val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
-val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
+val derevo          = "tf.tofu"           %% "derevo-cats"       % Version.derevo
 val swaggerUILib    = "org.webjars.npm"    % "swagger-ui-dist"   % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
 val env             = "tf.tofu"           %% "tofu-env"          % Version.tofu
@@ -126,13 +124,6 @@ val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala
 val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
 
 val typesafeConfig = "com.typesafe" % "config" % Version.typesafeConfig
-
-def resourcesOnCompilerCp(config: Configuration): Setting[_] =
-  managedClasspath in config := {
-    val res = (resourceDirectory in config).value
-    val old = (managedClasspath in config).value
-    Attributed.blank(res) +: old
-  }
 
 val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
@@ -302,14 +293,13 @@ lazy val swaggerUI =
     .settings(
       commonSettings,
       moduleName := "typed-schema-swagger-ui",
-      libraryDependencies ++= swaggerUILib :: Nil,
+      libraryDependencies ++= swaggerUILib :: scalaTags :: Nil,
       swaggerUIVersion := {
         libraryDependencies.value
           .find(_.name == "swagger-ui-dist")
           .map(_.revision)
           .get
       },
-      scalatags,
       buildInfoKeys := swaggerUIVersion :: Nil,
       buildInfoPackage := "ru.tinkoff.tschema.swagger"
     )

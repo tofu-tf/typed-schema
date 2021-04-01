@@ -45,7 +45,7 @@ object Version {
 
   val scalaTags = "0.9.3"
 
-  val scalaTest = "3.2.5"
+  val scalaTest = "3.2.7"
 
   val scalaCheck = "1.15.3"
 

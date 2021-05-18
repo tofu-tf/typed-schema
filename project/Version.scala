@@ -31,7 +31,7 @@ object Version {
 
   val magnolia = "0.17.0"
 
-  val zio = "1.0.4-2"
+  val zio = "1.0.8"
 
   val zioCats = "2.3.1.0"
 

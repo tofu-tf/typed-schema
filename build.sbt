@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.14.3"
+val pubVersion = "0.15.0"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -69,8 +69,8 @@ val setMinorVersion = minorVersion := {
 }
 
 lazy val compilerPlugins = libraryDependencies ++= List(
-  compilerPlugin("org.typelevel" %% "kind-projector"     % Version.kindProjector),
-  compilerPlugin("com.olegpy"    %% "better-monadic-for" % Version.bm4),
+  compilerPlugin("org.typelevel" % "kind-projector"     % Version.kindProjector cross CrossVersion.patch),
+  compilerPlugin("com.olegpy"   %% "better-monadic-for" % Version.bm4),
 )
 
 val paradise = libraryDependencies ++= {
@@ -96,7 +96,6 @@ val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-cir
 val catsCore   = "org.typelevel" %% "cats-core"   % Version.cats
 val catsFree   = "org.typelevel" %% "cats-free"   % Version.cats
 val catsEffect = "org.typelevel" %% "cats-effect" % Version.catsEffect
-val simulacrum = "org.typelevel" %% "simulacrum"  % Version.simulacrum
 val shapeless  = "com.chuusai"   %% "shapeless"   % Version.shapeless
 val enumeratum = "com.beachape"  %% "enumeratum"  % Version.enumeratum
 
@@ -140,32 +139,10 @@ lazy val commonSettings = publishSettings ++ List(
   testLibs,
 )
 
-lazy val simulacrumSettings = Seq(
-  libraryDependencies ++= Seq(
-    scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided,
-    simulacrum              % Provided
-  ),
-  pomPostProcess := { node =>
-    import scala.xml.transform.{RewriteRule, RuleTransformer}
-
-    new RuleTransformer(new RewriteRule {
-      override def transform(node: xml.Node): Seq[xml.Node] = node match {
-        case e: xml.Elem
-            if e.label == "dependency" &&
-              e.child.exists(child => child.label == "groupId" && child.text == simulacrum.organization) &&
-              e.child.exists(child => child.label == "artifactId" && child.text.startsWith(s"${simulacrum.name}_")) =>
-          Nil
-        case _ => Seq(node)
-      }
-    }).transform(node).head
-  }
-)
-
 lazy val kernel = project
   .in(file("modules/kernel"))
   .settings(
     commonSettings,
-    simulacrumSettings,
     moduleName := "typed-schema-typedsl",
     libraryDependencies ++= catsCore :: shapeless :: enumeratum :: Nil
   )
@@ -196,7 +173,6 @@ lazy val swagger = project
   .dependsOn(kernel, macros)
   .settings(
     commonSettings,
-    simulacrumSettings,
     moduleName := "typed-schema-swagger",
     libraryDependencies ++= enumeratum :: derevo :: enumeratumCirce :: Nil,
     magnolia,
@@ -309,7 +285,6 @@ lazy val swaggerTypesafe = project
   .dependsOn(kernel, swagger)
   .settings(
     commonSettings,
-    simulacrumSettings,
     paradise,
     moduleName := "typed-schema-swagger-typesafe",
     libraryDependencies += typesafeConfig,

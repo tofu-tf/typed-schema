@@ -1,6 +1,5 @@
 package ru.tinkoff.tschema.swagger
 
-import ru.tinkoff.tschema.swagger.{ConfigDesc, OAuthConfig, OpenApiFlow}
 import shapeless.Witness
 
 import scala.collection.immutable.TreeMap

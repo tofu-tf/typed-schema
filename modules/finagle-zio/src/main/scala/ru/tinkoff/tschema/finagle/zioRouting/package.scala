@@ -27,7 +27,7 @@ package object zioRouting {
   private[zioRouting] def execWithRuntime[R, E <: Throwable](runtime: Runtime[R])(
       zio: ZIO[R, E, Response]
   ): Future[Response] = {
-    val promise = Promise[Response]
+    val promise = Promise[Response]()
 
     runtime.unsafeRunAsync(setInterruption(zio, promise, runtime)) {
       case Exit.Success(resp)  => promise.setValue(resp)

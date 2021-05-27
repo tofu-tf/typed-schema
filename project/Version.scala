@@ -11,7 +11,7 @@ object Version {
 
   val shapeless = "2.3.7"
 
-  val kindProjector = "0.10.3"
+  val kindProjector = "0.13.0"
 
   val bm4 = "0.3.1"
 
@@ -27,8 +27,6 @@ object Version {
 
   val enumeratumCirce = "1.6.1"
 
-  val simulacrum = "1.0.1"
-
   val magnolia = "0.17.0"
 
   val zio = "1.0.8"
@@ -41,7 +39,7 @@ object Version {
 
   val tofu = "0.10.2"
 
-  val swaggerUI = "3.44.0"
+  val swaggerUI = "3.49.0"
 
   val scalaTags = "0.9.4"
 

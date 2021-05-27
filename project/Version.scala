@@ -21,7 +21,7 @@ object Version {
 
   val cats = "2.6.1"
 
-  val catsEffect = "2.3.3"
+  val catsEffect = "2.5.1"
 
   val enumeratum = "1.6.1"
 

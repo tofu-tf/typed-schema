@@ -3,7 +3,7 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 lazy val typedSchemaVersion = SettingKey[String]("typedSchemaVersion")
 
 val scala212V = "2.12.13"
-val scala213V = "2.13.5"
+val scala213V = "2.13.6"
 
 val commonSettings = List(
   scalaVersion := scala213V,

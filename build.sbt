@@ -29,11 +29,11 @@ val publishSettings = List(
   )
 )
 
-licenses in ThisBuild += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
-publishMavenStyle in ThisBuild := true
+ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / publishMavenStyle := true
 
-homepage in ThisBuild := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
-developers in ThisBuild := List(
+ThisBuild / homepage := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
+ThisBuild / developers := List(
   Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
 )
 
@@ -315,18 +315,6 @@ lazy val swaggerTypesafe = project
     libraryDependencies += typesafeConfig,
   )
 
-lazy val docs = project
-  .in(file("modules/docs"))
-  .enablePlugins(ScalaUnidocPlugin)
-  .settings(
-    scalaVersion := scala213V,
-    publish / skip := true,
-    crossCompile,
-    setMinorVersion,
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
-  )
-  .dependsOn(kernel, macros, main, akkaHttp)
-
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
@@ -353,7 +341,6 @@ lazy val typedschema =
       finagleCommon,
       finagleCustom,
       swaggerUI,
-      docs
     )
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")

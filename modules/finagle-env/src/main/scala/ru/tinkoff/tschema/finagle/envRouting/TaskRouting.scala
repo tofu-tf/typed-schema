@@ -35,7 +35,7 @@ object TaskRouting extends TaskInstanceDecl {
       envResponse: TaskHttp[Response],
       request: Request
   )(implicit sc: Scheduler, recover: Recover[TaskHttp]): Future[Response] = {
-    val promise = Promise[Response]
+    val promise = Promise[Response]()
     val routing = TaskRouting(request, SubString(request.path), 0)
 
     val cancelable = envResponse.onErrorRecoverWith { case Rejected(rej) => recover(rej) }.run(routing).runAsync {

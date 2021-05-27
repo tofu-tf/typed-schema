@@ -4,7 +4,6 @@ import io.circe.{Decoder, Encoder, Json}
 import io.circe.syntax._
 import shapeless.tag
 import tag.@@
-import simulacrum.typeclass
 
 /** tag for types that should be omitted with default value in json
   */
@@ -23,11 +22,36 @@ object Skippable {
   implicit def tagImplicitly[T](x: T): T @@ Skippable = tag[Skippable](x)
 }
 
-@typeclass trait Default[T] {
+trait Default[T] {
   def value: T
 }
 
 object Default {
+  def apply[A](implicit instance: Default[A]): Default[A] = instance
+
+  trait Ops[A] {
+    def typeClassInstance: Default[A]
+    def self: A
+  }
+
+  trait ToDefaultOps {
+    implicit def toDefaultOps[A](target: A)(implicit tc: Default[A]): Ops[A] = new Ops[A] {
+      val self              = target
+      val typeClassInstance = tc
+    }
+  }
+
+  trait AllOps[A] extends Ops[A] {
+    def typeClassInstance: Default[A]
+  }
+
+  object ops {
+    implicit def toAllDefaultOps[A](target: A)(implicit tc: Default[A]): AllOps[A] = new AllOps[A] {
+      val self              = target
+      val typeClassInstance = tc
+    }
+  }
+
   implicit val defaultBoolean: Default[Boolean] = new Default[Boolean] {
     def value: Boolean = false
   }

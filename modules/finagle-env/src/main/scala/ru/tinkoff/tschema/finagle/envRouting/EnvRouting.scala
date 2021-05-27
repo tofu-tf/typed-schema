@@ -39,7 +39,7 @@ object EnvRouting extends EnvInstanceDecl {
   private[this] def execResponse[R](r: R, envResponse: EnvHttp[R, Response], request: Request)(implicit
       sc: Scheduler
   ): Future[Response] = {
-    val promise = Promise[Response]
+    val promise = Promise[Response]()
     val routing = EnvRouting(request, SubString(request.path), 0, r)
 
     val cancelable = envResponse.run(routing).runAsync {

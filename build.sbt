@@ -295,7 +295,6 @@ lazy val swaggerTypesafeCheck = project
   .dependsOn(swaggerTypesafe)
   .settings(
     commonSettings,
-    simulacrumSettings,
     paradise,
     moduleName := "typed-schema-swagger-typesafe-check"
   )

@@ -19,38 +19,38 @@ object MkDescribedSwaggerTest {
 
   val tag1 =
     tag("tag1") :>
-    (
       (
-        prefix("method1") :>
-        key("meth1") :>
-        queryParam[Params1]("params") :>
-        $$[Response]
-      ) <|>
-      (
-        prefix("method2") :>
-        key("meth2") :>
-        queryParam[Params2]("params") :>
-        $$[Response]
+        (
+          prefix("method1") :>
+            key("meth1") :>
+            queryParam[Params1]("params") :>
+            $$[Response]
+        ) <|>
+          (
+            prefix("method2") :>
+              key("meth2") :>
+              queryParam[Params2]("params") :>
+              $$[Response]
+          )
       )
-    )
 
   val tag2 =
     tag("tag2") :>
-    (
       (
-        prefix("method3") :>
-        key("meth3") :>
-        queryParam[Params3]("params") :>
-        $$[Response]
-      ) <|>
-      (
-        prefix("method4") :>
-        key("meth4") :>
-        queryParam[String]("a") :>
-        queryParam[String]("b") :>
-        $$[Response]
+        (
+          prefix("method3") :>
+            key("meth3") :>
+            queryParam[Params3]("params") :>
+            $$[Response]
+        ) <|>
+          (
+            prefix("method4") :>
+              key("meth4") :>
+              queryParam[String]("a") :>
+              queryParam[String]("b") :>
+              $$[Response]
+          )
       )
-    )
 
   val api = tag1 <|> tag2
 

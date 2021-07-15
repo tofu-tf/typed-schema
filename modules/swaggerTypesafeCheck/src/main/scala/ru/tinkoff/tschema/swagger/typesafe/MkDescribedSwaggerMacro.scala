@@ -81,7 +81,7 @@ class MkDescribedSwaggerMacro(override val c: blackbox.Context) extends MakerMac
     val errors = collectErrors(defTpe, Monoid[MethodName].empty)
 
     if (errors.nonEmpty) {
-      val message = errors.iterator.distinct.mkString("Errors while check Swagger Description: \n", "\n", "")
+      val message = errors.iterator.toArray.distinct.mkString("Errors while check Swagger Description: \n", "\n", "")
       if (c.settings.contains("warn-swagger-description"))
         c.abort(c.enclosingPosition, message)
       else

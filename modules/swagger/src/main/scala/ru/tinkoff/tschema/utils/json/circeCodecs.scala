@@ -1,6 +1,6 @@
 package ru.tinkoff.tschema.utils.json
 
-import io.circe.{Encoder, JsonObject, KeyEncoder, ObjectEncoder}
+import io.circe.{Encoder, JsonObject, KeyEncoder}
 
 import scala.collection.immutable.TreeMap
 

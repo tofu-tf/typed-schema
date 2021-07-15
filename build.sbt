@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtGit.git
 
-val pubVersion = "0.14.0"
+val pubVersion = "0.15.0"
 
 val publishSettings = List(
   name := "Typed Schema",
@@ -29,18 +29,18 @@ val publishSettings = List(
   )
 )
 
-licenses in ThisBuild += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
-publishMavenStyle in ThisBuild := true
+ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / publishMavenStyle := true
 
-homepage in ThisBuild := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
-developers in ThisBuild := List(
+ThisBuild / homepage := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
+ThisBuild / developers := List(
   Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
 )
 
 val minorVersion = SettingKey[Int]("minor scala version")
 
-val scala212V = "2.12.13"
-val scala213V = "2.13.4"
+val scala212V = "2.12.14"
+val scala213V = "2.13.6"
 
 val crossCompile = crossScalaVersions := List(scala212V, scala213V)
 
@@ -69,8 +69,8 @@ val setMinorVersion = minorVersion := {
 }
 
 lazy val compilerPlugins = libraryDependencies ++= List(
-  compilerPlugin("org.typelevel" %% "kind-projector"     % Version.kindProjector),
-  compilerPlugin("com.olegpy"    %% "better-monadic-for" % Version.bm4),
+  compilerPlugin("org.typelevel" % "kind-projector"     % Version.kindProjector cross CrossVersion.patch),
+  compilerPlugin("com.olegpy"   %% "better-monadic-for" % Version.bm4),
 )
 
 val paradise = libraryDependencies ++= {
@@ -82,23 +82,20 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics =
-  libraryDependencies ++= List("core", "macro").map(module => "ru.tinkoff" %% s"tofu-optics-$module" % Version.tofu)
+val tofuOptics    =
+  libraryDependencies ++= List("core", "macro").map(module => "tf.tofu" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe      =
+val circe         =
   libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
     "derivation",
     "derivation-annotations"
   ).map(module => "io.circe" %% s"circe-$module" % Version.circeDerivation)
-
-val scalatags  = libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags
 
 val akkaHttpCirce = libraryDependencies += "de.heikoseeberger" %% "akka-http-circe" % Version.akkaHttpCirce
 
 val catsCore   = "org.typelevel" %% "cats-core"   % Version.cats
 val catsFree   = "org.typelevel" %% "cats-free"   % Version.cats
 val catsEffect = "org.typelevel" %% "cats-effect" % Version.catsEffect
-val simulacrum = "org.typelevel" %% "simulacrum"  % Version.simulacrum
 val shapeless  = "com.chuusai"   %% "shapeless"   % Version.shapeless
 val enumeratum = "com.beachape"  %% "enumeratum"  % Version.enumeratum
 
@@ -106,10 +103,10 @@ val akkaHttpLib     = "com.typesafe.akka" %% "akka-http"         % Version.akkaH
 val akkaTestKit     = "com.typesafe.akka" %% "akka-testkit"      % Version.akka     % Test
 val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % Version.akkaHttp % Test
 val finagleHttp     = "com.twitter"       %% "finagle-http"      % Version.finagle
-val derevo          = "org.manatki"       %% "derevo-cats"       % Version.derevo
+val derevo          = "tf.tofu"           %% "derevo-cats"       % Version.derevo
 val swaggerUILib    = "org.webjars.npm"    % "swagger-ui-dist"   % Version.swaggerUI
 val scalaTags       = "com.lihaoyi"       %% "scalatags"         % Version.scalaTags
-val env             = "ru.tinkoff"        %% "tofu-env"          % Version.tofu
+val env             = "tf.tofu"           %% "tofu-env"          % Version.tofu
 
 val scalatest           = "org.scalatest"     %% "scalatest"       % Version.scalaTest           % Test
 val scalacheck          = "org.scalacheck"    %% "scalacheck"      % Version.scalaCheck          % Test
@@ -121,18 +118,11 @@ val tethys = List("core", "jackson").map(module => "com.tethys-json" %% s"tethys
 
 val reflect          = libraryDependencies += scalaOrganization.value   % "scala-reflect"           % scalaVersion.value
 val compiler         = libraryDependencies += scalaOrganization.value   % "scala-compiler"          % scalaVersion.value
-val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.4.1"
+val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
 
 val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
 
 val typesafeConfig = "com.typesafe" % "config" % Version.typesafeConfig
-
-def resourcesOnCompilerCp(config: Configuration): Setting[_] =
-  managedClasspath in config := {
-    val res = (resourceDirectory in config).value
-    val old = (managedClasspath in config).value
-    Attributed.blank(res) +: old
-  }
 
 val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
@@ -149,32 +139,10 @@ lazy val commonSettings = publishSettings ++ List(
   testLibs,
 )
 
-lazy val simulacrumSettings = Seq(
-  libraryDependencies ++= Seq(
-    scalaOrganization.value % "scala-reflect" % scalaVersion.value % Provided,
-    simulacrum              % Provided
-  ),
-  pomPostProcess := { node =>
-    import scala.xml.transform.{RewriteRule, RuleTransformer}
-
-    new RuleTransformer(new RewriteRule {
-      override def transform(node: xml.Node): Seq[xml.Node] = node match {
-        case e: xml.Elem
-            if e.label == "dependency" &&
-              e.child.exists(child => child.label == "groupId" && child.text == simulacrum.organization) &&
-              e.child.exists(child => child.label == "artifactId" && child.text.startsWith(s"${simulacrum.name}_")) =>
-          Nil
-        case _ => Seq(node)
-      }
-    }).transform(node).head
-  }
-)
-
 lazy val kernel = project
   .in(file("modules/kernel"))
   .settings(
     commonSettings,
-    simulacrumSettings,
     moduleName := "typed-schema-typedsl",
     libraryDependencies ++= catsCore :: shapeless :: enumeratum :: Nil
   )
@@ -205,7 +173,6 @@ lazy val swagger = project
   .dependsOn(kernel, macros)
   .settings(
     commonSettings,
-    simulacrumSettings,
     moduleName := "typed-schema-swagger",
     libraryDependencies ++= enumeratum :: derevo :: enumeratumCirce :: Nil,
     magnolia,
@@ -215,7 +182,7 @@ lazy val swagger = project
   )
 
 lazy val akkaHttp = project
-  .in(file("modules/akkaHttp"))
+  .in(file("modules/akkaHttp"))core / publish / skip := true
   .dependsOn(kernel, macros, param)
   .settings(
     commonSettings,
@@ -299,17 +266,16 @@ lazy val swaggerUI =
   (project in file("modules/swaggerUI"))
     .dependsOn(swagger)
     .enablePlugins(BuildInfoPlugin)
-    .settings(
+    .settings(core / publish / skip := true
       commonSettings,
       moduleName := "typed-schema-swagger-ui",
-      libraryDependencies ++= swaggerUILib :: Nil,
+      libraryDependencies ++= swaggerUILib :: scalaTags :: Nil,
       swaggerUIVersion := {
         libraryDependencies.value
           .find(_.name == "swagger-ui-dist")
           .map(_.revision)
           .get
       },
-      scalatags,
       buildInfoKeys := swaggerUIVersion :: Nil,
       buildInfoPackage := "ru.tinkoff.tschema.swagger"
     )
@@ -319,7 +285,6 @@ lazy val swaggerTypesafe = project
   .dependsOn(kernel, swagger)
   .settings(
     commonSettings,
-    simulacrumSettings,
     paradise,
     moduleName := "typed-schema-swagger-typesafe",
     libraryDependencies += typesafeConfig,
@@ -334,18 +299,6 @@ lazy val swaggerTypesafeCheck = project
     paradise,
     moduleName := "typed-schema-swagger-typesafe-check"
   )
-
-lazy val docs = project
-  .in(file("modules/docs"))
-  .enablePlugins(ScalaUnidocPlugin)
-  .settings(
-    scalaVersion := scala213V,
-    publish / skip := true,
-    crossCompile,
-    setMinorVersion,
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(main, kernel, swagger, akkaHttp)
-  )
-  .dependsOn(kernel, macros, main, akkaHttp)
 
 lazy val typedschema =
   (project in file("."))
@@ -373,7 +326,6 @@ lazy val typedschema =
       finagleCommon,
       finagleCustom,
       swaggerUI,
-      docs
     )
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")

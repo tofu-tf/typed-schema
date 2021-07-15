@@ -290,6 +290,15 @@ lazy val swaggerTypesafe = project
     libraryDependencies += typesafeConfig,
   )
 
+lazy val swaggerTypesafeCheck = project
+  .in(file("modules/swaggerTypesafeCheck"))
+  .dependsOn(swaggerTypesafe)
+  .settings(
+    commonSettings,
+    paradise,
+    moduleName := "typed-schema-swagger-typesafe-check"
+  )
+
 lazy val typedschema =
   (project in file("."))
     .dependsOn(macros, kernel, main)
@@ -307,6 +316,7 @@ lazy val typedschema =
       param,
       swagger,
       swaggerTypesafe,
+      swaggerTypesafeCheck,
       akkaHttp,
       finagle,
       finagleZio,

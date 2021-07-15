@@ -182,7 +182,7 @@ lazy val swagger = project
   )
 
 lazy val akkaHttp = project
-  .in(file("modules/akkaHttp"))core / publish / skip := true
+  .in(file("modules/akkaHttp"))
   .dependsOn(kernel, macros, param)
   .settings(
     commonSettings,
@@ -266,7 +266,7 @@ lazy val swaggerUI =
   (project in file("modules/swaggerUI"))
     .dependsOn(swagger)
     .enablePlugins(BuildInfoPlugin)
-    .settings(core / publish / skip := true
+    .settings(
       commonSettings,
       moduleName := "typed-schema-swagger-ui",
       libraryDependencies ++= swaggerUILib :: scalaTags :: Nil,

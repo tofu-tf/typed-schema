@@ -316,6 +316,7 @@ lazy val typedschema =
       param,
       swagger,
       swaggerTypesafe,
+      swaggerTypesafeCheck,
       akkaHttp,
       finagle,
       finagleZio,

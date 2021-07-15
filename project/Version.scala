@@ -25,7 +25,7 @@ object Version {
 
   val enumeratum = "1.6.1"
 
-  val enumeratumCirce = "1.6.1"
+  val enumeratumCirce = "1.7.0"
 
   val magnolia = "0.17.0"
 

@@ -23,7 +23,7 @@ object Version {
 
   val catsEffect = "2.5.1"
 
-  val enumeratum = "1.6.1"
+  val enumeratum = "1.7.0"
 
   val enumeratumCirce = "1.7.0"
 

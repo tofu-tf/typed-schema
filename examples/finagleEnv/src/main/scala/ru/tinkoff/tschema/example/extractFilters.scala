@@ -26,8 +26,8 @@ object Filters {
 
 class FiltersModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   implicit val printer = io.circe.Printer.noSpaces.copy(dropNullValues = true)
-  val route = MkService[H](api)(handler)
-  val swag = MkSwagger(api)
+  val route            = MkService[H](api)(handler)
+  val swag             = MkSwagger(api)
 }
 
 object FiltersModule {

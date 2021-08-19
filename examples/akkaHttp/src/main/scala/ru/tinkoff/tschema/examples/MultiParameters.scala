@@ -12,9 +12,9 @@ object MultiParameters extends ExampleModule {
   final case class Child(childName: String, childAge: Int)
 
   object Child {
-    implicit val params: HttpParam[Child] = HttpParam.generate
+    implicit val params: HttpParam[Child]       = HttpParam.generate
     implicit val swagger: AsOpenApiParam[Child] = AsOpenApiParam.generate
-    implicit val typeable: Swagger[Child] = Swagger.instance
+    implicit val typeable: Swagger[Child]       = Swagger.instance
   }
 
   @derive(Swagger, HttpParam, AsOpenApiParam)
@@ -23,12 +23,8 @@ object MultiParameters extends ExampleModule {
   @derive(HttpParam, AsOpenApiParam)
   final case class Page(from: Int, count: Int, opt: Option[String])
 
-
-  def route: Route = MkRoute(api)(handler)
+  def route: Route         = MkRoute(api)(handler)
   def swag: SwaggerBuilder = MkSwagger(api)
-
-
-
 
   def api =
     tagPrefix("multi") |> ((
@@ -39,7 +35,7 @@ object MultiParameters extends ExampleModule {
     ))
 
   object handler {
-    def describe(user: User) = user.toString
+    def describe(user: User)          = user.toString
     def pageDescr(page: Option[Page]) = page.toString
   }
 

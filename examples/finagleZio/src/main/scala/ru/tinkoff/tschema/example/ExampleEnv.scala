@@ -5,14 +5,14 @@ import zio._
 
 final case class ExampleEnv(
     trackingId: String,
-    alohas:     Ref[Int],
-    storage:    Ref[Map[String, String]]
+    alohas: Ref[Int],
+    storage: Ref[Map[String, String]]
 )
 
 object ExampleEnv {
   val live: ULayer[HasExample] = ZLayer.fromEffect(
     for {
-      ref <- Ref.make(0)
+      ref     <- Ref.make(0)
       storage <- Ref.make(Map[String, String]())
     } yield ExampleEnv("lol", ref, storage)
   )
@@ -23,6 +23,6 @@ object ExampleEnv {
 }
 
 object Example {
-  val incrementAlohas: URIO[HasExample, Int] = ZIO.accessM(_.get.alohas.updateAndGet(_ + 1))
+  val incrementAlohas: URIO[HasExample, Int]              = ZIO.accessM(_.get.alohas.updateAndGet(_ + 1))
   val storage: URIO[HasExample, Ref[Map[String, String]]] = ZIO.access(_.get.storage)
 }

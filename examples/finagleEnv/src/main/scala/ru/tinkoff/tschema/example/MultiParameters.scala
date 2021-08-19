@@ -26,14 +26,14 @@ object MultiParams {
 
   //Just an example of a manual instance declaration
   object Child {
-    implicit val params: HttpParam[Child] = HttpParam.generate
+    implicit val params: HttpParam[Child]            = HttpParam.generate
     implicit val swaggerParam: AsOpenApiParam[Child] = AsOpenApiParam.instance
-    implicit val swagger: Swagger[Child] = Swagger.instance
-    implicit val catsShow: Show[Child] = show.instance
+    implicit val swagger: Swagger[Child]             = Swagger.instance
+    implicit val catsShow: Show[Child]               = show.instance
   }
 
   object handler {
-    def describe(user:  User) = user
+    def describe(user: User)          = user
     def pageDescr(page: Option[Page]) = page
   }
 
@@ -48,6 +48,6 @@ object MultiParams {
 
 class MultiParameters[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import MultiParams._
-  def route = MkService[H](api)(handler)
+  def route                = MkService[H](api)(handler)
   def swag: SwaggerBuilder = MkSwagger(api)
 }

@@ -5,13 +5,13 @@ import cats.syntax.applicative._
 
 trait SampleString[F[_]] {
   def mutate(value: Long): F[String]
-  def concat(l:     String, r: String): F[String]
+  def concat(l: String, r: String): F[String]
 }
 
 object SampleString {
   implicit def instance[F[_]: Monad]: SampleString[F] = new SampleString[F] {
-    def mutate(value: Long) = java.lang.Long.toBinaryString(value).pure[F]
-    def concat(l:     String, r: String) = (l + r).pure[F]
+    def mutate(value: Long)          = java.lang.Long.toBinaryString(value).pure[F]
+    def concat(l: String, r: String) = (l + r).pure[F]
   }
 }
 
@@ -40,11 +40,11 @@ object SampleOps {
     def sqrtMean(a: Double, b: Double) = Math.sqrt((a * a + b * b) / 2).pure[F]
 
     def stats(body: Seq[BigDecimal]) = {
-      val mean = body.sum / body.size
-      val mid = body.size / 2
+      val mean   = body.sum / body.size
+      val mid    = body.size / 2
       val median =
         if (body.size % 2 == 1) body(mid) else (body(mid) + body(mid - 1)) / 2
-      val std = body.view.map(x => x * x).sum / body.size - mean * mean
+      val std    = body.view.map(x => x * x).sum / body.size - mean * mean
       StatsRes(mean, std, median)
     }.pure[F]
 

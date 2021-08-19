@@ -22,10 +22,10 @@ case object Greeting extends ExampleModule {
 
   object handler {
     def hello: Example[String] = ZIO.succeed("Hello")
-    def aloha: Example[Aloha] =
+    def aloha: Example[Aloha]  =
       incrementAlohas.flatMap(i => ZIO.succeed(Aloha("aloha", i)))
   }
 
   val route = MkService[Http](api)(handler)
-  val swag = MkSwagger(api)
+  val swag  = MkSwagger(api)
 }

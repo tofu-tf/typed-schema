@@ -27,19 +27,19 @@ object ExampleSwagger {
 
   private def resource(name: String): Http[Response] =
     blocking(ZIO {
-      val BufSize = 1024
-      val response = Response()
-      val stream = getClass.getResourceAsStream(name)
-      val arr = Array.ofDim[Byte](BufSize)
+      val BufSize         = 1024
+      val response        = Response()
+      val stream          = getClass.getResourceAsStream(name)
+      val arr             = Array.ofDim[Byte](BufSize)
       def readAll(): Unit =
         stream.read(arr) match {
-          case BufSize =>
+          case BufSize          =>
             response.write(arr)
             readAll()
           case size if size > 0 =>
             response.write(arr.slice(0, size))
             readAll()
-          case _ =>
+          case _                =>
         }
       readAll()
       response
@@ -52,11 +52,11 @@ object ExampleSwagger {
     }
 
   private val swaggerJson: Http[Response] = {
-    val swagger = modules.foldMap(_.swag)
+    val swagger      = modules.foldMap(_.swag)
     val descriptions =
       PathDescription.utf8I18n("swagger", Locale.forLanguageTag("ru"))
-    val json = swagger.describe(descriptions).make(OpenApiInfo()).asJson.pretty(printer)
-    val response = message.jsonResponse(json)
+    val json         = swagger.describe(descriptions).make(OpenApiInfo()).asJson.pretty(printer)
+    val response     = message.jsonResponse(json)
     Routed.checkPath[Http, Response]("/swagger", ZIO.succeed(response))
   }
 

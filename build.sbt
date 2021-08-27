@@ -3,11 +3,11 @@ import com.typesafe.sbt.SbtGit.git
 val pubVersion = "0.15.0"
 
 val publishSettings = List(
-  name := "Typed Schema",
-  organization := "ru.tinkoff",
-  description := "Typelevel DSL for defining webservices, convertible to akka-http/finagle and swagger definitions",
+  name              := "Typed Schema",
+  organization      := "ru.tinkoff",
+  description       := "Typelevel DSL for defining webservices, convertible to akka-http/finagle and swagger definitions",
   publishMavenStyle := true,
-  publishTo := (
+  publishTo         := (
     if (isSnapshot.value)
       Some(Opts.resolver.sonatypeSnapshots)
     else
@@ -16,12 +16,12 @@ val publishSettings = List(
   credentials ++= Option(Path.userHome / ".sbt" / ".ossrh-credentials")
     .filter(_.exists())
     .map(Credentials(_)),
-  version := {
+  version           := {
     val branch = git.gitCurrentBranch.value
     if (branch == "master") pubVersion
     else s"$pubVersion-$branch-SNAPSHOT"
   },
-  scmInfo := Some(
+  scmInfo           := Some(
     ScmInfo(
       url("https://github.com/TinkoffCreditSystems/typed-schema"),
       "git@github.com:username/projectname.git"
@@ -32,7 +32,7 @@ val publishSettings = List(
 ThisBuild / licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / publishMavenStyle := true
 
-ThisBuild / homepage := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
+ThisBuild / homepage   := Some(url("https://github.com/TinkoffCreditSystems/typed-schema"))
 ThisBuild / developers := List(
   Developer("odomontois", "Oleg Nizhnik", "odomontois@gmail.com", url("https://github.com/odomontois"))
 )
@@ -268,7 +268,7 @@ lazy val swaggerUI =
     .enablePlugins(BuildInfoPlugin)
     .settings(
       commonSettings,
-      moduleName := "typed-schema-swagger-ui",
+      moduleName       := "typed-schema-swagger-ui",
       libraryDependencies ++= swaggerUILib :: scalaTags :: Nil,
       swaggerUIVersion := {
         libraryDependencies.value
@@ -276,7 +276,7 @@ lazy val swaggerUI =
           .map(_.revision)
           .get
       },
-      buildInfoKeys := swaggerUIVersion :: Nil,
+      buildInfoKeys    := swaggerUIVersion :: Nil,
       buildInfoPackage := "ru.tinkoff.tschema.swagger"
     )
 
@@ -304,7 +304,7 @@ lazy val typedschema =
     .dependsOn(macros, kernel, main)
     .settings(
       publish / skip := true,
-      scalaVersion := scala213V,
+      scalaVersion   := scala213V,
       publishSettings,
       setMinorVersion,
       crossCompile

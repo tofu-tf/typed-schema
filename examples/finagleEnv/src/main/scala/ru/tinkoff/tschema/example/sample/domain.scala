@@ -21,6 +21,6 @@ case class Client(value: Int)
 object Client {
   implicit lazy val clientFromParam: Param[ParamSource.All, Client] =
     Param.intParam.map(Client(_))
-  implicit val clientSwagger: Swagger[Client] =
+  implicit val clientSwagger: Swagger[Client]                       =
     Swagger[Int].as[Client]
 }

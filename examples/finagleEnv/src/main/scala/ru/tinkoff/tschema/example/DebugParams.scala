@@ -22,17 +22,15 @@ import tethys.jackson._
 final case class DebugParams[T](value: T, params: Map[String, String])
 
 object DebugParams {
-  implicit def routable[In <: HList, T: JsonWriter, L <: HList, H[_]: Monad](
-      implicit
+  implicit def routable[In <: HList, T: JsonWriter, L <: HList, H[_]: Monad](implicit
       im: Mapper.Aux[InputParamMap.type, In, L],
       tl: ToList[L, (String, String)]
   ): CompleteIn[H, In, DebugParams[T], T] =
     (res, in) => message.jsonResponse(DebugParams(res, im(in).toList.toMap).asJson).pure[H]
 
-  implicit def routableF[In <: HList, T: JsonWriter, L <: HList, H[_]: Monad, F[_]](
-      implicit
-      im:   Mapper.Aux[InputParamMap.type, In, L],
-      tl:   ToList[L, (String, String)],
+  implicit def routableF[In <: HList, T: JsonWriter, L <: HList, H[_]: Monad, F[_]](implicit
+      im: Mapper.Aux[InputParamMap.type, In, L],
+      tl: ToList[L, (String, String)],
       lift: LiftHttp[H, F]
   ): CompleteIn[H, In, DebugParams[T], F[T]] =
     (fres, in) => lift(fres).map(res => message.jsonResponse(DebugParams(res, im(in).toList.toMap).asJson))
@@ -43,8 +41,8 @@ trait InputParamMap[L <: HList] {
 }
 
 trait LowLevelInputParamMap {
-  implicit def simpleCons[L <: HList, A](
-      implicit tail: InputParamMap[L]
+  implicit def simpleCons[L <: HList, A](implicit
+      tail: InputParamMap[L]
   ): InputParamMap[A :: L] =
     l => tail(l.tail)
 }

@@ -8,8 +8,8 @@ object typeDSL {
   trait CanHoldApiKey
   trait DSLAtomAuth extends DSLAtom
 
-  /** Any path component that is subtype of Meta will be ignored
-    * by `Serve` but could support additional information like swagger tags or descriptions
+  /** Any path component that is subtype of Meta will be ignored by `Serve` but could support additional information
+    * like swagger tags or descriptions
     */
   trait Meta extends DSLAtom
 
@@ -43,111 +43,117 @@ object typeDSL {
     */
   final class AllQuery[name] extends DSLAtom
 
-  /** indicates result of element of type `x`
-    * does not check HTTP method
+  /** indicates result of element of type `x` does not check HTTP method
     */
   final class Complete[x] extends DSLDef
 
-  /** indicates result of element of type `x`
-    * via POST HTTP method
+  /** indicates result of element of type `x` via POST HTTP method
     */
   final class Post extends DSLMethod
 
-  /** indicates result of element of type `x`
-    * via GET HTTP method
+  /** indicates result of element of type `x` via GET HTTP method
     */
   final class Get extends DSLMethod
 
-  /** indicates result of element of type `x`
-    * via PUT HTTP method
+  /** indicates result of element of type `x` via PUT HTTP method
     */
   final class Put extends DSLMethod
 
-  /** indicates result of element of type `x`
-    * via DELETE HTTP method
+  /** indicates result of element of type `x` via DELETE HTTP method
     */
   final class Delete extends DSLMethod
 
-  /** indicates result of element of type `x`
-    * via HEAD HTTP method
+  /** indicates result of element of type `x` via HEAD HTTP method
     */
   final class Head extends DSLMethod
 
-  /** indicates result of element of type `x`
-    * via OPTIONS HTTP method
+  /** indicates result of element of type `x` via OPTIONS HTTP method
     */
   final class Options extends DSLMethod
 
-  /** indicates result of element of type `x`
-    * via PATCH HTTP method
+  /** indicates result of element of type `x` via PATCH HTTP method
     */
   final class Patch extends DSLMethod
 
-  /** Indicated single path prefix
-    * Could be replaced by it's parameter
+  /** Indicated single path prefix Could be replaced by it's parameter
     *
-    * @tparam pref singleton string
+    * @tparam pref
+    *   singleton string
     */
   final class Prefix[pref] extends DSLAtom
 
   /** captures param from query
     *
-    * @tparam name name of param
-    * @tparam x    type of param, should have instance of `FromQueryParam`
+    * @tparam name
+    *   name of param
+    * @tparam x
+    *   type of param, should have instance of `FromQueryParam`
     */
   final class QueryParamAs[name, p, x] extends DSLAtom with CanHoldApiKey
   type QueryParam[name, x] = QueryParamAs[name, name, x]
 
   /** captures param from path element
     *
-    * @tparam name name of param, have no effect to routing
-    * @tparam x    type of param, should have instance of `FromPathParam`
+    * @tparam name
+    *   name of param, have no effect to routing
+    * @tparam x
+    *   type of param, should have instance of `FromPathParam`
     */
   final class CaptureAs[name, p, x] extends DSLAtom
   type Capture[name, x] = CaptureAs[name, name, x]
 
   /** captures param list from query
     *
-    * @tparam name name of param
-    * @tparam x    type of param, should have instance of `FromQueryParam`
+    * @tparam name
+    *   name of param
+    * @tparam x
+    *   type of param, should have instance of `FromQueryParam`
     */
   final class QueryParamsAs[name, p, x] extends DSLAtom
   type QueryParams[name, x] = QueryParamsAs[name, name, x]
 
   /** captures fact of provision of param in query
     *
-    * @tparam name name of param
+    * @tparam name
+    *   name of param
     */
   final class QueryFlagAs[name, p] extends DSLAtom
   type QueryFlag[name] = QueryFlagAs[name, name]
 
   /** captures request body and unmarshalls in to requested type
     *
-    * @tparam x type of body, should have `FromRequestUnmarshaller` instance
+    * @tparam x
+    *   type of body, should have `FromRequestUnmarshaller` instance
     */
   final class ReqBodyAs[name, p, x] extends DSLAtom
   type ReqBody[name, x] = ReqBodyAs[name, name, x]
 
   /** captures header value
     *
-    * @tparam name header name
-    * @tparam x    parameter type, should have `FromHeader` instance
+    * @tparam name
+    *   header name
+    * @tparam x
+    *   parameter type, should have `FromHeader` instance
     */
   final class HeaderAs[name, p, x] extends DSLAtom with CanHoldApiKey
   type Header[name, x] = HeaderAs[name, name, x]
 
   /** captures field value from form data
     *
-    * @tparam name field name
-    * @tparam x    parameter type, should have `FromFormParam` instance
+    * @tparam name
+    *   field name
+    * @tparam x
+    *   parameter type, should have `FromFormParam` instance
     */
   final class FormFieldAs[name, p, x] extends DSLAtom
   type FormField[name, x] = FormFieldAs[name, name, x]
 
   /** captures field value from multipart field data
     *
-    * @tparam name field name
-    * @tparam x    parameter type, should have `FromMultipartParam` instance
+    * @tparam name
+    *   field name
+    * @tparam x
+    *   parameter type, should have `FromMultipartParam` instance
     */
   final class MultipartFieldAs[name, p, x] extends DSLAtom
   type MultipartField[name, x] = MultipartFieldAs[name, name, x]
@@ -170,7 +176,8 @@ object typeDSL {
   final class OAuth2Auth[+T, R, conf, name] extends DSLAtomAuth
 
   /** defines api key authentication scheme
-    * @tparam Param on of: Header, Cookie or Query
+    * @tparam Param
+    *   on of: Header, Cookie or Query
     */
   final class ApiKeyAuth[realm, Param <: CanHoldApiKey] extends DSLAtomAuth
 
@@ -180,14 +187,15 @@ object typeDSL {
 
   /** concatenates pair of paths into complete path
     *
-    * @tparam path    prefix - always simple path without disjunctions
-    * @tparam postfix postfix
+    * @tparam path
+    *   prefix - always simple path without disjunctions
+    * @tparam postfix
+    *   postfix
     */
   final class :>[path, postfix] extends DSLDef
 
-  /** disjunction operator
-    * can be used both for defining API type and for joining different handlers
-    * resulting type is effectively `Either[left input, right input] => Either[left output, right output]`
+  /** disjunction operator can be used both for defining API type and for joining different handlers resulting type is
+    * effectively `Either[left input, right input] => Either[left output, right output]`
     */
   final case class <|>[left, right](left: left, right: right) extends DSLDef {
     override def toString = s"$left <|> $right"

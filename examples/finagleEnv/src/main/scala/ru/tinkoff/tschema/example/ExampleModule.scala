@@ -7,5 +7,3 @@ trait ExampleModule[H[_]] {
   def route: H[Response]
   def swag: SwaggerBuilder
 }
-
-

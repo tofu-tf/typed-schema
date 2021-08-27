@@ -35,5 +35,5 @@ object FiltersModule extends ExampleModule {
   }
 
   val route = MkService[Http](api)(handler)
-  val swag = api.mkSwagger
+  val swag  = api.mkSwagger
 }

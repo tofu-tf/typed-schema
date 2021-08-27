@@ -13,7 +13,7 @@ import ru.tinkoff.tschema.syntax._
 
 class ProxyModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import ProxyModule._
-  val swag = MkSwagger(api)
+  val swag  = MkSwagger(api)
   val route = MkService[H](api)(handler)
 }
 

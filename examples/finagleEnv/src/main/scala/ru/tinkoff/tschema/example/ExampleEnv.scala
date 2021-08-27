@@ -13,7 +13,7 @@ object ExampleEnv {
 }
 
 object Example extends EnvSpecializedFunctions[ExampleEnv]
-object Http extends EnvSpecializedFunctions[EnvRouting[ExampleEnv]]
+object Http    extends EnvSpecializedFunctions[EnvRouting[ExampleEnv]]
 
 @typeclass trait Alohas[F[_]] {
   def increment(): F[Int]

@@ -6,8 +6,8 @@ import ru.tinkoff.tschema.finagle.{Completing, LiftHttp}
 import ru.tinkoff.tschema.swagger.MkSwagger
 import ru.tinkoff.tschema.typeDSL
 
-/** special complete type for JSON responses, it would try Tethys Writer first, then Circe Encoder
-  * you can define your own instance for your types
+/** special complete type for JSON responses, it would try Tethys Writer first, then Circe Encoder you can define your
+  * own instance for your types
   */
 class JsonResult[A]
 

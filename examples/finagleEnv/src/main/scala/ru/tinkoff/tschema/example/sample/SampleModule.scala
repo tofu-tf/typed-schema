@@ -21,8 +21,8 @@ class SampleModule[H[_]: Monad: RoutedPlus: LiftHttp[*[_], F], F[_]: Monad: Samp
 object SampleModule {
 
   trait Mutate {
-    def mutate(value: Long) = java.lang.Long.toBinaryString(value)
-    def concat(l:     String, r: String) = l + r
+    def mutate(value: Long)          = java.lang.Long.toBinaryString(value)
+    def concat(l: String, r: String) = l + r
   }
 
   class handler[F[_]](implicit val ops: SampleOps[F], val str: SampleString[F])

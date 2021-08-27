@@ -11,7 +11,7 @@ object Version {
 
   val shapeless = "2.3.7"
 
-  val kindProjector = "0.13.0"
+  val kindProjector = "0.13.1"
 
   val bm4 = "0.3.1"
 

@@ -19,8 +19,7 @@ import tethys.jackson._
 final case class DebugParams[T](value: T, params: Map[String, String])
 
 object DebugParams {
-  implicit def routable[In <: HList, T: JsonWriter, L <: HList](
-      implicit
+  implicit def routable[In <: HList, T: JsonWriter, L <: HList](implicit
       im: Mapper.Aux[InputParamMap.type, In, L],
       tl: ToList[L, (String, String)]
   ): CompleteIn[Http, In, DebugParams[T], T] =
@@ -32,8 +31,8 @@ trait InputParamMap[L <: HList] {
 }
 
 trait LowLevelInputParamMap {
-  implicit def simpleCons[L <: HList, A](
-      implicit tail: InputParamMap[L]
+  implicit def simpleCons[L <: HList, A](implicit
+      tail: InputParamMap[L]
   ): InputParamMap[A :: L] =
     l => tail(l.tail)
 }

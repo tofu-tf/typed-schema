@@ -38,13 +38,13 @@ object ReceiveModule extends ExampleModule {
 
   PlainResult.plainFComplete[Http, Example, Unit]
   def route = MkService[Http](api)(ReceiveService)
-  def swag = MkSwagger(api)
+  def swag  = MkSwagger(api)
 }
 
 object ReceiveService {
-  def put(key: String, value: String): Example[Unit] = storage.flatMap(_.update(_ + (key -> value)))
+  def put(key: String, value: String): Example[Unit]          = storage.flatMap(_.update(_ + (key -> value)))
   def get(key: String): Example[Either[KeySearching, String]] =
     (if (key.isEmpty || key.startsWith("bad")) ZIO.fail(BadKey(key))
      else read(key).some.orElseFail(NotFound())).either
-  def read(key: String): Example[Option[String]] = storage.flatMap(_.get.map(_.get(key)))
+  def read(key: String): Example[Option[String]]              = storage.flatMap(_.get.map(_.get(key)))
 }

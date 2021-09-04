@@ -14,12 +14,11 @@ object ProxyModule extends ExampleModule {
       allQuery("rest") |>
       $$[String]
 
-
   object handler {
     def proxy(foo: String, bar: String, rest: Map[String, String]): String =
       s"Proxy echo: $foo, $bar, $rest"
   }
 
-  val swag = MkSwagger(api)
+  val swag  = MkSwagger(api)
   val route = MkRoute(api)(handler)
 }

@@ -23,7 +23,7 @@ object Authorize extends ExampleModule {
 
   implicitly[Routed[Http]]
   override def route: Http[Response] = MkService[Http](api)(handler)
-  override def swag: SwaggerBuilder = MkSwagger(api)
+  override def swag: SwaggerBuilder  = MkSwagger(api)
 
   final case class User(name: String, roles: List[String])
 
@@ -47,16 +47,16 @@ object Authorize extends ExampleModule {
 
   val sessions = Map(
     "x123" -> List(1, 2, 3),
-    "x12" -> List(1, 2),
-    "y" -> List.empty
+    "x12"  -> List(1, 2),
+    "y"    -> List.empty
   )
 
   implicit val userAuth: AuthorizationS[Basic, Http, User] = SimpleAuth {
     case Credentials(id @ users(pass, roles), pwd) if secure_equals(pass, pwd) => User(id, roles)
   }
 
-  implicit val clientAuth: AuthorizationS[Bearer, Http, Client] = SimpleAuth {
-    case BearerToken(clients(client)) => client
+  implicit val clientAuth: AuthorizationS[Bearer, Http, Client] = SimpleAuth { case BearerToken(clients(client)) =>
+    client
   }
 
   def api =
@@ -69,8 +69,8 @@ object Authorize extends ExampleModule {
     ))
 
   object handler {
-    def roles(user:        User): List[String] = user.roles
-    def client(client:     Option[Client]): Client = client.getOrElse(anonClient)
+    def roles(user: User): List[String]               = user.roles
+    def client(client: Option[Client]): Client        = client.getOrElse(anonClient)
     def numbers(sessionId: Option[String]): List[Int] = sessionId.flatMap(sessions.get).getOrElse(List(-1))
   }
 }

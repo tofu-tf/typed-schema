@@ -15,16 +15,16 @@ object VersionModule extends ExampleModule {
     (version("v1") |> get[String]) <>
       (version("v2") |> get[Map[String, Int]]) <>
       (version(Symbol("v2.1")) |> get[Vector[String]])
-    )
+  )
 
   object service {
-    def v1 = "Ololo"
-    def v2 = Map("Olol" -> 0)
+    def v1     = "Ololo"
+    def v2     = Map("Olol" -> 0)
     def `v2.1` = Vector("Olo", "lo")
   }
 
   val route = MkRoute(api)(service)
-  val swag = MkSwagger(api)
+  val swag  = MkSwagger(api)
 }
 
 final class version[v] extends DSLAtom
@@ -37,7 +37,7 @@ object version {
 
   def apply[v](v: Witness.Aux[v]): version[v] :> Key[v] = new :>
 
-  implicit def versionServe[v : Name, In <: HList]: Serve.Aux[version[v], In, In] = Serve.serveCheck {
+  implicit def versionServe[v: Name, In <: HList]: Serve.Aux[version[v], In, In] = Serve.serveCheck {
     Directive { f =>
       parameter("version") { v =>
         if (v == Name[v].string) f(())
@@ -48,5 +48,5 @@ object version {
         }
     }
   }
-  implicit def versionSwagger[v: Name]: SwaggerMapper[version[v]] = SwaggerMapper[Prefix[v]].as[version[v]]
+  implicit def versionSwagger[v: Name]: SwaggerMapper[version[v]]                = SwaggerMapper[Prefix[v]].as[version[v]]
 }

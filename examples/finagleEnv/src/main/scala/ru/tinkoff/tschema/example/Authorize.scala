@@ -38,8 +38,8 @@ object Authorize {
 
   val sessions = Map(
     "x123" -> List(1, 2, 3),
-    "x12" -> List(1, 2),
-    "y" -> List.empty
+    "x12"  -> List(1, 2),
+    "y"    -> List.empty
   )
 
   def api =
@@ -52,8 +52,8 @@ object Authorize {
     ))
 
   object handler {
-    def roles(user:        User): List[String] = user.roles
-    def client(client:     Option[Client]): Client = client.getOrElse(anonClient)
+    def roles(user: User): List[String]               = user.roles
+    def client(client: Option[Client]): Client        = client.getOrElse(anonClient)
     def numbers(sessionId: Option[String]): List[Int] = sessionId.flatMap(sessions.get).getOrElse(List(-1))
   }
 
@@ -68,7 +68,7 @@ object Authorize {
 
 class Authorize[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import Authorize._
-  override def route: H[Response] = MkService[H](api)(handler)
+  override def route: H[Response]   = MkService[H](api)(handler)
   override def swag: SwaggerBuilder = MkSwagger(api)
 
 }

@@ -33,8 +33,8 @@ object InputParamMap extends LowLevelInputParamMap {
 
   implicit val hnil: InputParamMap[HNil] = _ => Map.empty
 
-  implicit def keyValueCons[L <: HList, K <: Symbol, V](
-      implicit witness: Witness.Aux[K],
+  implicit def keyValueCons[L <: HList, K <: Symbol, V](implicit
+      witness: Witness.Aux[K],
       tail: InputParamMap[L]
   ): InputParamMap[FieldType[K, V] :: L] =
     l => tail(l.tail) + (witness.value.name -> l.head.toString)

@@ -23,7 +23,7 @@ import syntax._
 class VersionModule[H[_]: Monad: RoutedPlus] extends ExampleModule[H] {
   import VersionModule._
   val route = MkService[H](api)(service)
-  val swag = MkSwagger(api)
+  val swag  = MkSwagger(api)
 }
 
 object VersionModule {
@@ -34,8 +34,8 @@ object VersionModule {
   )
 
   object service {
-    def v1 = "Ololo"
-    def v2 = Map("Olol" -> 0)
+    def v1     = "Ololo"
+    def v2     = Map("Olol" -> 0)
     def `v2.1` = Vector("Olo", "lo")
   }
 

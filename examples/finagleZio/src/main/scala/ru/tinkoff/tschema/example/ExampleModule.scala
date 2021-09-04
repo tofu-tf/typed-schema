@@ -7,5 +7,3 @@ trait ExampleModule {
   def route: Http[Response]
   def swag: SwaggerBuilder
 }
-
-

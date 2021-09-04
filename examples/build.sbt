@@ -6,38 +6,38 @@ val scala212V = "2.12.14"
 val scala213V = "2.13.6"
 
 val commonSettings = List(
-  scalaVersion := scala213V,
-  typedSchemaVersion := {
+  scalaVersion                            := scala213V,
+  typedSchemaVersion                      := {
     val branch = git.gitCurrentBranch.value
     if (branch == "master") Version.typedSchema
     else s"${Version.typedSchema}-$branch-SNAPSHOT"
   },
-  crossScalaVersions := List(scala212V, scala213V),
-  swaggerUIVersion := {
+  crossScalaVersions                      := List(scala212V, scala213V),
+  swaggerUIVersion                        := {
     libraryDependencies.value
       .find(_.name == "swagger-ui-dist")
       .map(_.revision)
       .get
   },
-  buildInfoKeys := Seq[BuildInfoKey](
+  buildInfoKeys                           := Seq[BuildInfoKey](
     name,
     version,
     scalaVersion,
     sbtVersion,
     swaggerUIVersion
   ),
-  buildInfoPackage := "ru.tinkoff.tschema.examples",
+  buildInfoPackage                        := "ru.tinkoff.tschema.examples",
   libraryDependencies += "org.webjars.npm" % "swagger-ui-dist" % Version.swaggerUI,
-  libraryDependencies += "com.lihaoyi" %% "scalatags" % Version.scalaTags,
-  libraryDependencies += "org.typelevel" %% "cats-core" % Version.catsCore,
-  libraryDependencies += "org.manatki" %% "derevo-cats" % Version.derevo,
-  libraryDependencies += "org.manatki" %% "derevo-circe" % Version.derevo,
-  libraryDependencies += "org.manatki" %% "derevo-tethys" % Version.derevo,
+  libraryDependencies += "com.lihaoyi"    %% "scalatags"       % Version.scalaTags,
+  libraryDependencies += "org.typelevel"  %% "cats-core"       % Version.catsCore,
+  libraryDependencies += "org.manatki"    %% "derevo-cats"     % Version.derevo,
+  libraryDependencies += "org.manatki"    %% "derevo-circe"    % Version.derevo,
+  libraryDependencies += "org.manatki"    %% "derevo-tethys"   % Version.derevo,
   libraryDependencies += { "ru.tinkoff" %% "typed-schema-swagger" % typedSchemaVersion.value },
   libraryDependencies += { "ru.tinkoff" %% "typed-schema-swagger-ui" % typedSchemaVersion.value }
     .exclude("org.webjars.npm", "swagger-ui-dist"),
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.patch),
-  addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+  addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.11.0" cross CrossVersion.patch),
+  addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
   scalacOptions ++= List(
     "language:higherKinds"
   ),

@@ -10,16 +10,15 @@ trait ExampleModule {
   def swag: SwaggerBuilder
 }
 
-
 object ExampleModule {
   implicit val monoidInstance: Monoid[ExampleModule] = new Monoid[ExampleModule] {
-    override def empty = new ExampleModule {
+    override def empty                                       = new ExampleModule {
       override def route = reject()
-      override def swag = SwaggerBuilder.empty
+      override def swag  = SwaggerBuilder.empty
     }
     override def combine(x: ExampleModule, y: ExampleModule) = new ExampleModule {
       override def route = x.route ~ y.route
-      override def swag = x.swag ++ y.swag
+      override def swag  = x.swag ++ y.swag
     }
   }
 }

@@ -66,13 +66,13 @@ object TestModule extends ExampleModule {
 
   implicit lazy val clientFromParam: Param[ParamSource.All, Client] =
     Param.intParam.map(Client)
-  implicit val clientSwagger: Swagger[Client] =  Swagger[Int].as[Client]
+  implicit val clientSwagger: Swagger[Client]                       = Swagger[Int].as[Client]
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   trait Mutate {
-    def mutate(value: Long) = java.lang.Long.toBinaryString(value)
-    def concat(l:     String, r: String) = l + r
+    def mutate(value: Long)          = java.lang.Long.toBinaryString(value)
+    def concat(l: String, r: String) = l + r
   }
 
   object handler extends Mutate {
@@ -88,11 +88,11 @@ object TestModule extends ExampleModule {
     def sqrtMean(a: Double, b: Double): Double = Math.sqrt((a * a + b * b) / 2)
 
     def stats(body: Seq[BigDecimal]) = {
-      val mean = body.sum / body.size
-      val mid = body.size / 2
+      val mean   = body.sum / body.size
+      val mid    = body.size / 2
       val median =
         if (body.size % 2 == 1) body(mid) else (body(mid) + body(mid - 1)) / 2
-      val std = body.view.map(x => x * x).sum / body.size - mean * mean
+      val std    = body.view.map(x => x * x).sum / body.size - mean * mean
       StatsRes(mean, std, median)
     }
 

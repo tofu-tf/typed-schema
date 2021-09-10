@@ -29,11 +29,11 @@ object Server extends App {
   val svc: Http[Response] = modules.foldMapK(_.route) combineK ExampleSwagger.route
 
   val server = for {
-    srv <- RunHttp.run[Example](svc)
+    srv  <- RunHttp.run[Example](svc)
     list <- ZIO.effect(FHttp.serve("0.0.0.0:9191", srv))
-    _ <- putStr(s"started at ${list.boundAddress}")
-    _ <- ZIO.effect(Await.ready(list, Duration.Top)).fork
-    res <- ZIO.never
+    _    <- putStr(s"started at ${list.boundAddress}")
+    _    <- ZIO.effect(Await.ready(list, Duration.Top)).fork
+    res  <- ZIO.never
   } yield res
 
   val layer: URLayer[Blocking with Console, FullEnv] =

@@ -11,7 +11,6 @@ import ru.tinkoff.tschema.syntax._
 import tethys._
 import tethys.jackson._
 
-
 object FormFieldsModule extends ExampleModule {
 
   @derive(tethysWriter, tethysReader, Swagger)
@@ -19,20 +18,19 @@ object FormFieldsModule extends ExampleModule {
 
   def api =
     tag("formFields") |>
-    urlencoded <|> multipart <|> encoded
+      urlencoded <|> multipart <|> encoded
 
   def urlencoded =
     operation("person") |>
-    formField[String]("name") |>
-    formField[Long]("age") |>
-    put[Person]
+      formField[String]("name") |>
+      formField[Long]("age") |>
+      put[Person]
 
   def multipart =
     operation("person") |>
-    multipartField[String]("name") |>
-    multipartField[Long]("age") |>
-    post[Person]
-  
+      multipartField[String]("name") |>
+      multipartField[Long]("age") |>
+      post[Person]
 
   // json-encoded form param example
   implicit val personParam: HttpSingleParamReq[Person] =
@@ -40,12 +38,12 @@ object FormFieldsModule extends ExampleModule {
 
   def encoded =
     operation("changeAge") |>
-    multipartField[Person]("person") |>
-    multipartField[Long]("age") |>
-    post[Person]
+      multipartField[Person]("person") |>
+      multipartField[Long]("age") |>
+      post[Person]
 
   object handler {
-    def person(name: String, age: Long): Person = Person(name, age)
+    def person(name: String, age: Long): Person      = Person(name, age)
     def changeAge(person: Person, age: Long): Person = person.copy(age = age)
   }
 

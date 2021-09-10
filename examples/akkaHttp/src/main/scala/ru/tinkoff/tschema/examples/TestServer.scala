@@ -16,7 +16,7 @@ import ru.tinkoff.tschema.swagger.{OpenApiInfo, PathDescription}
 object TestServer {
 
   implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
+  implicit val mat    = ActorMaterializer()
   import system.dispatcher
 
   val descriptions =

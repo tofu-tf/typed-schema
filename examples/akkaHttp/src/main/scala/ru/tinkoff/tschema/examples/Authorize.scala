@@ -41,7 +41,7 @@ object Authorize extends ExampleModule {
   )
 
   implicit val userAuth: BasicAuthenticator[User] = BasicAuthenticator.of {
-    case Credentials.Missing => None
+    case Credentials.Missing             => None
     case cred @ Credentials.Provided(id) =>
       for ((pass, roles) <- users.get(id) if cred.verify(pass)) yield User(id, roles)
   }

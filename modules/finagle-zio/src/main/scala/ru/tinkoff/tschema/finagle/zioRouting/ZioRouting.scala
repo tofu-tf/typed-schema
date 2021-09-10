@@ -30,8 +30,7 @@ object ZRouting {
 
 object ZioRouting extends ZioRoutingInstances {}
 
-/** trait containing implicits specifically for case E = Nothing
-  * since scala  2 compiler has issues with Nothing
+/** trait containing implicits specifically for case E = Nothing since scala 2 compiler has issues with Nothing
   */
 trait ZioRoutingInstances extends ZioRoutingInstances2 { self: ZioRouting.type =>
 

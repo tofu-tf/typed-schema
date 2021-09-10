@@ -55,7 +55,7 @@ final case class AuthMap(values: Map[String, (Boolean, String)]) {
     }
 }
 
-class SpecialAuth[userVar , admin <: Boolean] extends DSLAtom
+class SpecialAuth[userVar, admin <: Boolean] extends DSLAtom
 
 object SpecialAuth {
   def validateAuth[userVar, admin <: Boolean](
@@ -69,16 +69,19 @@ object SpecialAuth {
   implicit def swagger[userVar, admin <: Boolean]: SwaggerMapper[SpecialAuth[userVar, admin]] =
     bearerAuth[String]("kriwda", "kriwda").swaggerMapper.as[SpecialAuth[userVar, admin]]
 
-
   import akka.http.scaladsl.server.Directives._
 
-  implicit def serve[In <: HList, userVar, admin <: Boolean](
-      implicit auth: AuthMap,
+  implicit def serve[In <: HList, userVar, admin <: Boolean](implicit
+      auth: AuthMap,
       admin: W.Aux[admin],
       select: Selector.Aux[In, userVar, String]
   ): Check[SpecialAuth[userVar, admin], In] =
     serveReadCheck[SpecialAuth[userVar, admin], userVar, String, In](userId =>
-      authenticateOAuth2PF("kriwda", {
-        case cred @ Credentials.Provided(_) if auth.get(userId, admin.value).exists(cred.verify) => userId
-      }).tmap(_ => ()))
+      authenticateOAuth2PF(
+        "kriwda",
+        {
+          case cred @ Credentials.Provided(_) if auth.get(userId, admin.value).exists(cred.verify) => userId
+        }
+      ).tmap(_ => ())
+    )
 }

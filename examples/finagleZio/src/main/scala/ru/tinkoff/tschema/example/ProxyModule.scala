@@ -10,7 +10,6 @@ import ru.tinkoff.tschema.syntax._
 
 object ProxyModule extends ExampleModule {
 
-
   @derive(tethysWriter, Swagger)
   final case class ProxyEcho(
       foo: String,

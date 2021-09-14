@@ -20,7 +20,7 @@ class Greeting[H[_]: Monad: RoutedPlus: LiftHttp[*[_], F], F[_]: Monad: Alohas] 
       (operation("aloha") |> json[Aloha])
 
   val route = MkService[H](api)(new Greeting.handler[F])
-  val swag = MkSwagger(api)
+  val swag  = MkSwagger(api)
 }
 
 object Greeting {
@@ -29,6 +29,6 @@ object Greeting {
 
   class handler[F[_]: Applicative: Alohas] {
     def hello: F[String] = "Hello".pure[F]
-    def aloha: F[Aloha] = Alohas[F].increment().map(i => Aloha("aloha", i))
+    def aloha: F[Aloha]  = Alohas[F].increment().map(i => Aloha("aloha", i))
   }
 }

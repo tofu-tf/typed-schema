@@ -5,8 +5,7 @@ import ru.tinkoff.tschema.finagle.util.message._
 import ru.tinkoff.tschema.finagle.{ParseBody, Routed}
 import tethys.readers.tokens.TokenIteratorProducer
 
-/** typeclass checking that A could be parsed as JSON
-  *  it would try Tethys Reader first, then Circe Decoder
+/** typeclass checking that A could be parsed as JSON it would try Tethys Reader first, then Circe Decoder
   */
 trait JsonParseBody[F[_], A] extends ParseBody[F, A]
 

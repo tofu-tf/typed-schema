@@ -19,10 +19,10 @@ object MultiParameters extends ExampleModule {
 
   //Just an example of a manual instance declaration
   object Child {
-    implicit val params: HttpParam[Child] = HttpParam.generate
+    implicit val params: HttpParam[Child]            = HttpParam.generate
     implicit val swaggerParam: AsOpenApiParam[Child] = AsOpenApiParam.generate
-    implicit val swagger: Swagger[Child] = Swagger.instance
-    implicit val catsShow: Show[Child] = show.instance
+    implicit val swagger: Swagger[Child]             = Swagger.instance
+    implicit val catsShow: Show[Child]               = show.instance
   }
 
   @derive(Swagger, HttpParam, AsOpenApiParam, show)
@@ -31,7 +31,7 @@ object MultiParameters extends ExampleModule {
   @derive(HttpParam, AsOpenApiParam, show, Swagger)
   final case class Page(from: Int, count: Int, opt: Option[String])
 
-  def route = MkService[Http](api)(handler)
+  def route                = MkService[Http](api)(handler)
   def swag: SwaggerBuilder = MkSwagger(api)
 
   def api =
@@ -43,7 +43,7 @@ object MultiParameters extends ExampleModule {
     ))
 
   object handler {
-    def describe(user:  User) = user
+    def describe(user: User)          = user
     def pageDescr(page: Option[Page]) = page
   }
 

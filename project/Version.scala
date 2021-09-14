@@ -33,7 +33,7 @@ object Version {
 
   val zioCats = "2.5.1.0"
 
-  val finagle = "21.6.0"
+  val finagle = "21.8.0"
 
   val derevo = "0.12.6"
 

@@ -60,7 +60,7 @@ object Rejection {
         )
   }
 
-  implicit val order: Order[Rejection] =
+  implicit val order: Order[Rejection]            =
     (x, y) =>
       x.priority compare y.priority match {
         case 0 => x.path.length compare y.path.length
@@ -96,7 +96,7 @@ object Rejection {
   }
 
   object OptRecover {
-    def default[F[_]]: OptRecover[F] = new OptRecover[F] {
+    def default[F[_]]: OptRecover[F]                                    = new OptRecover[F] {
       def orDefault(implicit F: Applicative[F]): Recover[F] = Recover.default[F]
     }
 

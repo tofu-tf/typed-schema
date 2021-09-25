@@ -9,7 +9,7 @@ trait ResponseStatus[T] {
   def status: Int
 }
 
-object ResponseStatus {
+object ResponseStatus     {
   final case class Impl[T](status: Int) extends ResponseStatus[T]
 
   def apply[T](x: Int): ResponseStatus[T] = Impl(x)
@@ -51,7 +51,7 @@ object Decompose {
 
   def nil[A]: Last[A] = DecomposeLast.asInstanceOf[Last[A]]
 
-  trait Cons[A, H, D] extends Decompose[A] {
+  trait Cons[A, H, D]  extends Decompose[A] {
     type Self = Cons[A, H, D]
     def tryHead(a: A): Option[H]
     def next: D

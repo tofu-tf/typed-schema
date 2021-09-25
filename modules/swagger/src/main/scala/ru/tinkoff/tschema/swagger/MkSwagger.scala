@@ -245,7 +245,7 @@ object MkSwagger {
       op: OpenApiOp,
       key: Option[String] = None,
       groups: Vector[String] = Vector.empty
-  )               {
+  ) {
     def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.update(this, f)
   }
   object PathSpec {
@@ -262,14 +262,14 @@ object MkSwagger {
 
   type TagInfo = Vector[(String, SwaggerDescription)]
 
-  def single[T](op: OpenApiOp, typeList: TreeMap[String, DescribedType]) = new MkSwagger[T] {
+  def single[T](op: OpenApiOp, typeList: TreeMap[String, DescribedType])                        = new MkSwagger[T] {
     val paths                                   = Vector(PathSpec(Vector.empty, None, op))
     val types                                   = typeList
     val tags: TagInfo                           = Vector.empty
     val auths: TreeMap[String, OpenApiSecurity] = TreeMap.empty
   }
 
-  implicit def derivedComplete[T](implicit content: SwaggerContent[T]) =
+  implicit def derivedComplete[T](implicit content: SwaggerContent[T])                          =
     single[Complete[T]](
       op = OpenApiOp(responses = OpenApiResponses(codes = content.content.groupBy(_._1).map { case (i, contents) =>
         (i, OpenApiResponse.makeMany(contents.flatMap(_._2): _*))
@@ -286,9 +286,9 @@ object MkSwagger {
   ): MkSwagger[start :> end] =
     start(end).as[start :> end]
 
-  implicit val monoidKInstance: MonoidK[MkSwagger]     = new MonoidK[MkSwagger] {
+  implicit val monoidKInstance: MonoidK[MkSwagger]                                              = new MonoidK[MkSwagger] {
     def empty[A]: MkSwagger[A]                                      = MkSwagger.empty[A]
     def combineK[A](x: MkSwagger[A], y: MkSwagger[A]): MkSwagger[A] = x ++ y
   }
-  implicit def monoidInstance[A]: Monoid[MkSwagger[A]] = monoidKInstance.algebra[A]
+  implicit def monoidInstance[A]: Monoid[MkSwagger[A]]                                          = monoidKInstance.algebra[A]
 }

@@ -27,12 +27,12 @@ trait LowPriorityCirceEncoder {
   }
 }
 
-object DerivedCirceEncoder extends LowPriorityCirceEncoder {
-  implicit val nilEncoder = new DerivedCirceEncoder[HNil] {
+object DerivedCirceEncoder      extends LowPriorityCirceEncoder {
+  implicit val nilEncoder                                                                                              = new DerivedCirceEncoder[HNil] {
     override def encodeObject(a: HNil): JsonObject = JsonObject.empty
   }
 
-  implicit val cnilEncoder = new DerivedCirceEncoder[CNil] {
+  implicit val cnilEncoder                                                                                             = new DerivedCirceEncoder[CNil] {
     override def encodeObject(a: CNil): JsonObject = a.impossible
   }
 

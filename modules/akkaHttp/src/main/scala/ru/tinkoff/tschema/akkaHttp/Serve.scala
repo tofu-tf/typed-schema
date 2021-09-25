@@ -40,7 +40,7 @@ trait Serve[T, In <: HList] {
   def as[Q]: Serve.Aux[Q, In, Out] = asInstanceOf[Serve.Aux[Q, In, Out]]
 }
 
-object Serve extends ServeInstances {
+object Serve                           extends ServeInstances                                              {
   def nil[T](implicit serve: Serve[T, HNil]): Aux[T, HNil, serve.Out]         = serve
   def apply[L <: HList, T](implicit serve: Serve[T, L]): Aux[T, L, serve.Out] = serve
 }
@@ -53,7 +53,7 @@ private[akkaHttp] trait ServeTypes {
   type Push[T, In <: HList, value]     = Serve[T, In] { type Out = value :: In }
 }
 
-private[akkaHttp] trait ServeFunctions extends ServeTypes {
+private[akkaHttp] trait ServeFunctions extends ServeTypes                                                  {
   protected def resolveParam[S >: All <: ParamSource, name, A](implicit
       param: Param[S, A],
       w: Name[name],
@@ -151,38 +151,38 @@ private[akkaHttp] trait ServeFunctions extends ServeTypes {
 
 private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstances1 with ServeAuthInstances {
   self: Serve.type =>
-  implicit def prefixServe[pref, In <: HList](implicit n: Name[pref]) =
+  implicit def prefixServe[pref, In <: HList](implicit n: Name[pref])                        =
     serveCheck[Prefix[pref], In](pathPrefix(n.string) & rawPathPrefixTest(Slash | PathEnd))
 
-  implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
+  implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method])         =
     serveCheck[method, In](method(check.method))
 
-  implicit def queryMap[name: Name, x, In <: HList] =
+  implicit def queryMap[name: Name, x, In <: HList]                                          =
     serveAdd[AllQuery[name], In, Map[String, String], name](parameterMap)
 
-  implicit def queryParamServe[name: Name, p, x: Param.PQuery, In <: HList] =
+  implicit def queryParamServe[name: Name, p, x: Param.PQuery, In <: HList]                  =
     serveAdd[QueryParamAs[name, p, x], In, x, p](resolveParam[ParamSource.Query, name, x])
 
-  implicit def queryFlagServe[name: Name, p, x, In <: HList] =
+  implicit def queryFlagServe[name: Name, p, x, In <: HList]                                 =
     serveAdd[QueryFlagAs[name, p], In, Boolean, p](
       parameterMap.map(_.contains(Name[name].string))
     )
 
-  implicit def captureServe[name: Name, p, x: Param.PPath, In <: HList] =
+  implicit def captureServe[name: Name, p, x: Param.PPath, In <: HList]                      =
     serveAdd[CaptureAs[name, p, x], In, x, p](resolveParam[ParamSource.Path, name, x])
 
-  implicit def reqBodyServe[name: Name, p, x: FromRequestUnmarshaller, In <: HList] =
+  implicit def reqBodyServe[name: Name, p, x: FromRequestUnmarshaller, In <: HList]          =
     serveAdd[ReqBodyAs[name, p, x], In, x, p] {
       entity(as[x])
     }
 
-  implicit def headerServe[name: Name, p, x: Param.PHeader, In <: HList] =
+  implicit def headerServe[name: Name, p, x: Param.PHeader, In <: HList]                     =
     serveAdd[HeaderAs[name, p, x], In, x, p](resolveParam[ParamSource.Header, name, x])
 
-  implicit def cookieServe[name: Name, p, x: Param.PCookie, In <: HList] =
+  implicit def cookieServe[name: Name, p, x: Param.PCookie, In <: HList]                     =
     serveAdd[CookieAs[name, p, x], In, x, p](resolveParam[ParamSource.Cookie, name, x])
 
-  implicit def formFieldServe[name: Name, p, x: Param.PForm, In <: HList] =
+  implicit def formFieldServe[name: Name, p, x: Param.PForm, In <: HList]                    =
     serveAdd[FormFieldAs[name, p, x], In, x, p](resolveParam[ParamSource.Form, name, x])
 
   implicit def multipartFormFieldServe[name: Name, p, x: Param.PMultipartField, In <: HList] =
@@ -192,9 +192,9 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
       : Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In] =
     Serve.identity.asInstanceOf[Serve.Aux[As[name], FieldType[old, Head] :: In, FieldType[name, Head] :: In]]
 
-  implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In] = serveCheck[x, In](pass)
+  implicit def metaServe[x <: Meta, In <: HList]: Aux[x, In, In]                             = serveCheck[x, In](pass)
 
-  implicit def keyServe[name, In <: HList]: Push[Key[name], In, Key[name]] =
+  implicit def keyServe[name, In <: HList]: Push[Key[name], In, Key[name]]       =
     servePush(provide(Key.of[name]))
 
   implicit def groupServe[name, In <: HList]: Push[Group[name], In, Group[name]] =
@@ -214,7 +214,7 @@ object MethodCheck {
 
 private[akkaHttp] trait ServeInstances1 { self: Serve.type =>
 
-  implicit def queryParamsServe[name: Name, p, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
+  implicit def queryParamsServe[name: Name, p, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x])    =
     serveAdd[QueryParamsAs[name, p, x], In, List[x], p](extractQueryParams[name, x](allowEmpty = false))
 
   implicit def queryOptParamsServe[name: Name, p, x, In <: HList](implicit param: SingleParam[ParamSource.Query, x]) =
@@ -245,17 +245,17 @@ private[akkaHttp] trait ServeInstances1 { self: Serve.type =>
 }
 
 private[akkaHttp] trait ServeAuthInstances extends ServeFunctions {
-  implicit def basicAuthServe[realm: Name, name, x: BasicAuthenticator, In <: HList] =
+  implicit def basicAuthServe[realm: Name, name, x: BasicAuthenticator, In <: HList]      =
     serveAdd[BasicAuth[realm, name, x], In, x, name] {
       BasicAuthenticator[x].directive(Name[realm].string)
     }
 
-  implicit def bearerAuthServe[realm: Name, name, x: BearerAuthenticator, In <: HList] =
+  implicit def bearerAuthServe[realm: Name, name, x: BearerAuthenticator, In <: HList]    =
     serveAdd[BearerAuth[realm, name, x], In, x, name] {
       BearerAuthenticator[x].directive(Name[realm].string)
     }
 
-  implicit def basicAuthOptServe[realm: Name, name, x: BasicAuthenticator, In <: HList] =
+  implicit def basicAuthOptServe[realm: Name, name, x: BasicAuthenticator, In <: HList]   =
     serveAdd[BasicAuth[realm, name, Option[x]], In, Option[x], name] {
       BasicAuthenticator[x].directive(Name[realm].string).optional
     }
@@ -296,25 +296,25 @@ trait ParamDirectives[S <: ParamSource] {
 object ParamDirectives {
   type TC[A <: ParamSource] = ParamDirectives[A]
   import ParamSource._
-  implicit val queryParamDirective: TC[Query] = new TC[Query] {
+  implicit val queryParamDirective: TC[Query]                       = new TC[Query] {
     def getByName(name: String): Directive1[Option[String]] = parameter(name.?)
     def notFound(name: String): Rejection                   = MissingQueryParamRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedQueryParamRejection(name, error)
   }
 
-  implicit val cookieParamDirectives: TC[Cookie] = new TC[Cookie] {
+  implicit val cookieParamDirectives: TC[Cookie]                    = new TC[Cookie] {
     def getByName(name: String): Directive1[Option[String]] = optionalCookie(name).map(_.map(_.value))
     def notFound(name: String): Rejection                   = MissingCookieRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedHeaderRejection(s"cookie: $name", error)
   }
 
-  implicit val pathParamDirectives: TC[Path] = new TC[Path] {
+  implicit val pathParamDirectives: TC[Path]                        = new TC[Path] {
     def getByName(name: String): Directive1[Option[String]] = pathPrefix(Segment).map(Some(_): Option[String])
     def notFound(name: String): Rejection                   = NotFoundPathRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedPathRejection(name, error)
   }
 
-  implicit val formDataParamDirectives: TC[Form] = new TC[Form] {
+  implicit val formDataParamDirectives: TC[Form]                    = new TC[Form] {
     def getByName(name: String): Directive1[Option[String]] = formField(name.?)
     def notFound(name: String): Rejection                   = MissingFormFieldRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedFormFieldRejection(name, error)
@@ -326,7 +326,7 @@ object ParamDirectives {
     def malformed(name: String, error: String): Rejection   = MalformedFormFieldRejection(name, error)
   }
 
-  implicit val headerParamDirectives: TC[Header] = new TC[Header] {
+  implicit val headerParamDirectives: TC[Header]                    = new TC[Header] {
     def getByName(name: String): Directive1[Option[String]] = optionalHeaderValueByName(name)
     def notFound(name: String): Rejection                   = MissingHeaderRejection(name)
     def malformed(name: String, error: String): Rejection   = MalformedHeaderRejection(name, error)

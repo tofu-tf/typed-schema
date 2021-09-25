@@ -56,20 +56,20 @@ object ParamDirectives {
   type TCS[A <: ParamSource] = ParamDirectivesSimple[A]
   import ParamSource._
 
-  implicit val queryParamDirective: TC[Query] = new TCS[Query](Query) {
+  implicit val queryParamDirective: TC[Query]                    = new TCS[Query](Query) {
     def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
   }
 
-  implicit val cookieParamDirectives: TC[Cookie] = new TCS[Cookie](Cookie) {
+  implicit val cookieParamDirectives: TC[Cookie]                 = new TCS[Cookie](Cookie) {
     def getFromRequest(name: String)(req: Request): Option[String] = req.cookies.get(name).map(_.value)
   }
 
-  implicit val pathParamDirectives: TC[ParamSource.Path] = new TC[ParamSource.Path] {
+  implicit val pathParamDirectives: TC[ParamSource.Path]         = new TC[ParamSource.Path] {
     def getByName[F[_]: Routed: Monad, A](name: String, fa: Option[CharSequence] => F[A]): F[A] = Routed.segment(fa)
     def source                                                                                  = ParamSource.Path
   }
 
-  implicit val formDataParamDirectives: TC[Form] = new TCS[Form](Form) {
+  implicit val formDataParamDirectives: TC[Form]                 = new TCS[Form](Form) {
     def getFromRequest(name: String)(req: Request): Option[String] = req.params.get(name)
   }
 
@@ -92,7 +92,7 @@ object ParamDirectives {
       decodeIfNeeded(req).flatMap(_.attributes.get(name).flatMap(_.headOption))
   }
 
-  implicit val headerParamDirectives: TC[Header] = new TCS[Header](Header) {
+  implicit val headerParamDirectives: TC[Header]                 = new TCS[Header](Header) {
     def getFromRequest(name: String)(req: Request): Option[String] = req.headerMap.get(name)
   }
 

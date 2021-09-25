@@ -19,7 +19,7 @@ object Skippable {
     else h.as[T].asInstanceOf[Decoder.Result[T @@ Skippable]]
   }
 
-  implicit def tagImplicitly[T](x: T): T @@ Skippable = tag[Skippable](x)
+  implicit def tagImplicitly[T](x: T): T @@ Skippable                         = tag[Skippable](x)
 }
 
 trait Default[T] {

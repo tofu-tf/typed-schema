@@ -18,7 +18,7 @@ trait Authorization[K <: Kind, F[_], A, R] {
   def apply(s: Option[R]): F[A]
 }
 
-object Authorization {
+object Authorization                      {
   sealed trait Kind
 
   case object Basic  extends Kind

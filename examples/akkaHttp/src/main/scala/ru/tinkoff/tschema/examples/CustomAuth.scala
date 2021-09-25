@@ -23,7 +23,7 @@ object CustomAuth extends ExampleModule {
 
   implicit val auth = AuthMap(Map("kriwda" -> (true, "admin"), "oleg" -> (false, "notadmin")))
 
-  def api =
+  def api            =
     tagPrefix("adminka") |> queryParam[String]("userId") |>
       ((
         post |> validateAuth("userId", true) |> body[BanUser]("banUser") |> operation("ban") |> $$[Result]
@@ -38,7 +38,7 @@ object CustomAuth extends ExampleModule {
       banned.put(banUser.userToBan, banUser)
       Result(s"$userId ok")
     }
-    def bans: List[BanUser] = banned.values.toList
+    def bans: List[BanUser]                           = banned.values.toList
   }
 }
 

@@ -61,7 +61,7 @@ val specificScalacOptions = scalacOptions ++= {
   }
 }
 
-val setMinorVersion = minorVersion := {
+val setMinorVersion      = minorVersion := {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, v)) => v.toInt
     case _            => 0
@@ -82,10 +82,10 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics    =
+val tofuOptics =
   libraryDependencies ++= List("core", "macro").map(module => "tf.tofu" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe         =
+val circe =
   libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
     "derivation",
     "derivation-annotations"
@@ -128,7 +128,7 @@ val swaggerUIVersion = SettingKey[String]("swaggerUIVersion")
 
 lazy val testLibs = libraryDependencies ++= scalatest :: scalacheck :: scalatestScalacheck :: Nil
 
-lazy val commonSettings = publishSettings ++ List(
+lazy val commonSettings       = publishSettings ++ List(
   scalaVersion := scala213V,
   collectionCompat,
   compilerPlugins,
@@ -139,7 +139,7 @@ lazy val commonSettings = publishSettings ++ List(
   testLibs,
 )
 
-lazy val kernel = project
+lazy val kernel               = project
   .in(file("modules/kernel"))
   .settings(
     commonSettings,
@@ -147,7 +147,7 @@ lazy val kernel = project
     libraryDependencies ++= catsCore :: shapeless :: enumeratum :: Nil
   )
 
-lazy val param = project
+lazy val param                = project
   .in(file("modules/param"))
   .dependsOn(kernel)
   .settings(
@@ -158,7 +158,7 @@ lazy val param = project
     paradise,
   )
 
-lazy val macros = project
+lazy val macros               = project
   .in(file("modules/macros"))
   .dependsOn(kernel)
   .settings(
@@ -168,7 +168,7 @@ lazy val macros = project
     reflect
   )
 
-lazy val swagger = project
+lazy val swagger              = project
   .in(file("modules/swagger"))
   .dependsOn(kernel, macros)
   .settings(
@@ -181,7 +181,7 @@ lazy val swagger = project
     circe,
   )
 
-lazy val akkaHttp = project
+lazy val akkaHttp             = project
   .in(file("modules/akkaHttp"))
   .dependsOn(kernel, macros, param)
   .settings(
@@ -191,7 +191,7 @@ lazy val akkaHttp = project
     akkaHttpCirce
   )
 
-lazy val finagle = project
+lazy val finagle              = project
   .in(file("modules/finagle"))
   .dependsOn(kernel, macros, param)
   .settings(
@@ -200,7 +200,7 @@ lazy val finagle = project
     libraryDependencies ++= finagleHttp :: catsEffect :: catsFree :: Nil
   )
 
-lazy val finagleCirce = project
+lazy val finagleCirce         = project
   .in(file("modules/finagleCirce"))
   .dependsOn(finagle)
   .settings(
@@ -209,7 +209,7 @@ lazy val finagleCirce = project
     circe
   )
 
-lazy val finagleTethys = project
+lazy val finagleTethys        = project
   .in(file("modules/finagleTethys"))
   .dependsOn(finagle)
   .settings(
@@ -218,7 +218,7 @@ lazy val finagleTethys = project
     libraryDependencies ++= tethys
   )
 
-lazy val finagleCustom = project
+lazy val finagleCustom        = project
   .in(file("modules/finagleCustom"))
   .dependsOn(finagleCirce, finagleTethys, swagger)
   .settings(
@@ -227,7 +227,7 @@ lazy val finagleCustom = project
     libraryDependencies += derevo
   )
 
-lazy val finagleZio = project
+lazy val finagleZio           = project
   .in(file("modules/finagle-zio"))
   .dependsOn(finagle)
   .settings(
@@ -236,7 +236,7 @@ lazy val finagleZio = project
     libraryDependencies ++= catsEffect :: zio
   )
 
-lazy val finagleCommon = project
+lazy val finagleCommon        = project
   .in(file("modules/finagle-common"))
   .dependsOn(finagle, swagger)
   .settings(
@@ -244,7 +244,7 @@ lazy val finagleCommon = project
     moduleName := "typed-schema-finagle-common"
   )
 
-lazy val finagleEnv = project
+lazy val finagleEnv           = project
   .in(file("modules/finagle-env"))
   .dependsOn(finagle)
   .settings(
@@ -253,7 +253,7 @@ lazy val finagleEnv = project
     libraryDependencies ++= catsEffect :: env :: Nil
   )
 
-lazy val main = project
+lazy val main                 = project
   .in(file("modules/main"))
   .dependsOn(kernel, macros, swagger, akkaHttp)
   .settings(
@@ -262,7 +262,7 @@ lazy val main = project
     libraryDependencies ++= akkaHttpLib :: akkaHttpTestKit :: akkaTestKit :: akka
   )
 
-lazy val swaggerUI =
+lazy val swaggerUI            =
   (project in file("modules/swaggerUI"))
     .dependsOn(swagger)
     .enablePlugins(BuildInfoPlugin)
@@ -280,7 +280,7 @@ lazy val swaggerUI =
       buildInfoPackage := "ru.tinkoff.tschema.swagger"
     )
 
-lazy val swaggerTypesafe = project
+lazy val swaggerTypesafe      = project
   .in(file("modules/swaggerTypesafe"))
   .dependsOn(kernel, swagger)
   .settings(
@@ -299,7 +299,7 @@ lazy val swaggerTypesafeCheck = project
     moduleName := "typed-schema-swagger-typesafe-check"
   )
 
-lazy val typedschema =
+lazy val typedschema          =
   (project in file("."))
     .dependsOn(macros, kernel, main)
     .settings(

@@ -11,10 +11,10 @@ class StringCompleting[A](read: A => String, status: Int = 200) {
   implicit def fstringComplete[F[_]: Functor, H[_]](implicit lift: LiftHttp[H, F]): Completing[H, A, F[A]] =
     message.fstringComplete[H, F, A](read, Status(status))
 
-  implicit def stringComplete[H[_]: Applicative]: Completing[H, A, A] =
+  implicit def stringComplete[H[_]: Applicative]: Completing[H, A, A]                                      =
     message.stringComplete[H, A](read, Status(status))
 
-  implicit val swagger: SwaggerTypeable[A] = SwaggerTypeable[String].as[A]
+  implicit val swagger: SwaggerTypeable[A]                                                                 = SwaggerTypeable[String].as[A]
 }
 
 class NoneCompleting(status: Int = 200) {
@@ -23,8 +23,8 @@ class NoneCompleting(status: Int = 200) {
   implicit def femptyComplete[H[_]: Applicative, F[_]]: Completing[H, this.type, F[this.type]] =
     message.emptyComplete[H, this.type, F[this.type]](Status(status))
 
-  implicit def emptyComplete[H[_]: Applicative]: Completing[H, this.type, this.type] =
+  implicit def emptyComplete[H[_]: Applicative]: Completing[H, this.type, this.type]           =
     message.emptyComplete[H, this.type, this.type](Status(status))
 
-  implicit val swagger: SwaggerContent[this.type] = SwaggerContent(List(status -> None))
+  implicit val swagger: SwaggerContent[this.type]                                              = SwaggerContent(List(status -> None))
 }

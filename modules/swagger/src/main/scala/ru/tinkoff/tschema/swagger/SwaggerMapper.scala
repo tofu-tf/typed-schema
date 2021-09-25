@@ -88,7 +88,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     override def types: Map[String, DescribedType] = tps
   }
 
-  def fromAuth[T](name: String, auth: OpenApiSecurity) = new Empty[T] {
+  def fromAuth[T](name: String, auth: OpenApiSecurity)                                              = new Empty[T] {
     override def auths                             = TreeMap(name -> auth)
     override def mapSpec(spec: PathSpec): PathSpec =
       (PathSpec.op >> OpenApiOp.security).update(spec, _ :+ Map(name -> Vector.empty))
@@ -122,28 +122,28 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       fromTypes[atom](param.types)
   }
 
-  implicit def derivePath[path](implicit name: Name[path]) =
+  implicit def derivePath[path](implicit name: Name[path])                                          =
     fromFunc[path](_.modPath(name.string +: _))
 
-  implicit def derivePathPrefix[path](implicit name: Name[path]) =
+  implicit def derivePathPrefix[path](implicit name: Name[path])                                    =
     fromFunc[Prefix[path]](_.modPath(name.string +: _))
 
-  implicit def derivePathWitness[path](implicit name: Name[path]) =
+  implicit def derivePathWitness[path](implicit name: Name[path])                                   =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
-  implicit def deriveQueryParam[name: Name, p, T: AsOpenApiParam] =
+  implicit def deriveQueryParam[name: Name, p, T: AsOpenApiParam]                                   =
     derivedParam[name, p, T, QueryParamAs](In.query)
 
   implicit def deriveOptQueryParams[name: Name, p, T](implicit ev: AsOpenApiParam[Option[List[T]]]) =
     derivedParamAtom[name, Option[List[T]], QueryParamsAs[name, p, Option[T]]](In.query)
 
-  implicit def deriveQueryFlag[name: Name, p]: SwaggerMapper[QueryFlagAs[name, p]] =
+  implicit def deriveQueryFlag[name: Name, p]: SwaggerMapper[QueryFlagAs[name, p]]                  =
     derivedParamAtom[name, Option[Boolean], QueryFlagAs[name, p]](In.query, flag = true)
 
-  implicit def deriveHeader[name: Name, p, T: AsSingleOpenApiParam] =
+  implicit def deriveHeader[name: Name, p, T: AsSingleOpenApiParam]                                 =
     derivedParam[name, p, T, HeaderAs](In.header)
 
-  implicit def deriveFormField[name: Name, p, T](implicit asParam: AsOpenApiParam[T]) =
+  implicit def deriveFormField[name: Name, p, T](implicit asParam: AsOpenApiParam[T])               =
     fromFunc[FormFieldAs[name, p, T]] {
       def param(field: OpenApiParamInfo, name: String) = MakeFormField.urlencoded(name, field.typ, field.required)
 
@@ -155,7 +155,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
     } andThen fromTypes[FormFieldAs[name, p, T]](asParam.types)
 
-  implicit def deriveMultipartField[name: Name, p, T](implicit asParam: AsOpenApiParam[T]) =
+  implicit def deriveMultipartField[name: Name, p, T](implicit asParam: AsOpenApiParam[T])          =
     fromFunc[MultipartFieldAs[name, p, T]] {
       def param(field: OpenApiParamInfo, name: String) = MakeFormField.multipart(name, field.typ, field.required)
 
@@ -167,12 +167,12 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
       (PathSpec.op >> OpenApiOp.requestBody).update(_, _.fold(params.make)(params.add).some)
     } andThen fromTypes[MultipartFieldAs[name, p, T]](asParam.types)
 
-  implicit def deriveCookie[name: Name, p, T: AsOpenApiParam] =
+  implicit def deriveCookie[name: Name, p, T: AsOpenApiParam]                                       =
     derivedParam[name, p, T, CookieAs](In.cookie)
 
-  implicit def deriveAllQuery[x]: SwaggerMapper[AllQuery[x]] = SwaggerMapper.empty
+  implicit def deriveAllQuery[x]: SwaggerMapper[AllQuery[x]]                                        = SwaggerMapper.empty
 
-  implicit def derivePathParam[name, p, T: AsOpenApiParam](implicit name: Name[name]) =
+  implicit def derivePathParam[name, p, T: AsOpenApiParam](implicit name: Name[name])                     =
     derivedParam[name, p, T, CaptureAs](In.path).map(PathSpec.path.update(_, s"{$name}" +: _))
 
   implicit def deriveReqOptBody[name, p, T](implicit
@@ -208,21 +208,21 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   ): SwaggerMapper[start :> end] =
     (start andThen end).as[start :> end]
 
-  private def deriveDesr[T](descr: SwaggerDescription): SwaggerMapper[T] =
+  private def deriveDesr[T](descr: SwaggerDescription): SwaggerMapper[T]                                  =
     fromFunc((PathSpec.op >> OpenApiOp.description).set(_, descr.some))
 
-  implicit def deriveTag[name](implicit name: Name[name]): SwaggerMapper[Tag[name]] =
+  implicit def deriveTag[name](implicit name: Name[name]): SwaggerMapper[Tag[name]]                       =
     fromFunc((PathSpec.op >> OpenApiOp.tags).update(_, _ :+ name.string))
 
-  implicit def deriveDeprecated: SwaggerMapper[Deprecated] =
+  implicit def deriveDeprecated: SwaggerMapper[Deprecated]                                                =
     fromFunc((PathSpec.op >> OpenApiOp.deprecated).set(_, true))
 
-  implicit def deriveAs[name]: SwaggerMapper[As[name]] = SwaggerMapper.empty
+  implicit def deriveAs[name]: SwaggerMapper[As[name]]                                                    = SwaggerMapper.empty
 
-  implicit def deriveKey[name](implicit name: Name[name]): SwaggerMapper[Key[name]] =
+  implicit def deriveKey[name](implicit name: Name[name]): SwaggerMapper[Key[name]]                     =
     fromFunc(PathSpec.key.set(_, name.string.some))
 
-  implicit def deriveGroup[name](implicit name: Name[name]): SwaggerMapper[Group[name]] =
+  implicit def deriveGroup[name](implicit name: Name[name]): SwaggerMapper[Group[name]]                 =
     fromFunc(PathSpec.groups.update(_, name.string +: _))
 
   def swaggerAuth[realm: Name, x, T](
@@ -234,7 +234,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   ): SwaggerMapper[T] =
     fromAuth(Name[realm].string, OpenApiSecurity(`type` = typ, scheme = scheme, in = in, name = name, flows = flows))
 
-  implicit def basicSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BasicAuth[realm, name, x]] =
+  implicit def basicSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BasicAuth[realm, name, x]]   =
     swaggerAuth[realm, x, BasicAuth[realm, name, x]](scheme = OpenApiSecurityScheme.basic.some)
 
   implicit def bearerSwaggerAuth[realm: Name, name: Name, x]: SwaggerMapper[BearerAuth[realm, name, x]] =
@@ -259,17 +259,17 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     )(new Name[realm0](conf.realm))
   }
 
-  implicit val monoidKInstance = new MonoidK[SwaggerMapper] {
+  implicit val monoidKInstance                                                                          = new MonoidK[SwaggerMapper] {
     def empty[A]: SwaggerMapper[A]                                              = SwaggerMapper.empty
     def combineK[A](x: SwaggerMapper[A], y: SwaggerMapper[A]): SwaggerMapper[A] = x andThen y
   }
 
-  implicit def monoidInstance[A] = monoidKInstance.algebra[A]
+  implicit def monoidInstance[A]                                                                        = monoidKInstance.algebra[A]
 
   sealed abstract class MakeFormField(val objType: SwaggerType) {
     def myMediaType: MediaType
 
-    def make: OpenApiRequestBody                          =
+    def make: OpenApiRequestBody =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
 
     def add(body: OpenApiRequestBody): OpenApiRequestBody =
@@ -290,21 +290,21 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
     def multipart(name: String, typ: SwaggerType, required: Boolean): MakeMultipartField =
       new MakeMultipartField(swaggerType(name, typ, required))
 
-    private def swaggerType(name: String, typ: SwaggerType, required: Boolean) =
+    private def swaggerType(name: String, typ: SwaggerType, required: Boolean)           =
       SwaggerObject(
         required = Eval.now(Vector(name).filter(_ => required)),
         properties = Vector(SwaggerProperty(name, typ = Eval.now(typ), description = None))
       )
 
-    implicit val urlencodedSemigroup: Semigroup[MakeUrlencodedField] = (x, y) =>
+    implicit val urlencodedSemigroup: Semigroup[MakeUrlencodedField]                     = (x, y) =>
       new MakeUrlencodedField(x.objType merge y.objType)
-    implicit val multipartSemigroup: Semigroup[MakeMultipartField]   = (x, y) =>
+    implicit val multipartSemigroup: Semigroup[MakeMultipartField]                       = (x, y) =>
       new MakeMultipartField(x.objType merge y.objType)
   }
 }
 
 trait SwaggerMapperInstances1 { self: SwaggerMapper.type =>
-  implicit def deriveQueryParams[name: Name, T](implicit ev: AsSingleOpenApiParam[List[T]]) =
+  implicit def deriveQueryParams[name: Name, T](implicit ev: AsSingleOpenApiParam[List[T]])                 =
     derivedParamAtom[name, List[T], QueryParams[name, T]](In.query)
 
   implicit def deriveReqBody[name, T](implicit content: SwaggerContent[T]): SwaggerMapper[ReqBody[name, T]] = {

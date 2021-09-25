@@ -34,13 +34,13 @@ object Authorize extends ExampleModule {
     "123456" -> Client("client", List("diamond card", "premium subscription"))
   )
 
-  val sessions = Map(
+  val sessions                                         = Map(
     "x123" -> List(1, 2, 3),
     "x12"  -> List(1, 2),
     "y"    -> List.empty
   )
 
-  implicit val userAuth: BasicAuthenticator[User] = BasicAuthenticator.of {
+  implicit val userAuth: BasicAuthenticator[User]      = BasicAuthenticator.of {
     case Credentials.Missing             => None
     case cred @ Credentials.Provided(id) =>
       for ((pass, roles) <- users.get(id) if cred.verify(pass)) yield User(id, roles)

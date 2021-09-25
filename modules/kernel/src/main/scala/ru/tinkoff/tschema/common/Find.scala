@@ -8,7 +8,7 @@ trait Find[F[_], L <: HList] {
   def apply(l: L): F[Out]
 }
 
-sealed trait LowLevelFind {
+sealed trait LowLevelFind    {
   implicit def findTail[F[_], L <: HList, H](implicit tail: Find[F, L]): Find.Aux[F, H :: L, tail.Out] =
     new Find[F, H :: L] {
       type Out = tail.Out

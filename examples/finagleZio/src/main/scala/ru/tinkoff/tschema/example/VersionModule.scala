@@ -23,7 +23,7 @@ import ru.tinkoff.tschema.param.Param
 import ru.tinkoff.tschema.common.Name
 import Routed.{uriParam, reject}
 
-object VersionModule extends ExampleModule {
+object VersionModule   extends ExampleModule {
   def api = tagPrefix("versioned") |> (
     (version("v1") |> get[String]) <>
       (version("v2") |> get[Map[String, Int]]) <>
@@ -58,5 +58,5 @@ object version {
         } *> cnt)
     }
 
-  implicit def versionSwagger[v: Name]: SwaggerMapper[version[v]] = SwaggerMapper[Prefix[v]].as[version[v]]
+  implicit def versionSwagger[v: Name]: SwaggerMapper[version[v]]               = SwaggerMapper[Prefix[v]].as[version[v]]
 }

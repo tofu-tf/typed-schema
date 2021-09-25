@@ -127,7 +127,7 @@ object RunHttp {
     def all[T[_]: Foldable, F[_]](resps: T[(String, F[Response])])(implicit
         runnable: RunHttp[F, G],
         G: Monad[G]
-    ): G[Service[Request, Response]]                                                                    =
+    ): G[Service[Request, Response]] =
       resps
         .foldM[G, HttpMuxer](HttpMuxer) { case (mux, (name, svc)) =>
           runnable.run(svc).map(s => mux withHandler Route(name, s))

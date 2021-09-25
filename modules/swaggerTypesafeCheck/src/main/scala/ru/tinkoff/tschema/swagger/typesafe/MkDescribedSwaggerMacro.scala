@@ -28,7 +28,7 @@ class MkDescribedSwaggerMacro(override val c: blackbox.Context) extends MakerMac
     result
   }
 
-  private def checkTree(defTpe: Type): Unit = {
+  private def checkTree(defTpe: Type): Unit                                   = {
 
     val description = Description.get(c)
 
@@ -98,7 +98,7 @@ class MkDescribedSwaggerMacro(override val c: blackbox.Context) extends MakerMac
       case _                 => cur
     }
 
-  object AtomsTypes {
+  object AtomsTypes                                               {
     import ru.tinkoff.tschema.typeDSL._
 
     object Tag          extends CombMatcher(typeOf[Tag[_]].typeConstructor)

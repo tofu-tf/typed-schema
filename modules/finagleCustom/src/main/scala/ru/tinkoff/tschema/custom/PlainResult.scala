@@ -16,7 +16,7 @@ object PlainResult {
       lift: LiftHttp[F, G]
   ): Completing[F, PlainResult[A], G[A]] = gs => lift(gs.map(AsResponse.plain[A]))
 
-  implicit def plainSwagger[R]: MkSwagger[typeDSL.Complete[PlainResult[R]]] =
+  implicit def plainSwagger[R]: MkSwagger[typeDSL.Complete[PlainResult[R]]]                            =
     MkSwagger
       .summon[typeDSL.Complete[String]]
       .addDescribedResponse(200, SwaggerPrimitive.string.withMediaType("text/plain"))

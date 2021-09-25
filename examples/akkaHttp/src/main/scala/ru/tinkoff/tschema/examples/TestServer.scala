@@ -22,7 +22,7 @@ object TestServer {
   val descriptions =
     PathDescription.utf8I18n("swagger", Locale.forLanguageTag("ru"))
 
-  val modules = List[ExampleModule](
+  val modules                                 = List[ExampleModule](
     TestModule,
     VersionModule,
     FiltersModule,
@@ -36,7 +36,7 @@ object TestServer {
   private[this] implicit val printer: Printer =
     Printer.noSpaces.copy(dropNullValues = true)
 
-  val route =
+  val route                           =
     pathPrefix("api") {
       modules.route
     } ~

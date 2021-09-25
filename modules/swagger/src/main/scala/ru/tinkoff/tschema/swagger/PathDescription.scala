@@ -35,7 +35,7 @@ object PathDescription {
 
   sealed trait Target
 
-  object Target {
+  object Target       {
     final case class Method(name: String, sub: MethodTarget) extends Target
     final case class Tag(name: String)                       extends Target
     final case class Type(name: String, sub: TypeTarget)     extends Target
@@ -58,7 +58,7 @@ object PathDescription {
   }
 
   sealed trait TypeTarget
-  object TypeTarget {
+  object TypeTarget   {
     case object Type                     extends TypeTarget
     case object Title                    extends TypeTarget
     final case class Field(name: String) extends TypeTarget

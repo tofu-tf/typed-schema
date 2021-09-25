@@ -82,7 +82,7 @@ object Swagger extends Derivation[SwaggerTypeable] with SwaggerFunctions {
         case other                                              => other
       }
 
-      lazy val typ: SwaggerType =
+      lazy val typ: SwaggerType                                         =
         SwaggerRef(
           name = typeName,
           descr = desc.whole,
@@ -99,7 +99,7 @@ object Swagger extends Derivation[SwaggerTypeable] with SwaggerFunctions {
         )
     }
 
-  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeable[List[T]] = seq[List, T]
+  final implicit def swaggerListTypeable[T: SwaggerTypeable]: SwaggerTypeable[List[T]]       = seq[List, T]
 
   implicit def derivedInstance[T]: Typeclass[T] = macro Magnolia.gen[T]
   def derive[T]: Typeclass[T] = macro Magnolia.gen[T]

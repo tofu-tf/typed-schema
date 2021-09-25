@@ -18,7 +18,7 @@ trait ForAllTypes[S >: All <: ParamSource, L] {
 object ForAllTypes                            {
   def apply[L] = new Applier[L]
 
-  class Applier[L] {
+  class Applier[L]                                {
     def apply[S >: All <: ParamSource](checker: Checker[S])(implicit forAll: ForAllTypes[S, L]) = forAll.check(checker)
   }
 
@@ -53,8 +53,8 @@ object ForAllTypes                            {
     }
 }
 
-trait ParamSpecLow[S >: All <: ParamSource] {
-  val byColon = "\\,".r
+trait ParamSpecLow[S >: All <: ParamSource]                                                    {
+  val byColon                                                           = "\\,".r
   implicit def listParam[A: SingleParam[S, *]]: SingleParam[S, List[A]] = {
     Param.separated[S, A](byColon)
   }

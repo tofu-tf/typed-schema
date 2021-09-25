@@ -19,7 +19,7 @@ import io.circe.Printer
 object ExampleSwagger {
   private implicit val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
-  private val swaggerHttp: Http[Response] = {
+  private val swaggerHttp: Http[Response]            = {
     val response = message.stringResponse(SwaggerIndex.index.render)
     response.setContentType("text/html(UTF-8)")
     Routed.checkPath[Http, Response]("/swagger.php", ZIO.succeed(response))
@@ -45,13 +45,13 @@ object ExampleSwagger {
       response
     }).catchAll(_ => ZIO.fail(Rejected(Rejection.notFound)))
 
-  private val swaggerResources: Http[Response] =
+  private val swaggerResources: Http[Response]       =
     Routed.path[Http].map(_.toString).flatMap {
       case s if s.startsWith("/webjars") => resource("/META-INF/resources" + s)
       case _                             => Routed.reject[Http, Response](Rejection.notFound)
     }
 
-  private val swaggerJson: Http[Response] = {
+  private val swaggerJson: Http[Response]            = {
     val swagger      = modules.foldMap(_.swag)
     val descriptions =
       PathDescription.utf8I18n("swagger", Locale.forLanguageTag("ru"))

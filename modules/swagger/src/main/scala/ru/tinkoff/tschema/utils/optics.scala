@@ -15,7 +15,7 @@ object optics {
       case Some(value) => Right(value)
     }
 
-    override def upcast(b: A): Option[A] = Some(b)
+    override def upcast(b: A): Option[A]                    = Some(b)
   }
 
   def eval[A]: Update[Eval[A], A] = (ev, f) => ev.map(f)

@@ -5,7 +5,7 @@ lazy val typedSchemaVersion = SettingKey[String]("typedSchemaVersion")
 val scala212V = "2.12.14"
 val scala213V = "2.13.6"
 
-val commonSettings = List(
+val commonSettings  = List(
   scalaVersion                            := scala213V,
   typedSchemaVersion                      := {
     val branch = git.gitCurrentBranch.value
@@ -52,10 +52,10 @@ val commonSettings = List(
   }
 )
 
-lazy val common =
+lazy val common     =
   project.settings(commonSettings).enablePlugins(BuildInfoPlugin)
 
-lazy val akkaHttp = project
+lazy val akkaHttp   = project
   .dependsOn(common)
   .settings(commonSettings)
   .settings(
@@ -85,4 +85,4 @@ lazy val finagleEnv = project
     libraryDependencies += "org.typelevel" %% "simulacrum" % Version.simulacrum,
   )
 
-lazy val example = project.in(file(".")).aggregate(common, akkaHttp, finagleZio, finagleEnv)
+lazy val example    = project.in(file(".")).aggregate(common, akkaHttp, finagleZio, finagleEnv)

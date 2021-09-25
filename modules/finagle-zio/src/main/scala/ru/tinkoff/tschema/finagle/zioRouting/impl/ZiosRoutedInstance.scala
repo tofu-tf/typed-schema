@@ -23,7 +23,7 @@ private[zioRouting] class ZiosRoutedInstance[R, E] extends RoutedPlus[ZIOH[R, E,
   def reject[A](rejection: Rejection): F[A] =
     Routed.unmatchedPath[F].flatMap(path => throwRej(rejection withPath path.toString))
 
-  def combineK[A](x: F[A], y: F[A]): F[A] =
+  def combineK[A](x: F[A], y: F[A]): F[A]                                    =
     catchRej(x)(xrs => catchRej(y)(yrs => throwRej(xrs |+| yrs)))
 
   @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =

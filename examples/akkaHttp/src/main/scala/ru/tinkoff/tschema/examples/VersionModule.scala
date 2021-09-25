@@ -10,7 +10,7 @@ import ru.tinkoff.tschema.typeDSL._
 import shapeless.{HList, Witness}
 import ru.tinkoff.tschema.common.Name
 
-object VersionModule extends ExampleModule {
+object VersionModule   extends ExampleModule {
   def api = tagPrefix("versioned") |> (
     (version("v1") |> get[String]) <>
       (version("v2") |> get[Map[String, Int]]) <>

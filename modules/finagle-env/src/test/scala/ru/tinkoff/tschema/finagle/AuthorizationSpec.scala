@@ -19,13 +19,13 @@ class AuthorizationSpec extends AnyFlatSpec {
 object AuthorizationSpec {
   val api = operation("test") |> get |> oauth[From, To]("param", None) |> $$[String]
 
-  val service: TaskHttp[Response] =
+  val service: TaskHttp[Response]                                            =
     MkService[TaskHttp](api)(new {
       def test(param: To): Task[String] =
         Task.pure(s"Greetings, ${param.name}!")
     })
 
-  implicit val provide: Provision[TaskHttp, From] = () => {
+  implicit val provide: Provision[TaskHttp, From]                            = () => {
     Routed[TaskHttp].request.map { req =>
       Some(
         From(
@@ -36,7 +36,7 @@ object AuthorizationSpec {
     }
   }
 
-  implicit val auth: Authorization[OAuth2, TaskHttp, To, From] = {
+  implicit val auth: Authorization[OAuth2, TaskHttp, To, From]               = {
     case Some(from) if from.param1 == 0 =>
       Env.pure(To(from.param1, from.param2))
     case None                           =>

@@ -60,5 +60,5 @@ object version {
         } >> cnt)
     }
 
-  implicit def versionSwagger[v: Name]: SwaggerMapper[version[v]] = SwaggerMapper[Prefix[v]].as[version[v]]
+  implicit def versionSwagger[v: Name]: SwaggerMapper[version[v]]                                     = SwaggerMapper[Prefix[v]].as[version[v]]
 }

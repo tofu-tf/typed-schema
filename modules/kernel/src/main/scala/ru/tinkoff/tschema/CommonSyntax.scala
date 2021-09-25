@@ -24,7 +24,7 @@ class CommonSyntax { self: syntax.type =>
   def complete[x]: Complete[x] = new Complete[x]
   def $$[x]: Complete[x]       = new Complete[x]
 
-  implicit class TypeApiOps[x <: DSLDef](x: => x) {
+  implicit class TypeApiOps[x <: DSLDef](x: => x)     {
     def ~[y](y: => y): x <|> y                           = new <|>(x, y)
     def <|>[y](y: => y): x <|> y                         = new <|>(x, y)
     def <>[y](y: => y): x <|> y                          = new <|>(x, y)

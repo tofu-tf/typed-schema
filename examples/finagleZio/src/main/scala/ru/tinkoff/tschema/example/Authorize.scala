@@ -45,13 +45,13 @@ object Authorize extends ExampleModule {
     )
   )
 
-  val sessions = Map(
+  val sessions                                                  = Map(
     "x123" -> List(1, 2, 3),
     "x12"  -> List(1, 2),
     "y"    -> List.empty
   )
 
-  implicit val userAuth: AuthorizationS[Basic, Http, User] = SimpleAuth {
+  implicit val userAuth: AuthorizationS[Basic, Http, User]      = SimpleAuth {
     case Credentials(id @ users(pass, roles), pwd) if secure_equals(pass, pwd) => User(id, roles)
   }
 

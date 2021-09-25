@@ -10,7 +10,7 @@ final case class ExampleEnv(
 )
 
 object ExampleEnv {
-  val live: ULayer[HasExample] = ZLayer.fromEffect(
+  val live: ULayer[HasExample]                    = ZLayer.fromEffect(
     for {
       ref     <- Ref.make(0)
       storage <- Ref.make(Map[String, String]())

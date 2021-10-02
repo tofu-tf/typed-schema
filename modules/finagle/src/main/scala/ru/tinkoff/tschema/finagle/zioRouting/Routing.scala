@@ -95,7 +95,7 @@ private[finagle] class FInstanceDecl {
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.recoverWith { case Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A]                =
+    @inline private[this] def throwRej[A](map: Rejection): F[A] =
       cached.raiseError(Rejected(map))
   }
 

@@ -88,7 +88,7 @@ private[finagle] class TaskInstanceDecl {
     @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
       z.onErrorRecoverWith { case Rejected(xrs) => f(xrs) }
 
-    @inline private[this] def throwRej[A](map: Rejection): F[A]                = Env.raiseError(envRouting.Rejected(map))
+    @inline private[this] def throwRej[A](map: Rejection): F[A] = Env.raiseError(envRouting.Rejected(map))
   }
 
 }

@@ -82,10 +82,10 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics    =
+val tofuOptics =
   libraryDependencies ++= List("core", "macro").map(module => "tf.tofu" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe         =
+val circe =
   libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
     "derivation",
     "derivation-annotations"

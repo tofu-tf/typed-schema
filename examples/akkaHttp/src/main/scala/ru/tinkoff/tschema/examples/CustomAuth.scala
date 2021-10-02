@@ -38,7 +38,7 @@ object CustomAuth extends ExampleModule {
       banned.put(banUser.userToBan, banUser)
       Result(s"$userId ok")
     }
-    def bans: List[BanUser] = banned.values.toList
+    def bans: List[BanUser]                           = banned.values.toList
   }
 }
 

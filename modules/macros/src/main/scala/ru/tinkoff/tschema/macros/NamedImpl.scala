@@ -61,17 +61,17 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
 
   def extractMethods(tpe: Type): NList[(List[NList[Type]], Type)] =
     tpe.decls.collect { case s: MethodSymbol =>
-      symbolName(s) ->
+      symbolName(s)                                                              ->
         (s.paramLists.map(lst => lst.map(p => symbolName(p) -> p.typeSignature)) -> s.returnType)
     }.toList
 
-  def extractAlgebra(tpe: Type): NList[NList[Type]]    =
+  def extractAlgebra(tpe: Type): NList[NList[Type]] =
     extractUnion(tpe).map { case (name, product) => name -> extractList(product) }
 
-  def extractUnion(tpe: Type): NList[Type]             =
+  def extractUnion(tpe: Type): NList[Type] =
     coproductElements(tpe).collect { case FieldType(KeyName(name), value) => name -> value }
 
-  def extractList(tpe: Type): NList[Type]              =
+  def extractList(tpe: Type): NList[Type] =
     hlistElements(tpe).collect { case FieldType(KeyName(name), value) => name -> value }
 
   def showNList[A](lst: NList[A], prefix: String = "") =
@@ -81,7 +81,7 @@ class NamedImplMacros(val c: whitebox.Context) extends shapeless.CaseClassMacros
   def showAlg[A](alg: NList[NList[A]]) =
     alg.map { case (name, value) => s"$name : \n${showNList(value, "    ")}" }.mkString("", "\n", "")
 
-  def symbolName(symbol: Symbol)       = symbol.name.decodedName.toString
+  def symbolName(symbol: Symbol) = symbol.name.decodedName.toString
 
   case class ResultField(pattern: Tree, result: Tree, key: Type)
 

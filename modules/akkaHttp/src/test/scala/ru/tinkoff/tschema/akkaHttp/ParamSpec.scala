@@ -54,7 +54,7 @@ object ForAllTypes                            {
 }
 
 trait ParamSpecLow[S >: All <: ParamSource] {
-  val byColon = "\\,".r
+  val byColon                                                           = "\\,".r
   implicit def listParam[A: SingleParam[S, *]]: SingleParam[S, List[A]] = {
     Param.separated[S, A](byColon)
   }

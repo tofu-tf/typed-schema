@@ -5,7 +5,7 @@ object Version {
 
   val tethys = "0.25.0"
 
-  val akka = "2.6.16"
+  val akka = "2.6.17"
 
   val akkaHttp = "10.2.6"
 

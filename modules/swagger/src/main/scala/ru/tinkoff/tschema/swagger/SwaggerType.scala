@@ -331,7 +331,7 @@ object SwaggerType {
           .traverse(_.flatMap(encode).map(Json.fromJsonObject))
           .map(c => JsonObject("anyOf" -> Json.arr(c: _*)))
 
-      case SwaggerMap(values)  =>
+      case SwaggerMap(values) =>
         values
           .flatMap(encode)
           .map(enc =>

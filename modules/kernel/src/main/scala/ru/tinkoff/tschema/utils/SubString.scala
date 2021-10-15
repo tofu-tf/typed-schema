@@ -7,9 +7,9 @@ import scala.util.hashing.MurmurHash3
 
 final class SubString private[SubString] (private val arr: Array[Char], private val from: Int, private val to: Int)
     extends CharSequence {
-  @inline private[this] def size         = to - from
-  def length(): Int                      = size
-  def charAt(index: Int): Char = {
+  @inline private[this] def size                      = to - from
+  def length(): Int                                   = size
+  def charAt(index: Int): Char                        = {
     if (index >= size || index < 0) outOfBound(index)
     arr(from + index)
   }
@@ -21,7 +21,7 @@ final class SubString private[SubString] (private val arr: Array[Char], private 
     if ((start == 0) && (end == size)) this
     else new SubString(arr, from + start, from + end)
   }
-  override def equals(obj: Any): Boolean = obj match {
+  override def equals(obj: Any): Boolean              = obj match {
     case s: CharSequence =>
       @tailrec def go(i: Int): Boolean = (i == size) || ((s.charAt(i) == charAt(i)) && go(i + 1))
       size == s.length() && go(0)

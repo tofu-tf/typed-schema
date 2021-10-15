@@ -230,7 +230,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
   def extractMethod(meth: MethodSymbol): MethodDecl[Type] =
     meth.paramLists.map(lst => lst.map(p => symbolName(p) -> p.typeSignature)) -> meth.returnType
 
-  def symbolName(symbol: Symbol)                          = symbol.name.decodedName.toString
+  def symbolName(symbol: Symbol) = symbol.name.decodedName.toString
 
   def makeRouteTree(t: Type): Tree = {
     val defTree = constructDslTree(t, Monoid.empty[PrefixInfo[Type]])

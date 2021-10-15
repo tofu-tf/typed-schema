@@ -224,7 +224,7 @@ trait ParamInstances[P[s >: All <: ParamSource, a] >: SingleParam[s, a]]
 
   implicit def optSingleParam[S >: All <: ParamSource, A](implicit
       param: SingleParam[S, A]
-  ): SingleParam[S, Option[A]]                                                                                       =
+  ): SingleParam[S, Option[A]] =
     param.optional
   implicit def optMultiParam[S >: All <: ParamSource, A](implicit param: MultiParam[S, A]): MultiParam[S, Option[A]] =
     param.optional

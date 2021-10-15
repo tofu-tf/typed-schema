@@ -77,7 +77,7 @@ trait SwaggerTypeable[T] {
   )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S]) =
     xmlFields(Name[S].string -> fld)
 
-  def withMediaType(mediaType: MediaType): SwaggerTypeable[T]                 = updateTyp(_.withMediaType(mediaType))
+  def withMediaType(mediaType: MediaType): SwaggerTypeable[T] = updateTyp(_.withMediaType(mediaType))
 
   def withDiscriminator(discr: String): Swagger[T] = updateTyp(
     (SwaggerType.objProp >> SwaggerObject.discriminator).set(_, Some(discr))
@@ -166,7 +166,7 @@ trait SwaggerTypeableInstances
   private def typeSum[X[_, _], A, B](implicit
       left: Lazy[SwaggerTypeable[A]],
       right: Lazy[SwaggerTypeable[B]]
-  ): SwaggerTypeable[X[A, B]]                                                                                     =
+  ): SwaggerTypeable[X[A, B]] =
     make[X[A, B]](SwaggerOneOf(Vector(None -> left.later, None -> right.later)))
 
   final implicit def swaggerEitherTypeable[A: SwaggerTypeable, B: SwaggerTypeable]: SwaggerTypeable[Either[A, B]] =
@@ -217,7 +217,7 @@ object SwaggerTypeable extends SwaggerTypeableInstances {
       gen: Lazy[GenericSwaggerTypeable[T]],
       typeTag: TypeTag[T],
       config: Config = defaultConfig
-  ): SwaggerTypeable[T]                                                                =
+  ): SwaggerTypeable[T] =
     genNamedTypeable[T](config.nameMod(typeTag.tpe.typeSymbol.name.toString))
 
   trait SwaggerTypeableEnum[X <: EnumEntry] {

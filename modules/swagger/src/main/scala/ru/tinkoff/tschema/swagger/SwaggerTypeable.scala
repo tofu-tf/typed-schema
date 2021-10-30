@@ -66,7 +66,7 @@ trait SwaggerTypeable[T] {
   def xmlFields(fieldOpts: (String, SwaggerXMLOptions)*) =
     updateTyp(SwaggerType.objProp.update(_, _.xmlFields(fieldOpts: _*)))
 
-  //Safe versions
+  // Safe versions
   def descr[S: Name, L <: HList](
       fld: FieldType[S, String]
   )(implicit lgen: LabelledGeneric.Aux[T, L], sel: ops.record.Selector[L, S]) =

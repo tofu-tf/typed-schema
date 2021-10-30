@@ -104,7 +104,7 @@ object OpenApiSecurityScheme       extends Enum[OpenApiSecurityScheme] with Circ
 @JsonCodec(encodeOnly.withDiscriminator("type"))
 sealed trait OpenApiFlow { self: Product =>
   val name: String = productPrefix
-  val refreshUrl: Option[String] //TODO URL?
+  val refreshUrl: Option[String] // TODO URL?
   val scopes: Map[String, String]
 }
 object OpenApiFlow {

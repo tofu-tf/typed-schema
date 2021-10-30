@@ -39,13 +39,13 @@ trait SwaggerFunctions {
       SwaggerOneOf(ts.map { case (name, t) => Some(name) -> Eval.later(t()) }.toVector)
     )
 
-  //usage : Swagger.string(_(format = OpenApiFormat.password, maxLength = 30))
+  // usage : Swagger.string(_(format = OpenApiFormat.password, maxLength = 30))
   def string[A](create: SwaggerStringValue.type => SwaggerStringValue): Swagger[A] =
     SwaggerTypeable.make(
       new SwaggerPrimitive(create(SwaggerStringValue))
     )
 
-  //usage : Swagger.int(_(format = OpenApiFormat.int64, minimum = 1))
+  // usage : Swagger.int(_(format = OpenApiFormat.int64, minimum = 1))
   def int[A](create: SwaggerIntValue.type => SwaggerIntValue): Swagger[A] =
     SwaggerTypeable.make(
       new SwaggerPrimitive(create(SwaggerIntValue))

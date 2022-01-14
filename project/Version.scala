@@ -7,7 +7,7 @@ object Version {
 
   val akka = "2.6.17"
 
-  val akkaHttp = "10.2.6"
+  val akkaHttp = "10.2.7"
 
   val shapeless = "2.3.7"
 
@@ -17,9 +17,9 @@ object Version {
 
   val macroParadise = "2.1.1"
 
-  val akkaHttpCirce = "1.38.2"
+  val akkaHttpCirce = "1.39.2"
 
-  val cats = "2.6.1"
+  val cats = "2.7.0"
 
   val catsEffect = "2.5.4"
 
@@ -29,7 +29,7 @@ object Version {
 
   val magnolia = "0.17.0"
 
-  val zio = "1.0.12"
+  val zio = "1.0.13"
 
   val zioCats = "2.5.1.0"
 
@@ -39,9 +39,9 @@ object Version {
 
   val tofu = "0.10.6"
 
-  val swaggerUI = "3.52.5"
+  val swaggerUI = "4.1.3"
 
-  val scalaTags = "0.9.4"
+  val scalaTags = "0.11.0"
 
   val scalaTest = "3.2.10"
 

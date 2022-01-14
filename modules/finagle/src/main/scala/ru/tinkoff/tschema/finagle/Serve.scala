@@ -108,6 +108,9 @@ object Serve
   implicit def prefix[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[Prefix[name], F, In] =
     checkCont(Routed.checkPrefix(Name[name].string, _))
 
+  implicit def pathEnd[F[_]: Routed: Monad, name: Name, In <: HList]: Filter[End, F, In] = 
+    checkCont(Routed.checkPathEnd(_))
+
   implicit def serveKey[F[_], key, In]: Filter[Key[key], F, In]     = ignore
   implicit def serveGroup[F[_], key, In]: Filter[Group[key], F, In] = ignore
   implicit def serveMeta[F[_], U <: Meta, In]: Filter[U, F, In]     = ignore

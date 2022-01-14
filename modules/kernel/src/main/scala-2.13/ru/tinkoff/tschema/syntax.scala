@@ -21,6 +21,8 @@ object syntax extends CommonSyntax {
 
   def renamed[name <: Singleton, as <: Singleton](name: name, as: as): Renamed[name, as] = new Renamed
 
+  def path[s <: Singleton](s: s) = prefix(s) :> end
+
   def capture[x] =
     new MkComplex(new Maker[x, Capture] {
       override def make[s]: Capture[s, x] = new Capture

@@ -176,7 +176,7 @@ final case class OpenApiServer(
 object OpenApiServer
 
 @JsonCodec
-final case class OpenApiServerVariable(enum: Vector[String], default: String, description: Option[String])
+final case class OpenApiServerVariable(`enum`: Vector[String], default: String, description: Option[String])
 object OpenApiServerVariable
 
 sealed trait SwaggerValue {
@@ -191,7 +191,7 @@ final case class SwaggerStringValue(
     maxLength: Option[Int] = None,
     minLength: Option[Int] = None,
     pattern: Option[String] = None,
-    enum: Option[Vector[String]] = None
+    `enum`: Option[Vector[String]] = None
 ) extends SwaggerValue {
   def typeName = "string"
 }

@@ -168,7 +168,7 @@ class MakerMacro(val c: blackbox.Context) extends ShapelessMacros with Singleton
           case ms: ModuleSymbol                         => findMeth(ms.typeSignature, rest, name)
           case _                                        => None
         }
-      case Vector()      => extractMeth(typ, name)
+      case _             => extractMeth(typ, name)
     }
 
   private def unpackString(name: String)(sExpr: c.Expr[String]): String =

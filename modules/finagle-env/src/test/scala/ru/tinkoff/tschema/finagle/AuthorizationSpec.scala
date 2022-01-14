@@ -39,7 +39,7 @@ object AuthorizationSpec {
   implicit val auth: Authorization[OAuth2, TaskHttp, To, From] = {
     case Some(from) if from.param1 == 0 =>
       Env.pure(To(from.param1, from.param2))
-    case None                           =>
+    case _                              =>
       Routed[TaskHttp].reject(Rejection.unauthorized)
   }
 

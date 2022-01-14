@@ -269,7 +269,7 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   sealed abstract class MakeFormField(val objType: SwaggerType) {
     def myMediaType: MediaType
 
-    def make: OpenApiRequestBody                          =
+    def make: OpenApiRequestBody =
       OpenApiRequestBody(content = Map(myMediaType -> OpenApiMediaType(schema = objType.some)))
 
     def add(body: OpenApiRequestBody): OpenApiRequestBody =

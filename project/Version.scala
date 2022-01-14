@@ -3,11 +3,11 @@ object Version {
 
   val circeDerivation = "0.12.0-M7"
 
-  val tethys = "0.24.0"
+  val tethys = "0.25.0"
 
-  val akka = "2.6.16"
+  val akka = "2.6.18"
 
-  val akkaHttp = "10.2.6"
+  val akkaHttp = "10.2.7"
 
   val shapeless = "2.3.7"
 
@@ -17,11 +17,11 @@ object Version {
 
   val macroParadise = "2.1.1"
 
-  val akkaHttpCirce = "1.37.0"
+  val akkaHttpCirce = "1.39.2"
 
-  val cats = "2.6.1"
+  val cats = "2.7.0"
 
-  val catsEffect = "2.5.3"
+  val catsEffect = "2.5.4"
 
   val enumeratum = "1.7.0"
 
@@ -29,25 +29,25 @@ object Version {
 
   val magnolia = "0.17.0"
 
-  val zio = "1.0.11"
+  val zio = "1.0.13"
 
   val zioCats = "2.5.1.0"
 
-  val finagle = "21.8.0"
+  val finagle = "21.12.0"
 
   val derevo = "0.12.6"
 
-  val tofu = "0.10.4"
+  val tofu = "0.10.6"
 
-  val swaggerUI = "3.51.2"
+  val swaggerUI = "4.1.3"
 
-  val scalaTags = "0.9.4"
+  val scalaTags = "0.11.0"
 
-  val scalaTest = "3.2.9"
+  val scalaTest = "3.2.10"
 
   val scalaCheck = "1.15.4"
 
-  val scalaTestScalaCheck = "3.2.9.0"
+  val scalaTestScalaCheck = "3.2.10.0"
 
   val typesafeConfig = "1.4.1"
 }

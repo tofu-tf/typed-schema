@@ -245,7 +245,7 @@ object MkSwagger {
       op: OpenApiOp,
       key: Option[String] = None,
       groups: Vector[String] = Vector.empty
-  )               {
+  ) {
     def modPath(f: Vector[String] => Vector[String]) = PathSpec.path.update(this, f)
   }
   object PathSpec {

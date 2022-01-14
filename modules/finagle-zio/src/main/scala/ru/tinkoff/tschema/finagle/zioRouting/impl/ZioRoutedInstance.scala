@@ -26,5 +26,5 @@ private[finagle] class ZioRoutedInstance[R, E] extends RoutedPlus[ZIOHttp[R, E, 
   @inline private[this] def catchRej[A](z: F[A])(f: Rejection => F[A]): F[A] =
     z.catchSome { case Fail.Rejected(xrs) => f(xrs) }
 
-  @inline private[this] def throwRej[A](map: Rejection): F[A]                = ZIO.fail(Fail.Rejected(map))
+  @inline private[this] def throwRej[A](map: Rejection): F[A] = ZIO.fail(Fail.Rejected(map))
 }

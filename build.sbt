@@ -40,7 +40,7 @@ ThisBuild / developers := List(
 val minorVersion = SettingKey[Int]("minor scala version")
 
 val scala212V = "2.12.15"
-val scala213V = "2.13.6"
+val scala213V = "2.13.8"
 
 val crossCompile = crossScalaVersions := List(scala212V, scala213V)
 
@@ -82,10 +82,10 @@ val paradise = libraryDependencies ++= {
 
 val magnolia = libraryDependencies += "com.propensive" %% "magnolia" % Version.magnolia
 
-val tofuOptics    =
+val tofuOptics =
   libraryDependencies ++= List("core", "macro").map(module => "tf.tofu" %% s"tofu-optics-$module" % Version.tofu)
 
-val circe         =
+val circe =
   libraryDependencies ++= List("core", "parser").map(module => "io.circe" %% s"circe-$module" % Version.circe) ++ List(
     "derivation",
     "derivation-annotations"
@@ -118,7 +118,7 @@ val tethys = List("core", "jackson").map(module => "com.tethys-json" %% s"tethys
 
 val reflect          = libraryDependencies += scalaOrganization.value   % "scala-reflect"           % scalaVersion.value
 val compiler         = libraryDependencies += scalaOrganization.value   % "scala-compiler"          % scalaVersion.value
-val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
+val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
 
 val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
 

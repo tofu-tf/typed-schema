@@ -24,7 +24,7 @@ object MultiParams {
 
   final case class Child(childName: String, childAge: Int)
 
-  //Just an example of a manual instance declaration
+  // Just an example of a manual instance declaration
   object Child {
     implicit val params: HttpParam[Child]            = HttpParam.generate
     implicit val swaggerParam: AsOpenApiParam[Child] = AsOpenApiParam.instance

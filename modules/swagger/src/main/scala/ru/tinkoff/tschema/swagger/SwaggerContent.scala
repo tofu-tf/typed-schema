@@ -34,7 +34,7 @@ object SwaggerContent extends Derivation[SwaggerContent] {
   final implicit def bySingleTypeable[T](implicit
       t: SwaggerTypeable[T],
       s: ResponseStatus[T] = ResponseStatus.default[T]
-  ): SwaggerContent[T]                                              =
+  ): SwaggerContent[T] =
     SwaggerContent(List(s.status -> t.typ.some))
 
   final implicit val notFoundContent: SwaggerContent[NotFound.type] = SwaggerContent(List(404 -> None))

@@ -36,7 +36,7 @@ object TestServer {
   private[this] implicit val printer: Printer =
     Printer.noSpaces.copy(dropNullValues = true)
 
-  val route =
+  val route                           =
     pathPrefix("api") {
       modules.route
     } ~

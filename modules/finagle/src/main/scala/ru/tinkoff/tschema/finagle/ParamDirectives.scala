@@ -76,7 +76,7 @@ object ParamDirectives {
   implicit val multipartFieldParamDirectives: TC[MultipartField] = new TCS[MultipartField](MultipartField) {
     private val field = Request.Schema.newField[Option[Multipart]](null)
 
-    private def decodeNow(req: Request): Option[Multipart]      =
+    private def decodeNow(req: Request): Option[Multipart] =
       try MultipartDecoder.decode(req)
       catch { case scala.util.control.NonFatal(_) => None }
 

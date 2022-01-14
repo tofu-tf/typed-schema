@@ -41,7 +41,7 @@ trait ZioRoutingInstances extends ZioRoutingInstances2 { self: ZioRouting.type =
   final implicit def zioConvertServiceU[R]: ConvertService[URIOHttp[R, *]]                          = zioConvertService[R, NoError]
   final implicit def zioRunnableU[R](implicit
       recover: Recover[URIOHttp[R, *]] = Recover.default[URIOHttp[R, *]]
-  ): RunHttp[URIOHttp[R, *], URIO[R, *]]                                                            = zioRunnable[R, NoError]
+  ): RunHttp[URIOHttp[R, *], URIO[R, *]] = zioRunnable[R, NoError]
 
   implicit def ziosRoutedU[R]: RoutedPlus[URIOH[R, *]]                                     = ziosRouted[R, Nothing]
   implicit def ziosLiftU[R, R1](implicit asR: R As R1): LiftHttp[URIOH[R, *], URIO[R1, *]] =
@@ -50,7 +50,7 @@ trait ZioRoutingInstances extends ZioRoutingInstances2 { self: ZioRouting.type =
     ziosConvertService[R, Nothing]
   implicit def ziosRunnableU[R <: Has[_]](implicit
       recover: Recover[URIOH[R, *]] = Recover.default[URIOH[R, *]]
-  ): RunHttp[URIOH[R, *], URIO[R, *]]                                                      =
+  ): RunHttp[URIOH[R, *], URIO[R, *]] =
     ziosRunnable[R, Nothing]
 }
 

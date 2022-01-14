@@ -118,7 +118,7 @@ val tethys = List("core", "jackson").map(module => "com.tethys-json" %% s"tethys
 
 val reflect          = libraryDependencies += scalaOrganization.value   % "scala-reflect"           % scalaVersion.value
 val compiler         = libraryDependencies += scalaOrganization.value   % "scala-compiler"          % scalaVersion.value
-val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0"
+val collectionCompat = libraryDependencies += "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
 
 val enumeratumCirce = "com.beachape" %% "enumeratum-circe" % Version.enumeratumCirce
 

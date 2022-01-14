@@ -154,6 +154,8 @@ private[akkaHttp] trait ServeInstances extends ServeFunctions with ServeInstance
   implicit def prefixServe[pref, In <: HList](implicit n: Name[pref]) =
     serveCheck[Prefix[pref], In](pathPrefix(n.string) & rawPathPrefixTest(Slash | PathEnd))
 
+  implicit def endServe[In <: HList] = serveCheck[End, In](pathEnd)
+
   implicit def methodServe[method, In <: HList](implicit check: MethodCheck[method]) =
     serveCheck[method, In](method(check.method))
 

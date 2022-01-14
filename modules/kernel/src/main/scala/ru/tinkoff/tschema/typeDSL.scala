@@ -82,6 +82,10 @@ object typeDSL {
     */
   final class Prefix[pref] extends DSLAtom
 
+  /** Indicates end of path
+    */
+  final class End extends DSLAtom
+
   /** captures param from query
     *
     * @tparam name

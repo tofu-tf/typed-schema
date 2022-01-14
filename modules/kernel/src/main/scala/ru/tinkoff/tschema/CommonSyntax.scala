@@ -13,6 +13,8 @@ class CommonSyntax { self: syntax.type =>
   def options: Options = new Options
   def patch: Patch     = new Patch
 
+  def end: End = new End
+
   def opGet     = key("get") |> new Get
   def opPost    = key("post") |> new Post
   def opPut     = key("put") |> new Put

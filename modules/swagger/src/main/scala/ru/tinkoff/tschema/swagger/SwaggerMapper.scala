@@ -128,6 +128,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathPrefix[path](implicit name: Name[path]) =
     fromFunc[Prefix[path]](_.modPath(name.string +: _))
 
+  implicit val derivePathEnd: SwaggerMapper[End] = SwaggerMapper.empty
+
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 
@@ -224,8 +226,6 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
 
   implicit def deriveGroup[name](implicit name: Name[name]): SwaggerMapper[Group[name]] =
     fromFunc(PathSpec.groups.update(_, name.string +: _))
-
-  implicit val endInstance: SwaggerMapper[End] = SwaggerMapper.empty
 
   def swaggerAuth[realm: Name, x, T](
       scheme: Option[OpenApiSecurityScheme] = None,

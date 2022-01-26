@@ -81,7 +81,7 @@ object Serve
       : Add[AllQuery[name], F, In, name, Map[String, String]] =
     add(Routed.request[F].map(_.params))
 
-  implicit def queryFlagServe[F[_]: Routed: Monad, name: Name, p, x, In <: HList]
+  implicit def queryFlagServe[F[_]: Routed: Monad, name: Name, p, In <: HList]
       : Add[QueryFlagAs[name, p], F, In, p, Boolean] =
     add[QueryFlagAs[name, p], F, In, Boolean, p](Routed.request[F].map(_.params.contains(Name[name].string)))
 

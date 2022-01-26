@@ -128,6 +128,8 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def derivePathPrefix[path](implicit name: Name[path]) =
     fromFunc[Prefix[path]](_.modPath(name.string +: _))
 
+  implicit val derivePathEnd: SwaggerMapper[End] = SwaggerMapper.empty
+
   implicit def derivePathWitness[path](implicit name: Name[path]) =
     fromFunc[Witness.Aux[path]](_.modPath(name.string +: _))
 

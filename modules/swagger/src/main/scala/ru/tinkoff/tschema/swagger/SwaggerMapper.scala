@@ -227,8 +227,6 @@ object SwaggerMapper extends SwaggerMapperInstances1 {
   implicit def deriveGroup[name](implicit name: Name[name]): SwaggerMapper[Group[name]] =
     fromFunc(PathSpec.groups.update(_, name.string +: _))
 
-  implicit val endInstance: SwaggerMapper[End] = SwaggerMapper.empty
-
   def swaggerAuth[realm: Name, x, T](
       scheme: Option[OpenApiSecurityScheme] = None,
       name: Option[String] = None,

@@ -82,7 +82,7 @@ private[finagle] class FInstanceDecl {
 
     def convertService[A](svc: Service[http.Request, A]): F[A] =
       ReaderT(r =>
-        Async[G].async(cb =>
+        Async[G].async_(cb =>
           svc(r.request).respond {
             case twitter.util.Return(a) => cb(Right(a))
             case twitter.util.Throw(ex) => cb(Left(ex))

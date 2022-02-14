@@ -37,7 +37,7 @@ object Version {
 
   val derevo = "0.12.8"
 
-  val tofu = "0.10.6"
+  val tofu = "0.10.7"
 
   val swaggerUI = "4.5.0"
 

@@ -9,7 +9,7 @@ object Version {
 
   val akkaHttp = "10.2.7"
 
-  val shapeless = "2.3.7"
+  val shapeless = "2.3.10"
 
   val kindProjector = "0.13.2"
 

@@ -1,5 +1,7 @@
 package ru.tinkoff.tschema
 
+import scala.annotation.StaticAnnotation
+
 package object swagger {
   type SwaggerDescription = String
 
@@ -13,4 +15,6 @@ package object swagger {
 
   type Swagger[A] = SwaggerTypeable[A]
   val MagnoliaSwagger: Swagger.type = Swagger
+
+  case class obsolete() extends StaticAnnotation
 }

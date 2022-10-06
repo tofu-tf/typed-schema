@@ -42,7 +42,11 @@ object Swagger extends Derivation[SwaggerTypeable] with SwaggerFunctions {
                 SwaggerProperty(
                   name = cfg.propMod(param.label),
                   description = desc.element(param.label),
-                  typ = Eval.later(param.typeclass.typ)
+                  typ = Eval.later(param.typeclass.typ),
+                  deprecated = param.annotations.exists {
+                    case obsolete() => true
+                    case _          => false
+                  }
                 )
               }.toVector,
               required = Eval.later(

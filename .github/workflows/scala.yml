@@ -10,7 +10,7 @@ jobs:
   checkfmt:
     runs-on: [ubuntu-latest]
     steps:
-     - uses: actions/checkout@v2
+     - uses: actions/checkout@v3.1.0
      
      - name: Cache jabba
        uses: actions/cache@v3.0.3
@@ -46,7 +46,7 @@ jobs:
         scala: [2.12.15, 2.13.8]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3.1.0
       
     - name: Cache jabba
       uses: actions/cache@v3.0.3

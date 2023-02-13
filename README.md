@@ -42,4 +42,4 @@ We the People building services using modern scala often struggling to satisfy f
 without changing any definition
 * There should be some way to migrate all the service to another framework without reimplementing them
 
-# [Learn More on the TypedSchema Microsite](https://tinkoffcreditsystems.github.io/typed-schema/)
+# [Learn More on the TypedSchema Microsite](https://tofu-tf.github.io/typed-schema/)

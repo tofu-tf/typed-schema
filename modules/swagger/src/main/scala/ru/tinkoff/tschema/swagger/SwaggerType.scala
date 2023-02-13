@@ -93,7 +93,12 @@ final case class SwaggerArray(items: Eval[SwaggerType], minLength: Option[Int] =
   }
 }
 
-final case class SwaggerProperty(name: String, description: Option[String], typ: Eval[SwaggerType])
+final case class SwaggerProperty(
+    name: String,
+    description: Option[String],
+    typ: Eval[SwaggerType],
+    deprecated: Boolean = false
+)
 object SwaggerProperty {
   val description: Contains[SwaggerProperty, Option[String]] = GenContains[SwaggerProperty](_.description)
   val typ: Contains[SwaggerProperty, Eval[SwaggerType]]      = GenContains[SwaggerProperty](_.typ)
@@ -108,8 +113,8 @@ final case class SwaggerObject(
     val thisMap    = properties.map(prop => prop.name -> prop).toMap
     val thatMap    = p2.map(prop => prop.name -> prop).toMap
     val unionProps = (thisMap -- thatMap.keySet).values.toVector ++ thatMap.values.map {
-      case SwaggerProperty(name, descr, prop) =>
-        SwaggerProperty(name, descr, thisMap.get(name).map(_.typ.map2(prop)(_ or _)).getOrElse(prop))
+      case SwaggerProperty(name, descr, prop, deprecated) =>
+        SwaggerProperty(name, descr, thisMap.get(name).map(_.typ.map2(prop)(_ or _)).getOrElse(prop), deprecated)
     }
     val reqs       = required.map2(req2) { (r1, r2) =>
       r1.toSet.intersect(r2.toSet).toVector
@@ -281,8 +286,10 @@ object SwaggerType {
 
       case SwaggerObject(properties, required, discr) =>
         properties
-          .traverse[Eval, (String, Option[String], JsonObject)] { case SwaggerProperty(name, descr, prop) =>
-            prop.flatMap(encode).map(typ => (name, descr, typ.asJsonObject))
+          .traverse[Eval, (String, Option[String], JsonObject)] { case SwaggerProperty(name, descr, prop, deprecated) =>
+            prop
+              .flatMap(encode)
+              .map(typ => (name, descr, typ.add("deprecated", Json.fromBoolean(deprecated)).asJsonObject))
           }
           .map { enc =>
             val fields = enc.map {

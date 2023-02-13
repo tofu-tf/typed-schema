@@ -35,9 +35,9 @@ class DescrSpec extends AnyFlatSpec with Matchers {
   it should "set description for fields" in assert(barTyp.deref.value match {
     case obj: SwaggerObject =>
       obj.properties.forall {
-        case SwaggerProperty("x", None, _)           => true
-        case SwaggerProperty("y", Some(`yDescr`), _) => true
-        case _                                       => false
+        case SwaggerProperty("x", None, _, _)           => true
+        case SwaggerProperty("y", Some(`yDescr`), _, _) => true
+        case _                                          => false
       }
     case _                  => false
   })

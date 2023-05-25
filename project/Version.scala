@@ -47,7 +47,7 @@ object Version {
 
   val scalaCheck = "1.15.4"
 
-  val scalaTestScalaCheck = "3.2.11.0"
+  val scalaTestScalaCheck = "3.2.14.0"
 
   val typesafeConfig = "1.4.2"
 }

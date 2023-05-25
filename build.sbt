@@ -110,7 +110,7 @@ val env             = "tf.tofu"           %% "tofu-env"          % Version.tofu
 
 val scalatest           = "org.scalatest"     %% "scalatest"       % Version.scalaTest           % Test
 val scalacheck          = "org.scalacheck"    %% "scalacheck"      % Version.scalaCheck          % Test
-val scalatestScalacheck = "org.scalatestplus" %% "scalacheck-1-15" % Version.scalaTestScalaCheck % Test
+val scalatestScalacheck = "org.scalatestplus" %% "scalacheck-1-16" % Version.scalaTestScalaCheck % Test
 
 val akka   = List("actor", "stream").map(module => "com.typesafe.akka" %% s"akka-$module" % Version.akka)
 val zio    = List("dev.zio" %% "zio" % Version.zio, "dev.zio" %% "zio-interop-cats" % Version.zioCats)

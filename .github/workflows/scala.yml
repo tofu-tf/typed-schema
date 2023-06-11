@@ -43,7 +43,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
 
-        scala: [2.12.15, 2.13.8]
+        scala: [2.12.15, 2.13.11]
 
     steps:
     - uses: actions/checkout@v2

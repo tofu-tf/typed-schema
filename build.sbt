@@ -40,7 +40,7 @@ ThisBuild / developers := List(
 val minorVersion = SettingKey[Int]("minor scala version")
 
 val scala212V = "2.12.15"
-val scala213V = "2.13.8"
+val scala213V = "2.13.12"
 
 val crossCompile = crossScalaVersions := List(scala212V, scala213V)
 

@@ -49,5 +49,5 @@ object Version {
 
   val scalaTestScalaCheck = "3.2.11.0"
 
-  val typesafeConfig = "1.4.2"
+  val typesafeConfig = "1.4.3"
 }

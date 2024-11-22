@@ -31,7 +31,7 @@ object Version {
 
   val zio = "1.0.13"
 
-  val zioCats = "2.5.1.0"
+  val zioCats = "3.2.9.1"
 
   val finagle = "22.1.0"
 
